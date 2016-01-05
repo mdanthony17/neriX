@@ -1,0 +1,11 @@
+Source distance (cm): 75
+
+Source Position = 75:
+LScint: 
+Solid Angle = 0.00170286517932
+/xe/gun/thetarange 1.54905331172 1.59253934187 rad
+/xe/gun/phirange 1.10142422424 1.14058621156 rad
+LXe: 
+Solid Angle = 0.0040386299325
+/xe/gun/thetarange 1.53294774338 1.60864491021 rad
+/xe/gun/phirange 1.54411372759 1.597478926 rad

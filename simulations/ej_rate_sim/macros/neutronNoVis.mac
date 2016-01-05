@@ -1,0 +1,27 @@
+/control/execute macros/no_verbose.mac
+
+#/xe/gun/particle neutron
+#/xe/gun/energytype Mono
+#/xe/gun/energy 2.5 MeV
+#/xe/gun/angtype iso
+
+#/xe/gun/type Volume
+#/xe/gun/shape Cylinder
+#/xe/gun/radius 2 cm
+#/xe/gun/halfz 2 cm
+#/xe/gun/center 1*m 1*m -1.5*cm
+
+#/xe/gun/angtype direction
+#/xe/gun/direction 0 -1 0
+#/xe/gun/energy 2.5 MeV
+
+########  Start real macro
+
+
+/xe/gun/particle neutron
+#/xe/gun/direction 0 1 0
+/xe/gun/type Point
+/xe/gun/angtype direction
+#/xe/gun/position 0 -1*m -1.5*cm
+/xe/gun/energy 2.5 MeV
+

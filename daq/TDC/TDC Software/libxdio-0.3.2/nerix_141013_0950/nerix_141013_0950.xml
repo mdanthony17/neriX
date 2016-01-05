@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--*********************************************************
+    *		 miniDAX - - DAQ for XEBELLA 
+    * 
+    * This xml file contains the settings of a measurement
+    * that can be changed by the user. The file is read by
+    * the DAX program and overwrites all possible command
+    * line arguments.
+    * Please note: Only the entries marked with ** are read
+    *    by the miniDAX program. All other information is just
+    *    for documentation purposes or can be used by 
+    *    other programs.
+    **i*******************************************************-->
+
+<settings author="Guillaume" date="05/25/2012">
+  <!-- global Settings for the measurement--> 
+  <global>
+    <source>Cs137-0</source>			<!-- What is measured? -->
+	<source_position>128uCi source, Near PMT1, 35cm from top ISO flange, 10 cm away from cryostat, TDC Trial</source_position>    <!-- Position -->
+	<top_grid_voltage>NA</top_grid_voltage>          <!-- Top grid voltage in kV -->
+	<anode_voltage>4.5</anode_voltage>                  <!-- Anode voltage in kV -->
+	<bottom_grid_voltage>0</bottom_grid_voltage>        <!-- Bottom grid voltage in kV -->
+	<cathode_voltage>1.045</cathode_voltage>             <!-- Cathode voltage in kV -->
+	<screening_grid_voltage>0</screening_grid_voltage>  <!-- Screening grid voltage in kV -->
+    <notes>Actual 0 deg baseline, 2.5cm opening Pb at cryostat, Ge face 2.0 cm away from cryostat, PMT 1-2:670V, 3:650V, 4:710V, 5: 735V, 6:700V. External gain: 1-17:10.0 Trigger: S2*Ge, S1 Disc. thresh: 25.1 mV, Coincidence Windows /S2/HPGe: 1.5us/30us, Motion feedthrough: 0.2875", HPGe pre-amp thrsh disc -10mV, HPGe HV: 3.9kV, Coarse gain x25, shaping: 6 mus; Ch19: prompt S1 trig and Ge Trig Combo</notes>			<!-- Comments -->
+    <path>/data2/rsync_to_archive/</path>		<!-- **Path to files-->
+    <daq_version>1.0</daq_version>		<!-- ... -->
+    <nb_evts>-1</nb_evts>			<!-- **Evts to be measured; -1 is infinity -->	
+    <nb_evts_per_file>1000</nb_evts_per_file> 	<!-- **No of Events stored in one file -->	
+    <store_data>3</store_data>			<!-- **0: no, 1: old format, 2: ASCII, 3: Xe100 -->
+    <displaytime>1</displaytime>		<!-- **Display measured triggers, MBs, etc. every x sec -->
+    <user>Matt</user>				<!-- Who started the measurement? -->
+  </global>
+  <!--*************************************************************************************************** -->
+  <!-- ADC CAEN v1724 specific settings -->
+  <adc>	
+    <!-- global ADC settings -->
+    <global>
+      <nb_chs>20</nb_chs>			<!-- **Total number of channels --> 
+      <nb_samples_per_evt>4</nb_samples_per_evt><!-- **max nb. samples/event in k-->
+      <posttrigger>2500</posttrigger> 		<!-- **samples after trigger -->
+      <trigger>0</trigger>			<!-- **0:ext trig, 1:S1 trig, 2:S2 trig -->
+      <s1_thresh>50</s1_thresh>			<!-- **ADC threshold to generate S1 trigger -->
+      <s2_magnify>8</s2_magnify>                <!-- magnification factor for sum signal: 1,2,4,8 -->
+      <s2_baseline>-23</s2_baseline>            <!-- add this value to shift baseline to zero -->
+      <sampling_freq>100000000</sampling_freq>	<!-- **sampling frequency -->
+      <sample_size>14</sample_size>		<!-- **sampling width in bits -->
+      <voltage_range>2.25</voltage_range>	<!-- **voltage range of ADC -->
+      <baseline>16000</baseline>  		<!-- **position of baseline (channels) -->	
+      <busy>0</busy>				<!-- **ADC busy on (1) or off (0) --> 
+    </global>
+    <!-- Settings for Zero Length Encoding (ZLE)-->
+    <zle_settings>
+      <zle>1</zle>				<!-- **Zero Length Encoding? (1..yes, 0..no) -->
+      <threshold>30</threshold>		<!-- **channels below baseline (neg. signals!) -->
+      <n_pre>50</n_pre>				<!-- **baseline samples before peak -->
+      <n_post>50</n_post>			<!-- **baseline samples behind peak -->
+      <special_thresholds>			<!-- **set individual ZLE threshold for some PMTs -->
+      </special_thresholds>
+    </zle_settings>
+    <!-- Settings for graphical display "Oscilloscope mode" -->
+    <graphics>
+      <xdisplay>0</xdisplay>			<!-- ** 0:standard, 1:manual, 2:auto -->
+      <ydisplay>1</ydisplay>			<!-- ** 0:standard, 1:manual, 2:auto -->
+      <xaxis_low>900</xaxis_low>		<!-- ** lower border x-axis -->
+      <xaxis_high>1100</xaxis_high>		<!-- ** upper border x-axis -->
+      <yaxis_low>15900</yaxis_low>		<!-- ** lower border of y-axis display -->
+      <yaxis_high>16100</yaxis_high>		<!-- ** upper border -->
+      <xautorange>30</xautorange>		<!-- ** x-display of y-minimum +- this value -->
+    </graphics>
+  </adc>
+</settings>

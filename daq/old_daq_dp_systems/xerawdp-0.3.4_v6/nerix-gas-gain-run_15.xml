@@ -1,0 +1,161 @@
+<xerawdp>
+	<global>
+		<verbosity>1</verbosity> <!-- 0: none, 1: minimal, 2: extensive, 3: debug -->
+		<dataset_name_format>nerix_YYMMDD_hhmm_NNNNNN</dataset_name_format>
+		<raw_data_dir>/data/nerix/run_15/</raw_data_dir>
+		<merged_data_dir>/data/nerix/merged/s2_gain/run_15/</merged_data_dir>
+		<processed_data_dir>/data/tmp/scratch/</processed_data_dir>
+		<processing_level>3</processing_level>
+	</global>
+	<event>
+		<nb_chunks>1</nb_chunks>
+		<chunks>
+			<chunk>
+				<index>0</index>
+				<type>zle0, raw0</type>
+				<nb_channels>8</nb_channels>
+			</chunk>
+		</chunks>
+	</event>
+	<pmts>
+		<top_pmts>1-16</top_pmts>
+		<bottom_pmts>17-18</bottom_pmts>
+		<!--<unused_channels>6-8</unused_channels>-->
+		<channels>0-4</channels>
+		<external_gains>1-16:10., 17:5., 18:0.5</external_gains>
+		<calibration_source>
+				<here>
+				    <header>gain gain_err qe</header>
+			    <!--<values>1:[7.10e+05 1.00e+05 2.50e-01], 2:[6.25e+05 1.00e+05 2.50e-01], 3:[7.08e+05 1.00e+05 2.50e-01], 4:[6.79e+05 1.00e+05 2.50e-01], 5:[7.84e+05 1.00e+05 2.50e-01], 6:[7.42e+05 1.00e+05 2.50e-01], 7:[7.65e+05 1.00e+05 2.50e-01], 8:[5.60e+05 1.00e+05 2.50e-01], 9:[7.66e+05 1.00e+05 2.50e-01], 10:[7.68e+05 1.00e+05 2.50e-01], 11:[7.96e+05 1.00e+05 2.50e-01], 12:[7.73e+05 1.00e+05 2.50e-01], 13:[6.28e+05 1.00e+05 2.50e-01], 14:[7.02e+05 1.00e+05 2.50e-01], 15:[7.38e+05 1.00e+05 2.50e-01], 16:[7.60e+05 1.00e+05 2.50e-01], 17:[1.00e+05 1.00e+05 2.50e-01], 18:[1.00e+05 1.00e+05 2.50e-01]</values>--> <!-- PMT 1-2:740V, 3:710V, 4:800V,` 5:800V, 6:700V -->
+			    <values>1:[1.29e+06 1.00e+05 2.50e-01], 2:[1.20e+06 1.00e+05 2.50e-01], 3:[1.31e+06 1.00e+05 2.50e-01], 4:[1.28e+06 1.00e+05 2.50e-01], 5:[1.54e+06 1.00e+05 2.50e-01], 6:[1.33e+06 1.00e+05 2.50e-01], 7:[1.52e+06 1.00e+05 2.50e-01], 8:[1.20e+06 1.00e+05 2.50e-01], 9:[1.22e+06 1.00e+05 2.50e-01], 10:[1.54e+06 1.00e+05 2.50e-01], 11:[1.52e+06 1.00e+05 2.50e-01], 12:[1.41e+06     1.00e+05 2.50e-01], 13:[1.28e+06 1.00e+05 2.50e-01], 14:[1.30e+06 1.00e+05 2.50e-01], 15:[1.59e+06 1.00e+05 2.50e-01], 16:[1.53e+06 1.00e+05 2.50e-01], 17:[1.48e+06 1.00e+05 2.50e-01], 18:[1.48e+06 1.00e+05 2.50e-01]</values> <!-- PMT 1-2:740V, 3:710V, 4:800V, 5:800V, 6:700V -->
+			    <!-- <values>1:[1.77e+06 1.00e+05 2.50e-01], 2:[1.59e+06 1.00e+05 2.50e-01], 3:[1.79e+06 1.00e+05 2.50e-01], 4:[1.66e+06 1.00e+05 2.50e-01], 5:[2.03e+06 1.00e+05 2.50e-01], 6:[1.82e+06 1.00e+05 2.50e-01], 7:[1.88e+06 1.00e+05 2.50e-01], 8:[1.53e+06 1.00e+05 2.50e-01], 9:[1.97e+06 1.00e+05 2.50e-01], 10:[2.04e+06 1.00e+05 2.50e-01], 11:[2.09e+05 1.00e+05 2.50e-01], 12:[1.85e+06 1.00e+05 2.50e-01], 13:[1.41e+06 1.00e+05 2.50e-01], 14:[1.97e+06 1.00e+05 2.50e-01], 15:[1.58e+06 1.00e+05 2.50e-01], 16:[1.78e+06 1.00e+05 2.50e-01], 17:[1.95e+06 1.00e+05 2.50e-01], 20:[1.95e+06 1.00e+05 2.50e-01]</values> --><!-- PMT 1-2:765V, 3:735V, 4:805V, 5:820V, 6:700V -->
+			    <!-- <values>1:[8.83e+05 1.00e+05 2.50e-01], 2:[8.15e+05 1.00e+05 2.50e-01], 3:[9.32e+05 1.00e+05 2.50e-01], 4:[8.39e+05 1.00e+05 2.50e-01], 5:[10.1e+05 1.00e+05 2.50e-01], 6:[9.74e+05 1.00e+05 2.50e-01], 7:[9.75e+05 1.00e+05 2.50e-01], 8:[8.22e+05 1.00e+05 2.50e-01], 9:[9.66e+05 1.00e+05 2.50e-01], 10:[10.2e+05 1.00e+05 2.50e-01], 11:[10.3e+05 1.00e+05 2.50e-01], 12:[9.30e+05 1.00e+05 2.50e-01], 13:[7.57e+05 1.00e+05 2.50e-01], 14:[9.02e+05 1.00e+05 2.50e-01], 15:[8.82e+05 1.00e+05 2.50e-01], 16:[9.30e+05 1.00e+05 2.50e-01], 17:[8.62e+05 1.00e+05 2.50e-01]</values> -->
+			</here>
+		</calibration_source>
+	</pmts>
+	<trigger_efficiency>
+		<nb_trigger_signals>1</nb_trigger_signals>
+		<channels>19-19</channels>
+		<trigger_window_start>0</trigger_window_start> <!-- samples -->
+		<trigger_window_width>100</trigger_window_width> <!-- samples -->
+		<trigger_signal_height_threshold>0.3</trigger_signal_height_threshold> <!-- volts -->
+	</trigger_efficiency>
+	<trigger>
+		<channels>19-19</channels>
+		<signal_threshold_height>0.05</signal_threshold_height>
+		<signal_threshold_area>1e-8</signal_threshold_area>
+	</trigger>	
+	<germanium_detectors>
+		<nb_germanium_detectors>1</nb_germanium_detectors>
+		<channels>20-20</channels>
+	</germanium_detectors>	
+	<raw_data>
+		<nb_baseline_samples>46</nb_baseline_samples>
+	</raw_data>
+	<peak_finding>
+		<s1>
+			<excluded_pmts>18-18</excluded_pmts>
+			<max_nb_peaks>4</max_nb_peaks>
+			<filter>
+				<raised_cosine>
+					<low_pass>1</low_pass>
+					<limit>0.03</limit>
+					<roll_off>0.2</roll_off>
+					<length>31</length>
+				</raised_cosine>
+			</filter>
+			<right_limit_height_threshold>0.05</right_limit_height_threshold> <!-- volts -->
+			<signal_threshold>0.004</signal_threshold> <!-- volts -->
+			<peak_window>55</peak_window> <!-- samples -->
+			<pre_peak_samples>10</pre_peak_samples> <!-- samples -->
+			<max_length>60</max_length> <!-- samples -->
+			<pre_peak_avg_window>50</pre_peak_avg_window> <!-- samples -->
+			<post_peak_avg_window>5</post_peak_avg_window> <!-- samples -->
+			<pre_peak_avg_threshold>0.005</pre_peak_avg_threshold>
+			<post_peak_avg_threshold>0.05</post_peak_avg_threshold>
+			<filtered_width_threshold>50</filtered_width_threshold> <!-- samples -->
+			<negative_excursion_fraction_threshold>3.</negative_excursion_fraction_threshold>
+			<height_fraction_threshold>0.005</height_fraction_threshold>
+			<samples_below_threshold>2</samples_below_threshold> <!-- samples -->
+			<coincidence_threshold>7.e5</coincidence_threshold> <!-- e- -->
+		</s1>
+		<s2>
+			<excluded_pmts>18-18</excluded_pmts>
+			<max_nb_peaks>32</max_nb_peaks>
+			<large_peaks>
+				<filter>
+					<raised_cosine>
+						<low_pass>1</low_pass>
+						<limit>0.03</limit>
+						<roll_off>0.2</roll_off>
+						<length>31</length>
+					</raised_cosine>
+				</filter>
+				<signal_threshold>0.01</signal_threshold> <!-- volts -->
+				<dynamic_fraction_signal_threshold>0.001</dynamic_fraction_signal_threshold>
+				<min_width>20</min_width> <!-- samples -->
+				<min_interval_width>40</min_interval_width> <!-- samples -->
+				<pre_interval_avg_window>21</pre_interval_avg_window> <!-- samples -->
+				<post_interval_avg_window>21</post_interval_avg_window> <!-- samples -->
+				<pre_top_level_interval_avg_threshold>0.05</pre_top_level_interval_avg_threshold>
+				<post_top_level_interval_avg_threshold>0.05</post_top_level_interval_avg_threshold>
+				<pre_interval_avg_threshold>0.25</pre_interval_avg_threshold>
+				<post_interval_avg_threshold>0.25</post_interval_avg_threshold>
+				<overlapping_peaks_threshold>0.125</overlapping_peaks_threshold>
+				<left_height_fraction_threshold>0.005</left_height_fraction_threshold>
+				<right_height_fraction_threshold>0.002</right_height_fraction_threshold>
+				<large_peak_slope_threshold>0.005</large_peak_slope_threshold> <!-- volts/bin -->
+				<small_peak_slope_threshold>0.02</small_peak_slope_threshold> <!-- volts/bin -->
+				<small_peak_threshold>0.625</small_peak_threshold> <!-- volts -->
+			</large_peaks>
+			<tiny_peaks>
+				<filter>
+					<custom>
+						<coefficients>0, 0.103, 0.371, 0.691, 0.933, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.933, 0.691, 0.371, 0.103, 0</coefficients>
+					</custom>
+				</filter>
+				<right_limit_height_threshold>10.</right_limit_height_threshold> <!-- volts -->
+				<signal_threshold>0.001</signal_threshold> <!-- volts -->
+				<min_interval_width>30</min_interval_width> <!-- samples -->
+				<max_interval_width>200</max_interval_width> <!-- samples -->
+				<aspect_ratio_threshold>0.001</aspect_ratio_threshold> <!-- volts/bin -->
+				<pre_peak_avg_window>10</pre_peak_avg_window> <!-- samples -->
+				<post_peak_avg_window>10</post_peak_avg_window> <!-- samples -->
+				<pre_peak_avg_threshold>0.05</pre_peak_avg_threshold>
+				<post_peak_avg_threshold>0.05</post_peak_avg_threshold>
+				<height_fraction_threshold>0.01</height_fraction_threshold>
+			</tiny_peaks>
+		</s2>
+	</peak_finding>
+	<signals>
+		<signal_threshold>0.35</signal_threshold> <!-- pe -->
+		<saturation_threshold>2.196</saturation_threshold> <!-- volts -->
+		<s1>
+			<coincidence_excluded_pmts>18</coincidence_excluded_pmts>
+			<total_signal_excluded_pmts>18</total_signal_excluded_pmts>
+			<coincidence_window>2</coincidence_window> <!-- samples -->
+		</s1>
+		<s2>
+			<coincidence_excluded_pmts>18</coincidence_excluded_pmts>
+			<total_signal_excluded_pmts>18</total_signal_excluded_pmts>
+		</s2>
+	</signals>
+	<position_reconstruction>
+		<relative_efficiencies>1:1.0, 2:1.0, 3:1.0, 4:1.0, 5:1.0, 6:1.0, 7:1.0, 8:1.0, 9:1.0, 10:1.0 11:1.0, 12:1.0, 13:1.0, 14:1.0, 15:1.0, 16:1.0</relative_efficiencies>
+<!--        <relative_efficiencies>1:1.3, 2:1.3, 3:1.0, 4:1.0, 5:0.8, 6:1.0, 7:1.0, 8:1.3, 9:1.0, 10:1.0 11:1.3, 12:1.0, 13:1.0, 14:1.3, 15:1.0, 16:1.0</relative_efficiencies>-->
+<!--        <relative_efficiencies>1:1.3, 2:1.3, 3:1.1, 4:1.0, 5:0.8, 6:1.1, 7:1.0, 8:1.3, 9:0.8, 10:1.0 11:1.0, 12:1.0, 13:1.0, 14:1.3, 15:1.0, 16:1.0</relative_efficiencies>-->
+		<fann>
+			<use_algorithm>1</use_algorithm>
+			<xy_model_file_name>models/pr_r95.net</xy_model_file_name>
+		</fann>
+	</position_reconstruction>
+	<signal_corrections>
+		<s2>
+			<axial_correction>
+				<apply_correction>1</apply_correction>
+				<electron_lifetime>6.75</electron_lifetime> <!-- us, value overwritten by process.py (if used) -->
+			</axial_correction>
+		</s2>
+	</signal_corrections>
+</xerawdp>
+

@@ -1,0 +1,4 @@
+Teflon       AddProperty       REFLECTIVITY  {6.91, 6.98, 7.05}  eV  {0.80, 0.80, 0.80}
+SourceSteel  AddProperty       REFLECTIVITY  {6.91, 6.98, 7.05}  eV  {0.20, 0.20, 0.20}
+SS304LSteel  AddProperty       REFLECTIVITY  {6.91, 6.98, 7.05}  eV  {0.30, 0.30, 0.30}
+LXe          AddConstProperty  SCINTILLATIONYIELD  1000000  1/keV

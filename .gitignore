@@ -1,0 +1,4 @@
+# ignore data directories to save space
+
+/data/
+/er/

@@ -1,0 +1,8 @@
+#!/usr/bin/python
+
+from subprocess import call
+
+call(['./scripts/process.py', '-f', 'nerix-default-run_11.xml.v2', 'nerix_150213_1146', '2'])
+call(['./scripts/process.py', '-f', 'nerix-default-run_11.xml.v2', 'nerix_150212_1029', '2'])
+call(['./scripts/process.py', '-f', 'nerix-default-run_11.xml.v2', 'nerix_150212_1744', '2'])
+call(['./scripts/process.py', '-f', 'nerix-default-run_11.xml.v2', 'nerix_150210_1114', '2'])
