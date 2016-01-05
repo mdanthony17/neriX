@@ -1,0 +1,115 @@
+**Logfile********************************************************
+                 multiDAX  --  DAQ for neriX                   
+                    version: 1.1.7m1 (30/07/2013)                             
+*****************************************************************
+program started: 
+Local Time: Fri Aug  9 12:17:12 2013
+UTC: Fri Aug  9 16:17:12 2013
+
+12:17:13: DAQ started
+12:17:13: data file: ./tests/nerix_130809_1217/nerix_130809_1217_000000.xed
+12:17:14: :::: WARNING: Modules are not synchronized (Event: 6) ::::
+12:17:14: :::: WARNING:   max dt=1038655075  ::::
+12:17:14: :::: WARNING: Modules are not synchronized (Event: 14) ::::
+12:17:14: :::: WARNING:   max dt=1031465174  ::::
+12:17:14: :::: WARNING: Modules are not synchronized (Event: 19) ::::
+12:17:14: :::: WARNING:   max dt=3064142  ::::
+12:17:14: :::: WARNING: Modules are not synchronized (Event: 40) ::::
+12:17:14: :::: WARNING:   max dt=1029323368  ::::
+12:17:15: :::: WARNING: modules 1  returns nothing (evt: 48) ::::
+12:17:15: :::: WARNING: Modules are not synchronized (Event: 52) ::::
+12:17:15: :::: WARNING:   max dt=1758744  ::::
+12:17:15: :::: WARNING: Modules are not synchronized (Event: 53) ::::
+12:17:15: :::: WARNING:   max dt=2137730152  ::::
+12:17:15: :::: WARNING: Modules are not synchronized (Event: 67) ::::
+12:17:15: :::: WARNING:   max dt=1010249756  ::::
+12:17:15: :::: WARNING: Modules are not synchronized (Event: 69) ::::
+12:17:15: :::: WARNING:   max dt=4391564  ::::
+12:17:15: :::: WARNING: Modules are not synchronized (Event: 73) ::::
+12:17:15: :::: WARNING:   max dt=3006988  ::::
+12:17:16: :::: WARNING: Modules are not synchronized (Event: 82) ::::
+12:17:16: :::: WARNING:   max dt=1036642302  ::::
+12:17:16: :::: WARNING: Modules are not synchronized (Event: 95) ::::
+12:17:16: :::: WARNING:   max dt=2575684  ::::
+12:17:16: :::: WARNING: Modules are not synchronized (Event: 97) ::::
+12:17:16: :::: WARNING:   max dt=896622065  ::::
+12:17:16: :::: WARNING: Modules are not synchronized (Event: 100) ::::
+12:17:16: :::: WARNING:   max dt=2751072  ::::
+12:17:16: :::: WARNING: Modules are not synchronized (Event: 122) ::::
+12:17:16: :::: WARNING:   max dt=1550536  ::::
+12:17:17: :::: WARNING: Modules are not synchronized (Event: 127) ::::
+12:17:17: :::: WARNING:   max dt=7484666  ::::
+12:17:17: :::: WARNING: Modules are not synchronized (Event: 128) ::::
+12:17:17: :::: WARNING:   max dt=4775586  ::::
+12:17:17: :::: WARNING: Modules are not synchronized (Event: 138) ::::
+12:17:17: :::: WARNING:   max dt=2143724466  ::::
+12:17:17: :::: WARNING: No data read ::::
+12:17:17: :::: WARNING: Modules are not synchronized (Event: 139) ::::
+12:17:17: :::: WARNING:   max dt=899118  ::::
+12:17:17: :::: WARNING: Modules are not synchronized (Event: 152) ::::
+12:17:17: :::: WARNING:   max dt=8764774  ::::
+12:17:18: :::: WARNING: Modules are not synchronized (Event: 165) ::::
+12:17:18: :::: WARNING:   max dt=1028246445  ::::
+12:17:18: :::: WARNING: Modules are not synchronized (Event: 167) ::::
+12:17:18: :::: WARNING:   max dt=1046684767  ::::
+12:17:18: :::: WARNING: Modules are not synchronized (Event: 177) ::::
+12:17:18: :::: WARNING:   max dt=2463848  ::::
+12:17:18: :::: WARNING: Modules are not synchronized (Event: 181) ::::
+12:17:18: :::: WARNING:   max dt=1041242359  ::::
+12:17:18: :::: WARNING: Modules are not synchronized (Event: 186) ::::
+12:17:18: :::: WARNING:   max dt=2677896  ::::
+12:17:19: :::: WARNING: Modules are not synchronized (Event: 219) ::::
+12:17:19: :::: WARNING:   max dt=3596152  ::::
+12:17:19: :::: WARNING: Modules are not synchronized (Event: 235) ::::
+12:17:19: :::: WARNING:   max dt=4328414  ::::
+12:17:19: :::: WARNING: Modules are not synchronized (Event: 238) ::::
+12:17:19: :::: WARNING:   max dt=1043408511  ::::
+12:17:20: :::: WARNING: Modules are not synchronized (Event: 246) ::::
+12:17:20: :::: WARNING:   max dt=5896978  ::::
+12:17:20: :::: WARNING: modules 1  returns nothing (evt: 248) ::::
+12:17:20: :::: WARNING: Modules are not synchronized (Event: 260) ::::
+12:17:20: :::: WARNING:   max dt=2777208  ::::
+12:17:20: :::: WARNING: Modules are not synchronized (Event: 261) ::::
+12:17:20: :::: WARNING:   max dt=1045745553  ::::
+12:17:20: :::: WARNING: Modules are not synchronized (Event: 270) ::::
+12:17:20: :::: WARNING:   max dt=10633036  ::::
+12:17:20: :::: WARNING: Modules are not synchronized (Event: 281) ::::
+12:17:20: :::: WARNING:   max dt=1046188276  ::::
+12:17:20: :::: WARNING: Modules are not synchronized (Event: 284) ::::
+12:17:20: :::: WARNING:   max dt=1037405278  ::::
+12:17:21: :::: WARNING: Modules are not synchronized (Event: 291) ::::
+12:17:21: :::: WARNING:   max dt=1030800072  ::::
+12:17:21: :::: WARNING: Modules are not synchronized (Event: 296) ::::
+12:17:21: :::: WARNING:   max dt=3085050  ::::
+12:17:21: :::: WARNING: modules 1  returns nothing (evt: 296) ::::
+12:17:21: :::: WARNING: Modules are not synchronized (Event: 298) ::::
+12:17:21: :::: WARNING:   max dt=2774886  ::::
+12:17:21: :::: WARNING: Modules are not synchronized (Event: 308) ::::
+12:17:21: :::: WARNING:   max dt=2131128468  ::::
+12:17:22: :::: WARNING: modules 1  returns nothing (evt: 320) ::::
+12:17:22: :::: WARNING: Modules are not synchronized (Event: 330) ::::
+12:17:22: :::: WARNING:   max dt=4489784  ::::
+12:17:22: :::: WARNING: Modules are not synchronized (Event: 354) ::::
+12:17:22: :::: WARNING:   max dt=1713846  ::::
+12:17:22: :::: WARNING: Modules are not synchronized (Event: 356) ::::
+12:17:22: :::: WARNING:   max dt=5072366  ::::
+12:17:22: :::: WARNING: modules 1  returns nothing (evt: 363) ::::
+12:17:23: :::: WARNING: Modules are not synchronized (Event: 415) ::::
+12:17:23: :::: WARNING:   max dt=1016465745  ::::
+12:17:24: :::: WARNING: modules 1  returns nothing (evt: 428) ::::
+12:17:24: :::: WARNING: Modules are not synchronized (Event: 431) ::::
+12:17:24: :::: WARNING:   max dt=1043856309  ::::
+12:17:24: :::: WARNING: Modules are not synchronized (Event: 466) ::::
+12:17:24: :::: WARNING:   max dt=1039881374  ::::
+12:17:25: :::: WARNING: modules 1  returns nothing (evt: 469) ::::
+12:17:25: :::: WARNING: Modules are not synchronized (Event: 470) ::::
+12:17:25: :::: WARNING:   max dt=1872600  ::::
+12:17:25: :::: WARNING: Modules are not synchronized (Event: 482) ::::
+12:17:25: :::: WARNING:   max dt=2263988  ::::
+12:17:25: :::: WARNING: modules 1  returns nothing (evt: 486) ::::
+12:17:25: :::: WARNING: Modules are not synchronized (Event: 496) ::::
+12:17:25: :::: WARNING:   max dt=1037289146  ::::
+12:17:26: :::: WARNING: Modules are not synchronized (Event: 569) ::::
+12:17:26: :::: WARNING:   max dt=2493554  ::::
+12:17:26: :::: WARNING: No data read ::::
+12:17:26: :::: WARNING: found invalid event signature ::::

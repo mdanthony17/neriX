@@ -1,0 +1,24 @@
+**Logfile********************************************************
+                 multiDAX  --  DAQ for neriX                   
+                    version: 1.1.7m1 (30/07/2013)                             
+*****************************************************************
+program started: 
+Local Time: Fri Aug  9 11:53:17 2013
+UTC: Fri Aug  9 15:53:17 2013
+
+11:53:18: DAQ started
+11:53:18: data file: ./tests/nerix_130809_1153/nerix_130809_1153_000000.xed
+11:53:21: :::: WARNING: modules 1  returns nothing (evt: 139) ::::
+11:53:21: :::: WARNING: Modules are not synchronized (Event: 139) ::::
+11:53:21: :::: WARNING:   max dt=2131607257  ::::
+11:53:24: :::: WARNING: Modules are not synchronized (Event: 226) ::::
+11:53:24: :::: WARNING:   max dt=2123739163  ::::
+11:53:27: :::: WARNING: modules 1  returns nothing (evt: 330) ::::
+11:53:27: :::: WARNING: Modules are not synchronized (Event: 330) ::::
+11:53:27: :::: WARNING:   max dt=573327  ::::
+11:53:27: :::: WARNING: modules 1  returns nothing (evt: 357) ::::
+11:53:27: :::: WARNING: Modules are not synchronized (Event: 357) ::::
+11:53:27: :::: WARNING:   max dt=2122246239  ::::
+11:53:28: DAQ stopped
+Total Measuring Time = 9.376 s = 00:00:09.376 h
+Total Number of Events Measured = 373

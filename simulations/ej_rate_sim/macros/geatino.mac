@@ -1,0 +1,12 @@
+#/control/execute macros/no_verbose.mac
+
+/xe/gun/particle geatino
+/xe/gun/energytype Mono
+/xe/gun/energy 2.5 MeV
+/xe/gun/angtype iso
+
+/xe/gun/type Volume
+/xe/gun/shape Cylinder
+/xe/gun/radius 2 cm
+/xe/gun/halfz 2 cm
+/xe/gun/center 0 0 0 cm

@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+import os, subprocess, time, smtplib
+
+fnull = open(os.devnull, 'w')
+bibimbapOnline = True
+emailSent = False
+
+sender = 'xedaq@astro18.astronevis.columbia.edu'
+receiver = ['mda2149@columbia.edu', 'luke.goetzke@gmail.com', 'marc.weber@astro.columbia.edu']
+message = """From: xedaq <xedaq@astro18.astronevis.columbia.edu>
+To: Matt <mda2149@columbia.edu>, Luke <luke.goetzke@gmail.com>, Marc <marc.weber@astro.columbia.edu>
+Subject: bibimbap Down - restart pingAstro18
+
+bibimbap is down.  Restart pingAstro18 in /etc/init.d
+"""
+
+while 1:
+	time.sleep(60)
+
+	pingProc = subprocess.Popen(["ping", "-q", "-c", "1", "bibimbap.astro.columbia.edu"], stdout = subprocess.PIPE, stderr = fnull)
+
+	streamdata = pingProc.communicate()[0]
+	if(pingProc.returncode == 1 or pingProc.returncode == 0):
+		bibimbapOnline = True
+		emailSent = False
+	else:
+		bibimbapOnline = False
+
+	if(not bibimbapOnline and not emailSent):
+		smtpObj = smtplib.SMTP('localhost')
+		smtpObj.sendmail(sender, receiver, message)
+		emailSent = True

@@ -1,0 +1,31 @@
+#!/usr/bin/python
+
+import os, subprocess, time, smtplib
+
+#pingResults = os.system('ping -q -c 1 astro18.astronevis.columbia.edu')
+fnull = open(os.devnull, 'w')
+astronOnline = True
+
+sender = 'astro18_down@bibimbap.astro.columbia.edu'
+receiver = ['mda2149@columbia.edu']
+message = """From: astro18_down <astr018_down@bibimbap.astro.columbia.edu>
+To: Matt <mda2149@columbia.edu>
+Subject: astro18 Down
+
+astro18 is down.
+"""
+
+while 1:
+	time.sleep(20)
+
+	pingProc = subprocess.Popen(["ping", "-q", "-c", "1", "astro18.astronevis.columbia.edu"], stdout = subprocess.PIPE, stderr = fnull)
+
+	streamdata = pingProc.communicate()[0]
+	if(pingProc.returncode == 0): astronOnline = True
+	else: astronOnline = False
+
+	if(astronOnline == True):
+		print 'sending email'
+
+		smtpObj = smtplib.SMTP('localhost')
+		smtpObj.sendmail(sender, receiver, message)

@@ -1,0 +1,13 @@
+**Logfile********************************************************
+                 multiDAX  --  DAQ for neriX                   
+                    version: 1.1.7m1 (30/07/2013)                             
+*****************************************************************
+program started: 
+Local Time: Fri Aug  9 11:51:53 2013
+UTC: Fri Aug  9 15:51:53 2013
+
+11:51:54: DAQ started
+11:51:54: data file: ./tests/nerix_130809_1151/nerix_130809_1151_000000.xed
+11:51:55: DAQ stopped
+Total Measuring Time = 1.115 s = 00:00:01.115 h
+Total Number of Events Measured = 32

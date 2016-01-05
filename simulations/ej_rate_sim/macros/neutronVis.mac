@@ -1,0 +1,32 @@
+/control/execute macros/no_verbose.mac
+
+/vis/scene/create
+/vis/open VRML2FILE
+
+/vis/viewer/set/viewpointThetaPhi 0 180 deg
+/vis/viewer/zoom 10.0
+
+/tracking/storeTrajectory 1
+/vis/scene/add/trajectories
+/vis/scene/endOfEventAction accumulate
+
+#/xe/gun/particle neutron
+#/xe/gun/center 0 -1*m -1.5*cm
+#/xe/gun/type Point
+#/xe/gun/angtype direction
+#/xe/gun/direction 0 -1 0
+#/xe/gun/energy 2.5 MeV
+
+/xe/gun/particle neutron
+#/xe/gun/direction -1 -1 0
+/xe/gun/type Point
+/xe/gun/angtype direction
+#/xe/gun/position 1*m 1*m -1.5*cm
+/xe/gun/energy 2.5 MeV
+
+
+
+
+/vis/viewer/flush
+
+#/run/beamOn 1

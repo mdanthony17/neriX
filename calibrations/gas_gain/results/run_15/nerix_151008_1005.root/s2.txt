@@ -1,0 +1,2 @@
+anode (kV)cathode (kV)   mu (pe) mu_err (pe)  sigma (pe)sigma_err (pe)  threshold (pe)  rolloff (pe)
+    3.9000    1.0540   56.5800      0.0954     13.6778        0.0361          7.2401        0.0697

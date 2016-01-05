@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+import sys, socket
+
+class Smac:
+	def __init__(self, socket_name):
+		self.socket_name = socket_name
+
+	def connect(self):
+		self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+		self.socket.connect(self.socket_name)
+
+	def disconnect(self):
+		self.socket.close()
+
+	def send(self, command):
+		self.socket.send(command)
+
+if __name__ == '__main__':
+	
+	if len(sys.argv) < 2:
+		print >>sys.stderr, 'usage: smac <command>'
+		sys.exit(1)
+	
+	cmd = sys.argv[1]
+
+	smac = Smac('/tmp/smacd.socket')
+	smac.connect()
+
+	smac.send(cmd)
+
+	smac.disconnect()
+

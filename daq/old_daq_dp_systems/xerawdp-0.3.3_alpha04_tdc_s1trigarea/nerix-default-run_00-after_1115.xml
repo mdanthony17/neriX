@@ -1,0 +1,94 @@
+<xerawdp>
+	<global>
+		<verbosity>1</verbosity> <!-- 0: none, 1: minimal, 2: extensive, 3: debug -->
+		<dataset_name_format>nerix_YYMMDD_hhmm_NNNNNN</dataset_name_format>
+		<raw_data_dir>/data/nerix/run_00/</raw_data_dir>
+		<merged_data_dir>/data/tmp/nerix/run_00/</merged_data_dir>
+		<processed_data_dir>/data/tmp/scratch/</processed_data_dir>
+		<processing_level>2</processing_level>
+	</global>
+	<event>
+		<nb_chunks>1</nb_chunks>
+		<chunks>
+			<chunk>
+				<index>0</index>
+				<type>zle0, raw0</type>
+				<nb_channels>8</nb_channels>
+			</chunk>
+		</chunks>
+	</event>
+	<pmts>
+		<top_pmts>1-4</top_pmts>
+		<bottom_pmts>5-5</bottom_pmts>
+		<unused_channels>6-8</unused_channels>
+		<channels>0-4</channels>
+		<external_gains>1-4:10.00, 5:1.</external_gains>
+		<calibration_source>
+			<here>
+				<header>gain gain_err qe</header>
+				<values>1:[8.80e+05 1.00e+06 2.50e-01], 2:[9.23e+05 1.00e+06 2.50e-01], 3:[8.76e+05 1.05e+06 2.50e-01], 4:[7.46e+05 1.00e+06 2.50e-01], 5:[1.17e+06 1.00e+06 2.50e-01]</values>
+			</here>
+		</calibration_source>
+	</pmts>
+	<raw_data>
+		<nb_baseline_samples>46</nb_baseline_samples>
+	</raw_data>
+	<peak_finding>
+		<s1>
+			<filter>
+				<raised_cosine>
+					<low_pass>1</low_pass>
+					<limit>0.03</limit>
+					<roll_off>0.2</roll_off>
+					<length>31</length>
+				</raised_cosine>
+			</filter>
+			<max_nb_peaks>4</max_nb_peaks>
+			<signal_threshold>0.004</signal_threshold> <!-- volts -->
+			<peak_window>55</peak_window> <!-- samples -->
+			<pre_peak_samples>10</pre_peak_samples> <!-- samples -->
+			<max_length>60</max_length> <!-- samples -->
+			<pre_peak_avg_window>50</pre_peak_avg_window> <!-- samples -->
+			<post_peak_avg_window>5</post_peak_avg_window> <!-- samples -->
+			<pre_peak_avg_threshold>0.005</pre_peak_avg_threshold>
+			<post_peak_avg_threshold>0.05</post_peak_avg_threshold>
+			<filtered_width_threshold>50</filtered_width_threshold> <!-- samples -->
+			<height_fraction_threshold>0.005</height_fraction_threshold>
+			<samples_below_threshold>2</samples_below_threshold> <!-- samples -->
+		</s1>
+		<s2>
+			<filter>
+				<raised_cosine>
+					<low_pass>1</low_pass>
+					<limit>0.03</limit>
+					<roll_off>0.2</roll_off>
+					<length>31</length>
+				</raised_cosine>
+			</filter>
+			<max_nb_peaks>8</max_nb_peaks>
+			<signal_threshold>0.01</signal_threshold> <!-- volts -->
+			<post_large_peak_fraction_signal_threshold>0.001</post_large_peak_fraction_signal_threshold>
+			<min_width>30</min_width> <!-- samples -->
+			<min_interval_width>60</min_interval_width> <!-- samples -->
+			<pre_interval_avg_window>21</pre_interval_avg_window> <!-- samples -->
+			<post_interval_avg_window>21</post_interval_avg_window> <!-- samples -->
+			<pre_top_level_interval_avg_threshold>0.05</pre_top_level_interval_avg_threshold>
+			<post_top_level_interval_avg_threshold>0.05</post_top_level_interval_avg_threshold>
+			<pre_interval_avg_threshold>0.25</pre_interval_avg_threshold>
+			<post_interval_avg_threshold>0.25</post_interval_avg_threshold>
+			<overlapping_peaks_threshold>0.125</overlapping_peaks_threshold>
+			<left_height_fraction_threshold>0.005</left_height_fraction_threshold>
+			<right_height_fraction_threshold>0.002</right_height_fraction_threshold>
+			<large_peak_slope_threshold>0.005</large_peak_slope_threshold> <!-- volts/bin -->
+			<small_peak_slope_threshold>0.02</small_peak_slope_threshold> <!-- volts/bin -->
+			<large_peak_threshold>0.625</large_peak_threshold> <!-- volts -->
+		</s2>
+	</peak_finding>
+	<signals>
+		<signal_threshold>0.35</signal_threshold> <!-- pe -->
+		<saturation_threshold>2.196</saturation_threshold> <!-- volts -->
+	</signals>
+	<position_reconstruction>
+	</position_reconstruction>
+</xerawdp>
+
