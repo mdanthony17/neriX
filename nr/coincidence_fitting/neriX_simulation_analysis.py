@@ -8,7 +8,6 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
 import neriX_simulation_datasets
 import numpy as np
 from math import exp, factorial, erf, ceil, log, pow
-from iminuit import Minuit
 from scipy import optimize, misc, stats
 import copy_reg, types, pickle, click, time
 from subprocess import call
