@@ -1303,6 +1303,7 @@ class neriX_simulation_analysis:
 			if mcEnergy <= 0:
 				continue
 		
+			#print 'Energy: %.3f' % mcEnergy
 		
 			# ------------------------------------------------
 			# Transform to number of quanta via W-value
@@ -1313,6 +1314,8 @@ class neriX_simulation_analysis:
 			if not passedWithoutError:
 				continue
 			
+			#print 'Quanta before Lindhard: %.3f' % mcQuantaBeforeLindhard
+			
 			
 			# ------------------------------------------------
 			# Apply Lindhard spectrum to quanta
@@ -1320,6 +1323,10 @@ class neriX_simulation_analysis:
 			
 			
 			passedWithoutError, mcQuanta = safe_binomial(mcQuantaBeforeLindhard, lindhardFactor)
+			if not passedWithoutError:
+				continue
+			
+			#print 'Quanta: %.3f' % mcQuanta
 
 
 			# ------------------------------------------------
@@ -1332,6 +1339,8 @@ class neriX_simulation_analysis:
 				continue
 			mcIons = mcQuanta - mcExcitons
 			
+			#print 'Excitons before recombination: %.3f' % mcExcitons
+			#print 'Ions before recombination: %.3f' % mcIons
 			
 			# ------------------------------------------------
 			# Ions recombine to form excitons
@@ -1343,6 +1352,9 @@ class neriX_simulation_analysis:
 				continue
 			mcExcitons += mcRecombined
 			mcIons -= mcRecombined
+			
+			#print 'Excitons: %.3f' % mcExcitons
+			#print 'Ions: %.3f' % mcIons
 
 
 			# ------------------------------------------------
@@ -1356,6 +1368,9 @@ class neriX_simulation_analysis:
 			mcPhotons = mcExcitons - mcQuenched
 			mcElectrons = mcIons
 			
+			#print 'Photon Yield: %.3f' % (mcPhotons / mcEnergy)
+			#print 'Charge Yield: %.3f' % (mcElectrons / mcEnergy)
+			
 			
 			# ------------------------------------------------
 			# Convert to photoelectrons
@@ -1368,7 +1383,7 @@ class neriX_simulation_analysis:
 			passedWithoutError, mcExtractedElectrons = safe_binomial(mcElectrons, extractionEfficiency)
 			if not passedWithoutError:
 				continue
-			passedWithoutError, mcS2Ideal = safe_normal(mcExtractedElectrons*g2Value, gasGainWidth * mcExtractedElectrons**0.5)
+			passedWithoutError, mcS2Ideal = safe_normal(mcExtractedElectrons*gasGainValue, gasGainWidth * mcExtractedElectrons**0.5)
 			if not passedWithoutError:
 				continue
 				
@@ -1409,6 +1424,9 @@ class neriX_simulation_analysis:
 			passedWithoutError, mcS2Final = safe_normal(mcS2SPESmeared, intrinsicResolutionS2*mcS2SPESmeared**0.5)
 			if not passedWithoutError:
 				continue
+
+			#print 'S1 final: %.2f' % mcS1Final
+			#print 'S2 final: %.2f' % mcS2Final
 
 			aS1[i] = mcS1Final
 			aS2[i] = mcS2Final
@@ -1995,7 +2013,7 @@ if __name__ == '__main__':
 	test = neriX_simulation_analysis(15, 4.5, 1.054, 45)
 	#test.perform_mc_match_photon_yield(9.5, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
 	#test.perform_mc_match_charge_yield(7, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
-	#test.perform_mc_match_full(0.22, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	test.perform_mc_match_full(0.25, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	
 	#(self, lindhardFactor, recombinationProb, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, par0PhotonQuenching, par1PhotonQuenching, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False)#
 	# (self, chargeYield, intrinsicResolution, g2RV, gasGainRV, gasGainWidthRV, speResRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, drawTracker=False, lowerQuantile=0.0, upperQuantile=1.0)
@@ -2007,7 +2025,7 @@ if __name__ == '__main__':
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
-	test.run_mcmc('full_matching', sParametersFullMatching, 160, 10, 5)
+	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
