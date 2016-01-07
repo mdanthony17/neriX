@@ -2450,7 +2450,7 @@ if __name__ == '__main__':
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
 	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
-	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 30, 5) #"""640*8"""
+	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 20, 5) #"""640*8"""
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
