@@ -18,6 +18,8 @@ import matplotlib.mlab as mlab
 import rootpy.compiled as C
 from numpy.random import normal, binomial, seed, poisson
 from rootpy.plotting import root2matplotlib as rplt
+import matplotlib
+matplotlib.use('Agg')
 
 import warnings
 #warnings.filterwarnings('error')
@@ -2279,9 +2281,9 @@ class neriX_simulation_analysis(object):
 		# Setup save locations
 		# ------------------------------------------------
 		
-		resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
-		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
-		self.sPathForSave = './mcmc_results/%ddeg_%.3fkV_%.1fkV/%s/' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+		self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
+		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+		#self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.nameOfResultsDirectory, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
 		self.sPathForChains = self.sPathForSave + 'chains/'
 		self.sNameOfCurrentChain = 'chain_'
