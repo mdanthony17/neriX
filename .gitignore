@@ -5,4 +5,4 @@
 nr/coincidence_fitting/simulated_data/nerixsim-10keV.root
 nr/coincidence_fitting/simulated_data/nerixsim-5keV.root
 nr.zip
-nr/coincidence_fitting/mcmc_results/
+nr/coincidence_fitting/mcmc_results_local/
