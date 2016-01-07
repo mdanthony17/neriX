@@ -1511,7 +1511,7 @@ class neriX_simulation_analysis(object):
 		
 		
 		if np.isnan(totalLogLikelihood):
-			return -np.inf, aMatchingMCSpectrum
+			return -np.inf, aS1S2MC
 		else:
 			return totalLogLikelihood, aS1S2MC
 		
