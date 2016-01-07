@@ -5,7 +5,11 @@ from rootpy import stl
 from rootpy.io import File
 from rootpy.tree import Tree, TreeModel, TreeChain
 from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
+<<<<<<< HEAD
 import neriX_simulation_datasets, neriX_simulation_config
+=======
+import neriX_simulation_datasets
+>>>>>>> 40fe1c0be5945e600f9ccc78c368ff977209dd1c
 import numpy as np
 from math import exp, factorial, erf, ceil, log, pow
 from scipy import optimize, misc, stats
@@ -2278,8 +2282,12 @@ class neriX_simulation_analysis(object):
 		# Setup save locations
 		# ------------------------------------------------
 		
+<<<<<<< HEAD
 		resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
 		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+=======
+		self.sPathForSave = './mcmc_results/%ddeg_%.3fkV_%.1fkV/%s/' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+>>>>>>> 40fe1c0be5945e600f9ccc78c368ff977209dd1c
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
 		self.sPathForChains = self.sPathForSave + 'chains/'
 		self.sNameOfCurrentChain = 'chain_'
@@ -2450,7 +2458,11 @@ if __name__ == '__main__':
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
 	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
+<<<<<<< HEAD
 	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 20, 5) #"""640*8"""
+=======
+	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 30, 5) #"""640*8"""
+>>>>>>> 40fe1c0be5945e600f9ccc78c368ff977209dd1c
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
