@@ -15,9 +15,8 @@ from subprocess import call
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
-from numpy.random import normal, binomial, seed
+from numpy.random import normal, binomial, seed, poisson
 from rootpy.plotting import root2matplotlib as rplt
-
 
 import warnings
 #warnings.filterwarnings('error')
@@ -71,6 +70,12 @@ def integrate_normalized_gaussian(leftEdge, rightEdge, mu, sigma):
 	except:
 		return 0.
 
+
+def safe_poisson(mean):
+	try:
+		return True, poisson(mean)
+	except:
+		return False, 0
 
 
 
@@ -601,7 +606,7 @@ class track_steps_fit:
 
 
 
-class neriX_simulation_analysis:
+class neriX_simulation_analysis(object):
 	def __init__(self, run, anodeVoltage, cathodeVoltage, angle):
 
 		# ------------------------------------------------
@@ -1173,7 +1178,26 @@ class neriX_simulation_analysis:
 		
 		# add 1 to right index to keep it inclusive
 		return (indexLeft, indexRight + 1)
-		
+	
+	
+	
+	
+	
+	
+	
+	# ************************************************
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# Full matching (S1 and S2)
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ************************************************
 		
 		
 		
@@ -1501,11 +1525,319 @@ class neriX_simulation_analysis:
 		logLikelihood = self.perform_mc_match_full(*aParametersToFit, drawFit=drawFit)[0]
 		#print time.time() - startTime
 		return logLikelihood
-
-
 	
 	
-	# --------- charge yield
+	
+	
+	
+	
+	# ************************************************
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# Full matching (S1 and S2) using only
+	# the light and charge yield
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ************************************************
+	
+	
+	# function will return both log likelihood and graph with
+	# matched spectrum
+	# will simply call this for likelihood maximization
+	# and take just the likelihood - can call after that with
+	# best fit to get spectrum
+	# NOTE: THIS IS USING ONLY THE YIELDS!!!!
+	def perform_mc_match_full_yields_only(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False):
+
+
+		# ------------------------------------------------
+		# Load required constants, graphs, and likelihoods
+		# for later use in matching code
+		# ------------------------------------------------
+
+		# free parameters (4 free parameters)
+		
+		pYLogLikelihood = self.get_prior_log_likelihood_photon_yield(photonYield)
+		qYLogLikelihood = self.get_prior_log_likelihood_charge_yield(chargeYield)
+		
+		resS1LogLikelihood = self.get_prior_log_likelihood_resolution(intrinsicResolutionS1)
+		resS2LogLikelihood = self.get_prior_log_likelihood_resolution(intrinsicResolutionS2)
+		
+
+		# S1 values (6 nuissnce parameters)
+		g1Likelihood, g1Value = self.get_g1_default(g1RV)
+		g1LogLikelihood = self.get_prior_log_likelihood_nuissance(g1Likelihood)
+		
+		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
+		speResLogLikelihood = self.get_prior_log_likelihood_nuissance(speResLikelihood)
+
+		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV, par1TacEffRV)
+		tacEffLogLikelihood = self.get_prior_log_likelihood_nuissance(tacEffLikelihood)
+		
+		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
+		pfEffLogLikelihood = self.get_prior_log_likelihood_nuissance(pfEffLikelihood)
+
+
+		# S2 values (5 nuissance parameters)
+		g2Likelihood, g2Value = self.get_g2_default(g2RV)
+		g2LogLikelihood = self.get_prior_log_likelihood_nuissance(g2Likelihood)
+		
+		gasGainLikelihood, gasGainValue = self.get_gas_gain_default(gasGainRV)
+		gasGainLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainLikelihood)
+		
+		gasGainWidthLikelihood, gasGainWidth = self.get_gas_gain_default(gasGainWidthRV)
+		gasGainWidthLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainWidthLikelihood)
+		
+		trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
+		trigEffLogLikelihood = self.get_prior_log_likelihood_nuissance(trigEffLikelihood)
+
+
+		# sum all likelihood terms (should be 13 terms)
+		priorLogLikelihoods = pYLogLikelihood + qYLogLikelihood + resS1LogLikelihood + resS2LogLikelihood + g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + g2LogLikelihood + gasGainLogLikelihood + gasGainWidthLogLikelihood + trigEffLogLikelihood
+	
+	
+	
+	
+		# ------------------------------------------------
+		# Initialize required constants, matrices, and arrays
+		# ------------------------------------------------
+
+		numPhotonBins = int(self.maxPhotonYield * self.egMC.get_upper_bound())
+		numElectronBins = int(self.maxPhotonYield * self.egMC.get_upper_bound())
+		#aPhotonBinCenters = np.array([[i for i in xrange(numPhotonBins)]])
+		#aElectronBinCenters = np.array([[i for i in xrange(numElectronBins)]])
+		
+		numQuantaBeforeLindhard = 1*(numPhotonBins + numElectronBins)
+		numQuanta = numPhotonBins + numElectronBins
+		aQuantaBeforeLindhardBinCenters = np.array([[i for i in xrange(numQuantaBeforeLindhard)]])
+		aQuantaBinCenters = aQuantaBeforeLindhardBinCenters.flatten()[:numQuanta]
+		
+		aS1BinCenters = np.array(self.egS1.get_x_values(), dtype=np.int).flatten()
+		aS2BinCenters = np.array(self.egS2.get_x_values(), dtype=np.int).flatten()
+		
+		reducedEnergyMin = neriX_simulation_datasets.reducedEnergyMin
+		reducedEnergyMax = neriX_simulation_datasets.reducedEnergyMax
+		reducedEnergyNumBins = neriX_simulation_datasets.reducedEnergyNumBins
+		reducedEnergyBinSize = (reducedEnergyMax-reducedEnergyMin)/float(reducedEnergyNumBins)
+		aReducedEnergyBinCenters = np.array([reducedEnergyMin + i*reducedEnergyBinSize + 0.5*reducedEnergyBinSize for i in xrange(reducedEnergyNumBins)])
+		
+		
+		binWidthS1 = float(aS1BinCenters[1]-aS1BinCenters[0])
+		numBinsS1 = aS1BinCenters.size
+		binWidthS2 = float(aS2BinCenters[1]-aS2BinCenters[0])
+		numBinsS2 = aS2BinCenters.size
+		
+		aS1BinEdges = np.asarray([aS1BinCenters[0] - 0.5*binWidthS1 + i*binWidthS1 for i in xrange(numBinsS1+1)]) # need +1 to capture last bin!!
+		aS2BinEdges = np.asarray([aS2BinCenters[0] - 0.5*binWidthS2 + i*binWidthS2 for i in xrange(numBinsS2+1)])
+		
+		
+		
+		aPhotonBinCenters = np.array([[i for i in xrange(numPhotonBins)]])
+		aElectronBinCenters = np.array([[i for i in xrange(numElectronBins)]])
+		
+		extractionEfficiency = g2Value / gasGainValue
+	
+	
+	
+		# ------------------------------------------------
+		# Set seeds and number of trials
+		# ------------------------------------------------
+		
+		numRandomTrials = int(1e4)
+		seed(int(time.time()))
+		root.gRandom.SetSeed(0)
+		aS1 = np.zeros(numRandomTrials)
+		aS2 = np.zeros(numRandomTrials)
+		
+		#startTime = time.time()
+	
+		for i in xrange(numRandomTrials):
+		
+			passedWithoutError = True
+		
+			# ------------------------------------------------
+			# Get random energy value according to distribution
+			# ------------------------------------------------
+		
+			# the finer binning the better in MC
+			mcEnergy = self.hMC.GetRandom()
+			if mcEnergy <= 0:
+				continue
+		
+			#print 'Energy: %.3f' % mcEnergy
+		
+			# ------------------------------------------------
+			# Transform to number of photons and electrons
+			# (extraction efficiency in next step)
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcPhotons = safe_poisson(mcEnergy*photonYield)
+			if not passedWithoutError:
+				continue
+			
+			passedWithoutError, mcElectrons = safe_poisson(mcEnergy*chargeYield)
+			if not passedWithoutError:
+				continue
+
+			
+			
+			# ------------------------------------------------
+			# Convert to photoelectrons and account for
+			# extraction efficiency
+			# ------------------------------------------------
+			
+			
+			passedWithoutError, mcS1Ideal = safe_binomial(mcPhotons, g1Value)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcExtractedElectrons = safe_binomial(mcElectrons, extractionEfficiency)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2Ideal = safe_normal(mcExtractedElectrons*gasGainValue, gasGainWidth * mcExtractedElectrons**0.5)
+			if not passedWithoutError:
+				continue
+				
+				
+			if mcS1Ideal < 0:
+				mcS1Ideal = 0.
+			if mcS2Ideal < 0:
+				mcS2Ideal = 0.
+			
+		
+			# ------------------------------------------------
+			# Apply SPE Smearing
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcS1SPESmeared = safe_normal(mcS1Ideal, speRes*mcS1Ideal**0.5)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2SPESmeared = safe_normal(mcS2Ideal, speRes*mcS2Ideal**0.5)
+			if not passedWithoutError:
+				continue
+				
+			if mcS1SPESmeared < 0:
+				mcS1SPESmeared = 0.
+			if mcS2SPESmeared < 0:
+				mcS2SPESmeared = 0.
+			
+			
+			
+			# ------------------------------------------------
+			# Apply intrinsic smearing
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcS1Final = safe_normal(mcS1SPESmeared, intrinsicResolutionS1*mcS1SPESmeared**0.5)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2Final = safe_normal(mcS2SPESmeared, intrinsicResolutionS2*mcS2SPESmeared**0.5)
+			if not passedWithoutError:
+				continue
+
+			#print 'S1 final: %.2f' % mcS1Final
+			#print 'S2 final: %.2f' % mcS2Final
+
+			aS1[i] = mcS1Final
+			aS2[i] = mcS2Final
+			
+		#print 'Time per loop: %f' % ((time.time() - startTime) / numRandomTrials)
+		
+		
+		# ------------------------------------------------
+		# create 2D histogram of S1s and S2s
+		# ------------------------------------------------
+		
+		
+		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
+		
+		
+
+		# ------------------------------------------------
+		# apply efficiencies
+		# ------------------------------------------------
+
+		# element wise multiplication to combine S1 or S2
+		# need to use outer with multiply to make large matrix
+		
+		aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
+		aS2Efficiency = egTrigEff.get_y_values()
+		
+		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
+		
+		#print aS1S2.shape, aFullEfficiencyMatrix.shape
+		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
+		
+		aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
+
+		aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
+		
+		
+		if drawFit:
+			f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+			
+			s1s2DataPlot = np.rot90(self.aS1S2)
+			s1s2DataPlot = np.flipud(s1s2DataPlot)
+			ax1.pcolormesh(aS1BinEdges, aS2BinEdges, s1s2DataPlot)
+			
+			s1s2MCPlot = np.rot90(aS1S2MC)
+			s1s2MCPlot = np.flipud(s1s2MCPlot)
+			ax2.pcolormesh(aS1BinEdges, aS2BinEdges, s1s2MCPlot)
+			#plt.colorbar()
+			
+			plt.show()
+		
+		
+		
+		flatS1S2Data = self.aS1S2.flatten()
+		flatS1S2MC = aS1S2MC.flatten()
+		
+		
+		logLikelihoodMatching = np.sum( flatS1S2Data*smart_log(flatS1S2MC) - flatS1S2MC - smart_stirling(flatS1S2Data) )
+		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
+		
+		
+		if np.isnan(totalLogLikelihood):
+			return -np.inf, aMatchingMCSpectrum
+		else:
+			return totalLogLikelihood, aS1S2MC
+		
+		
+		
+		
+	def mcmc_func_full_matching_yields_only(self, aParametersToFit, drawFit=False):
+		#print aParametersToFit
+		assert len(aParametersToFit) == 15
+		#startTime = time.time()
+		logLikelihood = self.perform_mc_match_full_yields_only(*aParametersToFit, drawFit=drawFit)[0]
+		#print time.time() - startTime
+		return logLikelihood
+	
+	
+
+
+
+
+	# ************************************************
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# S2 Matching (Charge Yield)
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ************************************************
 	
 	
 	# function will return both log likelihood and graph with
@@ -1715,9 +2047,20 @@ class neriX_simulation_analysis:
 	
 		
 	
+	# ************************************************
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# S1 Matching (Photon Yield)
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ************************************************
 
-
-	# ------- photon yield
 
 	# function will return both log likelihood and graph with
 	# matched spectrum
@@ -1920,6 +2263,10 @@ class neriX_simulation_analysis:
 			numDim = 20
 			assert len(sParameters) == numDim
 			func = self.mcmc_func_full_matching
+		elif sMeasurement == 'full_matching_yields_only':
+			numDim = 15
+			assert len(sParameters) == numDim
+			func = self.mcmc_func_full_matching_yields_only
 		else:
 			print 'Currently not setup to handle the input measurement: %s' % sMeasurement
 			sys.exit()
@@ -1939,10 +2286,11 @@ class neriX_simulation_analysis:
 			call(['mkdir', self.sPathForChains])
 		else:
 			for file in os.listdir(self.sPathForSave):
-				if file == 'chains' or file == 'previous_results':
+				if file == 'chains' or file == 'previous_results' or 'sampler_dictionary.p':
 					continue
 				call(['mv', self.sPathForSave + file, self.sPathForOldFiles + file])
 			self.sNameOfCurrentChain += '%04d.p' % len(os.listdir(self.sPathForChains))
+			
 		
 		
 		# ------------------------------------------------
@@ -1956,9 +2304,58 @@ class neriX_simulation_analysis:
 			lLabelsForCorner[i] = '%s' % set[0]
 			initialParameters[i] = set[1]
 
-		#numDim, numWalkers, numSteps = 8, 160, 1
-		posWalkers = [(np.random.randn(numDim)+initialParameters)*fractionalDeviationStartPos + initialParameters for i in xrange(numWalkers)]
-		
+
+		# chain dictionary will have the following format
+		# dSampler[walkers] = [sampler_000, sampler_001, ...]
+
+		loadedPreviousSampler = False
+		try:
+			# two things will fail potentially
+			# 1. open if file doesn't exist
+			# 2. posWalkers load since initialized to None
+			with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
+				dSampler = pickle.load(fPrevSampler)
+				prevSampler = dSampler[numWalkers][-1]
+				# need to load in weird way bc can't pickle
+				# ensembler object
+				posWalkers = prevSampler['_chain'][:,-1,:]
+				randomState = prevSampler['_random']
+			loadedPreviousSampler = True
+			print '\nSuccessfully loaded previous chaind!\n'
+		except:
+			print '\nCould not load previous sampler or none existed - starting new sampler.\n'
+
+
+		if not loadedPreviousSampler:
+			posWalkers = [(np.random.randn(numDim)+initialParameters)*fractionalDeviationStartPos + initialParameters for i in xrange(numWalkers)]
+			randomState = None
+			
+			# create file if it doesn't exist
+			if not os.path.exists(self.sPathForSave + 'sampler_dictionary.p'):
+				with open(self.sPathForSave + 'sampler_dictionary.p', 'w') as fPrevSampler:
+					dSampler = {}
+					dSampler[numWalkers] = []
+					pickle.dump(dSampler, fPrevSampler)
+			else:
+				with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
+					dSampler = pickle.load(fPrevSampler)
+				with open(self.sPathForSave + 'sampler_dictionary.p', 'w') as fPrevSampler:
+					dSampler[numWalkers] = []
+					pickle.dump(dSampler, fPrevSampler)
+
+			"""
+			with open(self.sPathForSave + 'sampler_dictionary.p', 'r+') as fPrevSampler:
+				
+				# use try and except to maintain other walker sizes
+				try:
+					print 'loaded'
+					dSampler = pickle.load(fPrevSampler)
+				except:
+					dSampler = {}
+				dSampler[numWalkers] = []
+				pickle.dump(dSampler, fPrevSampler)
+			"""
+
 		
 
 		print '\n\nBeginning MCMC sampler\n\n'
@@ -1970,7 +2367,7 @@ class neriX_simulation_analysis:
 		startTimeMCMC = time.time()
 		
 		currentStep = 1
-		with click.progressbar(sampler.sample(posWalkers, iterations=numSteps), length=numSteps) as mcmc_sampler:
+		with click.progressbar(sampler.sample(posWalkers, iterations=numSteps, rstate0=randomState), length=numSteps) as mcmc_sampler:
 			for pos, lnprob, state in mcmc_sampler:
 				#print '\nCompleted step %d of %d.\n' % (currentStep, numSteps)
 				currentStep += 1
@@ -1985,6 +2382,29 @@ class neriX_simulation_analysis:
 			currentStep += 1
 		"""
 
+
+		# ------------------------------------------------
+		# Prepare and save data and plots
+		# ------------------------------------------------
+
+		#print sampler.__dict__
+		dictionary_for_sampler = sampler.__dict__
+		if 'lnprobfn' in dictionary_for_sampler:
+			del dictionary_for_sampler['lnprobfn']
+		if 'pool' in dictionary_for_sampler:
+			del dictionary_for_sampler['pool']
+
+		with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
+			dSampler = pickle.load(fPrevSampler)
+		fPrevSampler.close()
+
+		fPrevSampler = open(self.sPathForSave + 'sampler_dictionary.p', 'w')
+		dSampler[numWalkers].append(sampler.__dict__)
+		pickle.dump(dSampler, fPrevSampler)
+		fPrevSampler.close()
+
+		
+
 		#sampler.run_mcmc(posWalkers, numSteps) # shortcut of above method
 		pickle.dump(sampler.chain, open(self.sPathForSave + 'sampler_chain.p', 'w'))
 		pickle.dump(sampler.chain, open(self.sPathForChains + self.sNameOfCurrentChain, 'w'))
@@ -1994,8 +2414,8 @@ class neriX_simulation_analysis:
 		except:
 			print '\n\nWARNING: Not enough sample points to estimate the autocorrelation time - this likely means that the fit is bad since the burn-in time was not reached.\n\n'
 		
-		samples = sampler.chain[:, 5:, :].reshape((-1, numDim))
 		try:
+			samples = sampler.chain[:, int(max(sampler.acor)):, :].reshape((-1, numDim))
 			fig = corner.corner(samples, labels=lLabelsForCorner)
 			fig.savefig(self.sPathForSave + 'corner_plot.png')
 		except AssertionError:
@@ -2012,19 +2432,21 @@ if __name__ == '__main__':
 	test = neriX_simulation_analysis(15, 4.5, 1.054, 45)
 	#test.perform_mc_match_photon_yield(9.5, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
 	#test.perform_mc_match_charge_yield(7, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
-	test.perform_mc_match_full(0.25, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	#test.perform_mc_match_full(0.25, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	#test.perform_mc_match_full_yields_only(9.0, 7.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	
-	#(self, lindhardFactor, recombinationProb, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, par0PhotonQuenching, par1PhotonQuenching, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False)#
-	# (self, chargeYield, intrinsicResolution, g2RV, gasGainRV, gasGainWidthRV, speResRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, drawTracker=False, lowerQuantile=0.0, upperQuantile=1.0)
+	#(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False):
 	
 	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))
 	#sParametersChargeYield = (('charge_yield', 7.0), ('res_intrinsic', 0.8), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_res_spe', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
-	sParametersFullMatching = (('lindhard_factor', 0.2), ('recombination_prob', 0.24), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0), ('n_par0_photon_quenching', 0), ('n_par1_photon_quenching', 0))
+	#sParametersFullMatching = (('lindhard_factor', 0.2), ('recombination_prob', 0.24), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0), ('n_par0_photon_quenching', 0), ('n_par1_photon_quenching', 0))
+	sParametersFullMatchingYieldsOnly = (('photon_yield', 9.0), ('charge_yield', 7.0), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
 
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
 	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
+	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 32, 2, 5) #"""640*8"""
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
