@@ -5,7 +5,7 @@ from rootpy import stl
 from rootpy.io import File
 from rootpy.tree import Tree, TreeModel, TreeChain
 from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
-import neriX_simulation_datasets
+import neriX_simulation_datasets, neriX_simulation_config
 import numpy as np
 from math import exp, factorial, erf, ceil, log, pow
 from scipy import optimize, misc, stats
@@ -2278,7 +2278,8 @@ class neriX_simulation_analysis(object):
 		# Setup save locations
 		# ------------------------------------------------
 		
-		self.sPathForSave = './mcmc_results/%ddeg_%.3fkV_%.1fkV/%s/' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+		resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
+		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
 		self.sPathForChains = self.sPathForSave + 'chains/'
 		self.sNameOfCurrentChain = 'chain_'
