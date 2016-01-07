@@ -12,14 +12,15 @@ from math import exp, factorial, erf, ceil, log, pow
 from scipy import optimize, misc, stats
 import copy_reg, types, pickle, click, time
 from subprocess import call
-# for debugging
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
 from numpy.random import normal, binomial, seed, poisson
 from rootpy.plotting import root2matplotlib as rplt
-import matplotlib
-matplotlib.use('Agg')
+
 
 import warnings
 #warnings.filterwarnings('error')
@@ -2454,7 +2455,7 @@ if __name__ == '__main__':
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
 	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
-	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 20, 5) #"""640*8"""
+	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 30, 5) #"""640*8"""
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
