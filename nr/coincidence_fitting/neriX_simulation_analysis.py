@@ -1777,7 +1777,10 @@ class neriX_simulation_analysis(object):
 		
 		aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
 
-		aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
+		try:
+			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
+		except:
+			return -np.inf, aS1S2MC
 		
 		
 		if drawFit:
@@ -1805,7 +1808,7 @@ class neriX_simulation_analysis(object):
 		
 		
 		if np.isnan(totalLogLikelihood):
-			return -np.inf, aMatchingMCSpectrum
+			return -np.inf, aS1S2MC
 		else:
 			return totalLogLikelihood, aS1S2MC
 		
@@ -2446,7 +2449,7 @@ if __name__ == '__main__':
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
 	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
-	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 32, 2, 5) #"""640*8"""
+	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 30, 5) #"""640*8"""
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
