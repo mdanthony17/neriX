@@ -5,6 +5,8 @@ pathToReducedSimulationFiles = './reduced_simulation_data/'
 pathToData = '../analysis/full_angle_files/'
 pathToEfficiencyFiles = 'efficiency_files/'
 
+pathToFakeData = './fake_data/'
+
 default_g1 = 0.11
 default_g1_uncertainty = 0.01
 

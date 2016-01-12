@@ -26,7 +26,7 @@ import warnings
 #warnings.filterwarnings('error')
 # this turns runtime warnings into errors to
 # catch unexpected behavior
-#warnings.simplefilter('error', RuntimeWarning)
+warnings.simplefilter('error', RuntimeWarning)
 # this turns off a deprecation warning in general but aimed
 # at corners plot creation (should try to only put there)
 # and move back to all warnings as errors)
@@ -611,7 +611,7 @@ class track_steps_fit:
 
 
 class neriX_simulation_analysis(object):
-	def __init__(self, run, anodeVoltage, cathodeVoltage, angle):
+	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, use_fake_data=False, create_fake_data=False):
 
 		# ------------------------------------------------
 		# Pull filenames and create save paths
@@ -724,39 +724,63 @@ class neriX_simulation_analysis(object):
 		# Load histograms of data and convert them to
 		# easy graphs
 		# ------------------------------------------------
-
-		# load S1
-		fData = File(dFilesForAnalysis['data'])
-		self.hS1 = fData.hS1
-		self.hS1.Sumw2()
-		gS1 = convert_hist_to_graph_with_poisson_errors(self.hS1)
-		self.egS1 = easy_graph(gS1)
 		
-		self.s1NumBins = self.egS1.get_num_elements()
-		self.s1LowerBound = self.egS1.get_lower_bound()
-		self.s1UpperBound = self.egS1.get_upper_bound()
+		self.createFakeDataMode = create_fake_data
+		self.useFakeData = use_fake_data
 		
-		self.numCountsData = self.hS1.Integral()
-		if self.numCountsData <=0:
-			print '\n\nFAILURE: Number of data points found is zero.  Please check S1 or S2 spectrum.'
-			sys.exit()
+		if not self.createFakeDataMode:
+			# load S1
+			if not use_fake_data:
+				fileToLoad = dFilesForAnalysis['data']
+			else:
+				print '\n\nNOTE: You are using fake data produced by this framework.\n\n'
+				fileToLoad = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
+			
+			self.fData = File(fileToLoad)
+			self.hS1 = self.fData.hS1
+			self.hS1.Sumw2()
+			gS1 = convert_hist_to_graph_with_poisson_errors(self.hS1)
+			self.egS1 = easy_graph(gS1)
+			
+			self.s1NumBins = self.egS1.get_num_elements()
+			self.s1LowerBound = self.egS1.get_lower_bound()
+			self.s1UpperBound = self.egS1.get_upper_bound()
+			
+			self.numCountsData = self.hS1.Integral()
+			if self.numCountsData <=0:
+				print '\n\nFAILURE: Number of data points found is zero.  Please check S1 or S2 spectrum.'
+				sys.exit()
+			
+			
+			# load S2
+			self.hS2 = self.fData.hS2
+			self.hS2.Sumw2()
+			gS2 = convert_hist_to_graph_with_poisson_errors(self.hS2)
+			self.egS2 = easy_graph(gS2)
+			
+			self.s2NumBins = self.egS2.get_num_elements()
+			self.s2LowerBound = self.egS2.get_lower_bound()
+			self.s2UpperBound = self.egS2.get_upper_bound()
+			
+			
+			# load 2D histogram
+			self.hS1S2 = self.fData.hS1S2
+			self.hS1S2.Sumw2()
+			self.aS1S2 = convert_2D_hist_to_matrix(self.hS1S2)
+			
+		else:
+			print '\n\nCurrently in creating fake data mode so cannot run analysis!\n\n'
+			sFakeData = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
+			self.fFakeData = File(sFakeData, 'recreate')
 		
+			self.s1NumBins = 40
+			self.s1LowerBound =	-0.5
+			self.s1UpperBound = 39.5
 		
-		# load S2
-		self.hS2 = fData.hS2
-		self.hS2.Sumw2()
-		gS2 = convert_hist_to_graph_with_poisson_errors(self.hS2)
-		self.egS2 = easy_graph(gS2)
+			self.s2NumBins = 40
+			self.s2LowerBound = 0
+			self.s2UpperBound = 4000
 		
-		self.s2NumBins = self.egS2.get_num_elements()
-		self.s2LowerBound = self.egS2.get_lower_bound()
-		self.s2UpperBound = self.egS2.get_upper_bound()
-		
-		
-		# load 2D histogram
-		self.hS1S2 = fData.hS1S2
-		self.hS1S2.Sumw2()
-		self.aS1S2 = convert_2D_hist_to_matrix(self.hS1S2)
 		
 
 		# ------------------------------------------------
@@ -1186,6 +1210,326 @@ class neriX_simulation_analysis(object):
 	
 	
 	
+	# ************************************************
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# Create fake data
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ************************************************
+	
+	
+	def create_fake_data(self, lindhardFactor, recombinationProb, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, par0PhotonQuenching, par1PhotonQuenching):
+
+
+		# ------------------------------------------------
+		# Load required constants, graphs, and likelihoods
+		# for later use in matching code
+		# ------------------------------------------------
+
+		# free parameters (4 free parameters, 5 nuissance)
+		lindhardFactorLogLikelihood = self.get_prior_log_likelihood_lindhard_factor(lindhardFactor)
+		recombinationLogLikelihood = self.get_prior_log_likelihood_recombination(recombinationProb)
+		resS1LogLikelihood = self.get_prior_log_likelihood_resolution(intrinsicResolutionS1)
+		resS2LogLikelihood = self.get_prior_log_likelihood_resolution(intrinsicResolutionS2)
+		
+		excitonToIonLikelihood, excitonToIonRatio = self.get_exciton_ion_ratio([par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV])
+		excitonToIonLogLikelihood = self.get_prior_log_likelihood_nuissance(excitonToIonLikelihood)
+		
+		photonQuenchingLikelihood, photonQuenching = self.get_photon_quenching([par0PhotonQuenching, par1PhotonQuenching])
+		photonQuenchingLogLikelihood = self.get_prior_log_likelihood_nuissance(photonQuenchingLikelihood)
+
+		# S1 values (6 nuissnce parameters)
+		g1Likelihood, g1Value = self.get_g1_default(g1RV)
+		g1LogLikelihood = self.get_prior_log_likelihood_nuissance(g1Likelihood)
+		
+		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
+		speResLogLikelihood = self.get_prior_log_likelihood_nuissance(speResLikelihood)
+
+		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV, par1TacEffRV)
+		tacEffLogLikelihood = self.get_prior_log_likelihood_nuissance(tacEffLikelihood)
+		
+		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
+		pfEffLogLikelihood = self.get_prior_log_likelihood_nuissance(pfEffLikelihood)
+
+
+		# S2 values (5 nuissance parameters)
+		g2Likelihood, g2Value = self.get_g2_default(g2RV)
+		g2LogLikelihood = self.get_prior_log_likelihood_nuissance(g2Likelihood)
+		
+		gasGainLikelihood, gasGainValue = self.get_gas_gain_default(gasGainRV)
+		gasGainLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainLikelihood)
+		
+		gasGainWidthLikelihood, gasGainWidth = self.get_gas_gain_default(gasGainWidthRV)
+		gasGainWidthLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainWidthLikelihood)
+		
+		trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
+		trigEffLogLikelihood = self.get_prior_log_likelihood_nuissance(trigEffLikelihood)
+
+
+		# sum all likelihood terms (should be 15 terms)
+		priorLogLikelihoods = lindhardFactorLogLikelihood + recombinationLogLikelihood + excitonToIonLogLikelihood + photonQuenchingLogLikelihood + resS1LogLikelihood + resS2LogLikelihood + g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + g2LogLikelihood + gasGainLogLikelihood + gasGainWidthLogLikelihood + trigEffLogLikelihood
+	
+	
+	
+	
+		# ------------------------------------------------
+		# Initialize required constants, matrices, and arrays
+		# ------------------------------------------------
+
+		numPhotonBins = int(self.maxPhotonYield * self.egMC.get_upper_bound())
+		numElectronBins = int(self.maxPhotonYield * self.egMC.get_upper_bound())
+		#aPhotonBinCenters = np.array([[i for i in xrange(numPhotonBins)]])
+		#aElectronBinCenters = np.array([[i for i in xrange(numElectronBins)]])
+		
+		numQuantaBeforeLindhard = 1*(numPhotonBins + numElectronBins)
+		numQuanta = numPhotonBins + numElectronBins
+		aQuantaBeforeLindhardBinCenters = np.array([[i for i in xrange(numQuantaBeforeLindhard)]])
+		aQuantaBinCenters = aQuantaBeforeLindhardBinCenters.flatten()[:numQuanta]
+		
+		aS1BinCenters = np.array(np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins), dtype=np.int).flatten()
+		aS2BinCenters = np.array(np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins), dtype=np.int).flatten()
+		
+		reducedEnergyMin = neriX_simulation_datasets.reducedEnergyMin
+		reducedEnergyMax = neriX_simulation_datasets.reducedEnergyMax
+		reducedEnergyNumBins = neriX_simulation_datasets.reducedEnergyNumBins
+		reducedEnergyBinSize = (reducedEnergyMax-reducedEnergyMin)/float(reducedEnergyNumBins)
+		aReducedEnergyBinCenters = np.array([reducedEnergyMin + i*reducedEnergyBinSize + 0.5*reducedEnergyBinSize for i in xrange(reducedEnergyNumBins)])
+		
+		
+		binWidthS1 = float(aS1BinCenters[1]-aS1BinCenters[0])
+		numBinsS1 = aS1BinCenters.size
+		binWidthS2 = float(aS2BinCenters[1]-aS2BinCenters[0])
+		numBinsS2 = aS2BinCenters.size
+		
+		#aS1BinEdges = np.asarray([aS1BinCenters[0] - 0.5*binWidthS1 + i*binWidthS1 for i in xrange(numBinsS1+1)]) # need +1 to capture last bin!!
+		#aS2BinEdges = np.asarray([aS2BinCenters[0] - 0.5*binWidthS2 + i*binWidthS2 for i in xrange(numBinsS2+1)])
+		
+		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1)
+		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1)
+		
+		
+		
+		aPhotonBinCenters = np.array([[i for i in xrange(numPhotonBins)]])
+		aElectronBinCenters = np.array([[i for i in xrange(numElectronBins)]])
+		
+		extractionEfficiency = g2Value / gasGainValue
+	
+	
+	
+		# ------------------------------------------------
+		# Set seeds and number of trials
+		# ------------------------------------------------
+		
+		numRandomTrials = int(500)
+		seed(int(time.time()))
+		root.gRandom.SetSeed(0)
+		aS1 = np.full(numRandomTrials, -1)
+		aS2 = np.full(numRandomTrials, -1)
+		
+		#startTime = time.time()
+	
+		for i in xrange(numRandomTrials):
+		
+			passedWithoutError = True
+		
+			# ------------------------------------------------
+			# Get random energy value according to distribution
+			# ------------------------------------------------
+		
+			# the finer binning the better in MC
+			mcEnergy = self.hMC.GetRandom()
+			if mcEnergy <= 0:
+				continue
+		
+			#print 'Energy: %.3f' % mcEnergy
+		
+			# ------------------------------------------------
+			# Transform to number of quanta via W-value
+			# ------------------------------------------------
+
+			wValue = 13.7e-3
+			passedWithoutError, mcQuantaBeforeLindhard = safe_poisson(mcEnergy/wValue)
+			if not passedWithoutError:
+				continue
+			
+			#print 'Quanta before Lindhard: %.3f' % mcQuantaBeforeLindhard
+			
+			
+			# ------------------------------------------------
+			# Apply Lindhard spectrum to quanta
+			# ------------------------------------------------
+			
+			
+			passedWithoutError, mcQuanta = safe_binomial(mcQuantaBeforeLindhard, lindhardFactor)
+			if not passedWithoutError:
+				continue
+			
+			#print 'Quanta: %.3f' % mcQuanta
+
+
+			# ------------------------------------------------
+			# Convert quanta to excitons and ions
+			# ------------------------------------------------
+
+			probExcitonSuccess = 1. - 1./(1. + excitonToIonRatio)
+			#print 'Exciton to ion ratio: %.3f' % excitonToIonRatio
+			passedWithoutError, mcExcitons = safe_binomial(mcQuanta, probExcitonSuccess)
+			if not passedWithoutError:
+				continue
+			mcIons = mcQuanta - mcExcitons
+			
+			#print 'Excitons before recombination: %.3f' % mcExcitons
+			#print 'Ions before recombination: %.3f' % mcIons
+			
+			# ------------------------------------------------
+			# Ions recombine to form excitons
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcRecombined = safe_binomial(mcIons, recombinationProb)
+			if not passedWithoutError:
+				continue
+			mcExcitons += mcRecombined
+			mcIons -= mcRecombined
+			
+			#print 'Excitons: %.3f' % mcExcitons
+			#print 'Ions: %.3f' % mcIons
+
+
+			# ------------------------------------------------
+			# Quenching and conversion to photons+electrons
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcQuenched = safe_binomial(mcExcitons, 1-photonQuenching)
+			if not passedWithoutError:
+				continue
+			mcPhotons = mcExcitons - mcQuenched
+			mcElectrons = mcIons
+			
+			#print 'Photon Yield: %.3f' % (mcPhotons / mcEnergy)
+			#print 'Charge Yield: %.3f' % (mcElectrons / mcEnergy)
+			
+			
+			# ------------------------------------------------
+			# Convert to photoelectrons
+			# ------------------------------------------------
+			
+			
+			passedWithoutError, mcS1Ideal = safe_binomial(mcPhotons, g1Value)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcExtractedElectrons = safe_binomial(mcElectrons, extractionEfficiency)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2Ideal = safe_normal(mcExtractedElectrons*gasGainValue, gasGainWidth * mcExtractedElectrons**0.5)
+			if not passedWithoutError:
+				continue
+				
+			#try:
+			#	print 'Estimated g1: %.3f' % (float(mcS1Ideal) / mcPhotons)
+			#	print 'Estimated g2: %.3f' % (mcS2Ideal / mcElectrons)
+			#except:
+			#	pass
+				
+			if mcS1Ideal < 0:
+				mcS1Ideal = 0.
+			if mcS2Ideal < 0:
+				mcS2Ideal = 0.
+			
+		
+			# ------------------------------------------------
+			# Apply SPE Smearing
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcS1SPESmeared = safe_normal(mcS1Ideal, speRes*mcS1Ideal**0.5)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2SPESmeared = safe_normal(mcS2Ideal, speRes*mcS2Ideal**0.5)
+			if not passedWithoutError:
+				continue
+				
+			if mcS1SPESmeared < 0:
+				mcS1SPESmeared = 0.
+			if mcS2SPESmeared < 0:
+				mcS2SPESmeared = 0.
+			
+			
+			
+			# ------------------------------------------------
+			# Apply intrinsic smearing
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcS1Final = safe_normal(mcS1SPESmeared, intrinsicResolutionS1*mcS1SPESmeared**0.5)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2Final = safe_normal(mcS2SPESmeared, intrinsicResolutionS2*mcS2SPESmeared**0.5)
+			if not passedWithoutError:
+				continue
+
+			#print 'S1 final: %.2f' % mcS1Final
+			#print 'S2 final: %.2f' % mcS2Final
+
+			aS1[i] = mcS1Final
+			aS2[i] = mcS2Final
+			
+		#print 'Time per loop: %f' % ((time.time() - startTime) / numRandomTrials)
+		
+		
+		# ------------------------------------------------
+		# create 2D histogram of S1s and S2s
+		# ------------------------------------------------
+		
+		
+		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
+		
+		
+
+		# ------------------------------------------------
+		# apply efficiencies
+		# ------------------------------------------------
+
+		# element wise multiplication to combine S1 or S2
+		# need to use outer with multiply to make large matrix
+		
+		aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
+		aS2Efficiency = egTrigEff.get_y_values()
+		
+		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
+		
+		#print aS1S2.shape, aFullEfficiencyMatrix.shape
+		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
+		
+		aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
+		#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
+		
+
+		self.fFakeData.cd()
+		
+		self.hS1 = Hist(self.s1NumBins, self.s1LowerBound, self.s1UpperBound, name='hS1')
+		root_numpy.array2hist(aS1S2MC.sum(axis=1), self.hS1)
+		self.hS1.Write()
+		
+		self.hS2 = Hist(self.s2NumBins, self.s2LowerBound, self.s2UpperBound, name='hS2')
+		root_numpy.array2hist(aS1S2MC.sum(axis=0), self.hS2)
+		self.hS2.Write()
+		
+		self.hS1S2 = Hist2D(self.s1NumBins, self.s1LowerBound, self.s1UpperBound, self.s2NumBins, self.s2LowerBound, self.s2UpperBound, name='hS1S2')
+		root_numpy.array2hist(aS1S2MC, self.hS1S2)
+		self.hS1S2.Write()
+
+	
+	
+	
 	
 	
 	
@@ -1280,6 +1624,10 @@ class neriX_simulation_analysis(object):
 		
 		aS1BinCenters = np.array(self.egS1.get_x_values(), dtype=np.int).flatten()
 		aS2BinCenters = np.array(self.egS2.get_x_values(), dtype=np.int).flatten()
+		#print aS1BinCenters
+		
+		#aS1BinCenters = np.array(np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins), dtype=np.int).flatten()
+		#aS2BinCenters = np.array(np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins), dtype=np.int).flatten()
 		
 		reducedEnergyMin = neriX_simulation_datasets.reducedEnergyMin
 		reducedEnergyMax = neriX_simulation_datasets.reducedEnergyMax
@@ -1293,8 +1641,12 @@ class neriX_simulation_analysis(object):
 		binWidthS2 = float(aS2BinCenters[1]-aS2BinCenters[0])
 		numBinsS2 = aS2BinCenters.size
 		
-		aS1BinEdges = np.asarray([aS1BinCenters[0] - 0.5*binWidthS1 + i*binWidthS1 for i in xrange(numBinsS1+1)]) # need +1 to capture last bin!!
-		aS2BinEdges = np.asarray([aS2BinCenters[0] - 0.5*binWidthS2 + i*binWidthS2 for i in xrange(numBinsS2+1)])
+		#aS1BinEdges = np.asarray([aS1BinCenters[0] - 0.5*binWidthS1 + i*binWidthS1 for i in xrange(numBinsS1+1)]) # need +1 to capture last bin!!
+		#aS2BinEdges = np.asarray([aS2BinCenters[0] - 0.5*binWidthS2 + i*binWidthS2 for i in xrange(numBinsS2+1)])
+		
+		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1)
+		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1)
+		#print aS1BinEdges
 		
 		
 		
@@ -1309,11 +1661,11 @@ class neriX_simulation_analysis(object):
 		# Set seeds and number of trials
 		# ------------------------------------------------
 		
-		numRandomTrials = int(1e5)
+		numRandomTrials = int(1e4)
 		seed(int(time.time()))
 		root.gRandom.SetSeed(0)
-		aS1 = np.zeros(numRandomTrials)
-		aS2 = np.zeros(numRandomTrials)
+		aS1 = np.full(numRandomTrials, -1)
+		aS2 = np.full(numRandomTrials, -1)
 		
 		#startTime = time.time()
 	
@@ -1337,7 +1689,7 @@ class neriX_simulation_analysis(object):
 			# ------------------------------------------------
 
 			wValue = 13.7e-3
-			passedWithoutError, mcQuantaBeforeLindhard = safe_normal(mcEnergy/wValue, (mcEnergy/wValue)**0.5)
+			passedWithoutError, mcQuantaBeforeLindhard = safe_poisson(mcEnergy/wValue)
 			if not passedWithoutError:
 				continue
 			
@@ -1361,6 +1713,7 @@ class neriX_simulation_analysis(object):
 			# ------------------------------------------------
 
 			probExcitonSuccess = 1. - 1./(1. + excitonToIonRatio)
+			#print 'Exciton to ion ratio: %.3f' % excitonToIonRatio
 			passedWithoutError, mcExcitons = safe_binomial(mcQuanta, probExcitonSuccess)
 			if not passedWithoutError:
 				continue
@@ -1414,6 +1767,11 @@ class neriX_simulation_analysis(object):
 			if not passedWithoutError:
 				continue
 				
+			#try:
+			#	print 'Estimated g1: %.3f' % (float(mcS1Ideal) / mcPhotons)
+			#	print 'Estimated g2: %.3f' % (mcS2Ideal / mcElectrons)
+			#except:
+			#	pass
 				
 			if mcS1Ideal < 0:
 				mcS1Ideal = 0.
@@ -1485,12 +1843,16 @@ class neriX_simulation_analysis(object):
 		#print aS1S2.shape, aFullEfficiencyMatrix.shape
 		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
 		
-		aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
+		#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
+		aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
 
-		aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
-		
+		try:
+			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
+		except:
+			return -np.inf, aS1S2MC
 		
 		if drawFit:
+
 			f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
 			
 			s1s2DataPlot = np.rot90(self.aS1S2)
@@ -1502,13 +1864,44 @@ class neriX_simulation_analysis(object):
 			ax2.pcolormesh(aS1BinEdges, aS2BinEdges, s1s2MCPlot)
 			#plt.colorbar()
 			
+						
+			c1 = Canvas(1400, 400)
+			c1.Divide(2)
+			
+			hS1MC = Hist(self.s1NumBins, self.s1LowerBound, self.s1UpperBound, name='hS1_draw_mc', drawstyle='hist')
+			#hS1MC.fill_array(aS1) # gives bad 1D histogram
+			root_numpy.array2hist(aS1S2MC.sum(axis=1), hS1MC)
+			hS1MC.Scale(self.hS1.Integral() / hS1MC.Integral())
+			
+			self.hS1.SetLineColor(root.kRed)
+			self.hS1.SetMarkerSize(0)
+			
+			c1.cd(1)
+			self.hS1.Draw()
+			hS1MC.Draw('same')
+			
+			hS2MC = Hist(self.s2NumBins, self.s2LowerBound, self.s2UpperBound, name='hS2_draw_mc', drawstyle='hist')
+			#hS2MC.fill_array(aS2)
+			root_numpy.array2hist(aS1S2MC.sum(axis=0), hS2MC)
+			hS2MC.Scale(self.hS2.Integral() / hS2MC.Integral())
+			
+			self.hS2.SetLineColor(root.kRed)
+			self.hS2.SetMarkerSize(0)
+			
+			c1.cd(2)
+			self.hS2.Draw()
+			hS2MC.Draw('same')
+			
+			
 			plt.show()
+		
+			del hS1MC, hS2MC, c1
 		
 		
 		
 		flatS1S2Data = self.aS1S2.flatten()
 		flatS1S2MC = aS1S2MC.flatten()
-		
+
 		
 		logLikelihoodMatching = np.sum( flatS1S2Data*smart_log(flatS1S2MC) - flatS1S2MC - smart_stirling(flatS1S2Data) )
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
@@ -1656,8 +2049,8 @@ class neriX_simulation_analysis(object):
 		numRandomTrials = int(1e4)
 		seed(int(time.time()))
 		root.gRandom.SetSeed(0)
-		aS1 = np.zeros(numRandomTrials)
-		aS2 = np.zeros(numRandomTrials)
+		aS1 = np.full(numRandomTrials, -1)
+		aS2 = np.full(numRandomTrials, -1)
 		
 		#startTime = time.time()
 	
@@ -1788,6 +2181,7 @@ class neriX_simulation_analysis(object):
 		
 		
 		if drawFit:
+
 			f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
 			
 			s1s2DataPlot = np.rot90(self.aS1S2)
@@ -1799,8 +2193,36 @@ class neriX_simulation_analysis(object):
 			ax2.pcolormesh(aS1BinEdges, aS2BinEdges, s1s2MCPlot)
 			#plt.colorbar()
 			
+						
+			c1 = Canvas(1400, 400)
+			c1.Divide(2)
+			
+			hS1MC = Hist(self.s1NumBins, self.s1LowerBound, self.s1UpperBound, name='hS1_draw_mc', drawstyle='hist')
+			hS1MC.fill_array(aS1)
+			hS1MC.Scale(self.hS1.Integral() / hS1MC.Integral())
+			
+			self.hS1.SetLineColor(root.kRed)
+			self.hS1.SetMarkerSize(0)
+			
+			c1.cd(1)
+			self.hS1.Draw()
+			hS1MC.Draw('same')
+			
+			hS2MC = Hist(self.s2NumBins, self.s2LowerBound, self.s2UpperBound, name='hS2_draw_mc', drawstyle='hist')
+			hS2MC.fill_array(aS2)
+			hS2MC.Scale(self.hS2.Integral() / hS2MC.Integral())
+			
+			self.hS2.SetLineColor(root.kRed)
+			self.hS2.SetMarkerSize(0)
+			
+			c1.cd(2)
+			self.hS2.Draw()
+			hS2MC.Draw('same')
+			
+			
 			plt.show()
 		
+			del hS1MC, hS2MC, c1
 		
 		
 		flatS1S2Data = self.aS1S2.flatten()
@@ -2282,7 +2704,11 @@ class neriX_simulation_analysis(object):
 		# Setup save locations
 		# ------------------------------------------------
 		
-		self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
+		if not self.useFakeData:
+			self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
+		else:
+			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
+		
 		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		#self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.nameOfResultsDirectory, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
@@ -2438,24 +2864,30 @@ class neriX_simulation_analysis(object):
 if __name__ == '__main__':
 	copy_reg.pickle(types.MethodType, reduce_method)
 
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 45)
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45)
 	#test.perform_mc_match_photon_yield(9.5, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
 	#test.perform_mc_match_charge_yield(7, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
-	#test.perform_mc_match_full(0.25, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
-	#test.perform_mc_match_full_yields_only(9.0, 7.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	#test.perform_mc_match_full(0.3, 0.34, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	#test.perform_mc_match_full_yields_only(11.1, 7.5, 2.5, 1.0, 1.0, 0.5, -0.5, 0.7, 0.2, 0.2, 0.5, 0, 1, 0, 0.2, drawFit=True)
+	
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False, create_fake_data=True)
+	#test.create_fake_data(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=True)
+	#test.perform_mc_match_full(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	
 	#(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False):
 	
 	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))
 	#sParametersChargeYield = (('charge_yield', 7.0), ('res_intrinsic', 0.8), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_res_spe', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
-	#sParametersFullMatching = (('lindhard_factor', 0.2), ('recombination_prob', 0.24), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0), ('n_par0_photon_quenching', 0), ('n_par1_photon_quenching', 0))
-	sParametersFullMatchingYieldsOnly = (('photon_yield', 9.0), ('charge_yield', 7.0), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
+	sParametersFullMatching = (('lindhard_factor', 0.25), ('recombination_prob', 0.3), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0), ('n_par0_photon_quenching', 0), ('n_par1_photon_quenching', 0))
+	#sParametersFullMatchingYieldsOnly = (('photon_yield', 9.0), ('charge_yield', 7.0), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
 
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
-	#test.run_mcmc('full_matching', sParametersFullMatching, 160, 300, 5)
-	test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 30, 5) #"""640*8"""
+	test.run_mcmc('full_matching', sParametersFullMatching, 10240, 15, 5) #10240
+	#test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 200, 5) #"""640*8"""
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
