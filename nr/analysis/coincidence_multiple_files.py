@@ -94,7 +94,9 @@ print '\nUsing S1 Branch: %s \n\n' % s1Branch
 print '\nUsing S2 Branch: %s \n\n' % s2Branch
 
 
-print '\n\nTotal number of events: %s\n\n' % current_analysis.get_num_events()
+print '\n\nTotal number of events: %s' % current_analysis.get_num_events()
+print 'Total time: %.0f \n\n' % current_analysis.get_livetime()
+
 
 #current_analysis.get_lT1()[0].Scan('EventId:S1sPeak[0]:%s:S2sPeak[0]:S2sTotBottom[0]:TimeOfFlight' % sS1Branch, '%s > 6' % sS1Branch)
 

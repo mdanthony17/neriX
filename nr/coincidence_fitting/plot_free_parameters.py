@@ -11,7 +11,11 @@ if len(sys.argv) != 6:
 	sys.exit()
 
 
-nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+useFakeValueInPlots = True
+
+
+#nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+nameOfResultsDirectory = 'fake_data/results'
 pathToSamplerDictionary = nameOfResultsDirectory
 
 degreeSetting = int(sys.argv[1])
@@ -34,21 +38,66 @@ else:
 
 #--------------- Start Parameters to Change ----------------
 
-numBinsPY = 40
-lowerBoundPY = 7
-upperBoundPY = 14
+
+dParametersToDraw = {'lindhard_factor':{'index':0,
+									    'binning':[100, 0.1, 0.35],
+										'true_value_for_fake':0.18},
+					 'recombination_probability':{'index':1,
+												  'binning':[100, 0.15, 0.4],
+												  'true_value_for_fake':0.24},
+					 'res_s1':{'index':2,
+							   'binning':[100, 0.85, 1.15],
+							   'true_value_for_fake':1.0},
+					 'res_s2':{'index':3,
+							   'binning':[100, 0.85, 1.15],
+							   'true_value_for_fake':1.0}
+					}
+
+
 
 #--------------- End Parameters to Change ----------------
 
 
+dPlots = {}
+
+for parameter in dParametersToDraw:
+	# initialize canvas and histogram
+	dPlots[parameter] = {}
+	dPlots[parameter]['canvas'] = Canvas()
+	dPlots[parameter]['hist'] = Hist(dParametersToDraw[parameter]['binning'][0], dParametersToDraw[parameter]['binning'][1], dParametersToDraw[parameter]['binning'][2], name='h_%s' % parameter, title=parameter, drawstyle='hist')
+	
+	# fill histogram and draw it
+	dPlots[parameter]['hist'].fill_array(aSampler[:,-1:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].Draw()
+
+	# find quantiles
+	aQuantiles = dPlots[parameter]['hist'].quantiles([.5-.341, .5, .5+.341])
+	dPlots[parameter]['lines'] = [0 for i in xrange(len(aQuantiles))]
+	for i, line in enumerate(dPlots[parameter]['lines']):
+		dPlots[parameter]['lines'][i] = root.TLine(aQuantiles[i], dPlots[parameter]['hist'].GetYaxis().GetXmin(), aQuantiles[i], dPlots[parameter]['hist'].GetMaximum())
+		dPlots[parameter]['lines'][i].SetLineColor(root.kBlue)
+		dPlots[parameter]['lines'][i].SetLineStyle(7)
+		dPlots[parameter]['lines'][i].Draw('same')
+	
+	if useFakeValueInPlots:
+		dPlots[parameter]['lines'].append(root.TLine(dParametersToDraw[parameter]['true_value_for_fake'], dPlots[parameter]['hist'].GetYaxis().GetXmin(), dParametersToDraw[parameter]['true_value_for_fake'], dPlots[parameter]['hist'].GetMaximum()))
+		dPlots[parameter]['lines'][-1].SetLineColor(root.kRed)
+		dPlots[parameter]['lines'][-1].SetLineStyle(7)
+		dPlots[parameter]['lines'][-1].Draw('same')
+
+
+	dPlots[parameter]['canvas'].Update()
+
+
+"""
 c1 = Canvas()
-hPY = Hist(numBinsPY, lowerBoundPY, upperBoundPY, name='hPY', drawstyle='hist')
-hPY.fill_array(aSampler[:,:,0].flatten())
-hPY.Draw()
+hLindhard = Hist(numBinsLindhard, lowerBoundLindhard, upperBoundLindhard, name='hLindhard', drawstyle='hist')
+hLindhard.fill_array(aSampler[:,:,0].flatten())
+hLindhard.Draw()
 
-aQuantiles = hPY.quantiles([.5-.341, .5, .5+.341])
+aQuantiles = hLindhard.quantiles([.5-.341, .5, .5+.341])
 print aQuantiles
-
+"""
 
 raw_input('Enter to continue...')
 

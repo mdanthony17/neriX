@@ -99,6 +99,21 @@ def safe_normal(mean, sigma):
 
 
 
+def smart_log_likelihood(aData, aMC, numMCEvents, confidenceIntervalLimit=0.95):
+	totalLogLikelihood = 0.
+	for (data, mc) in zip(aData, aMC):
+		if mc == 0 and data != 0:
+			# use 95% confidence interval
+			# confidenceIntervalLimit = 1 - probability of the zero occuring
+			probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./numMCEvents)
+			totalLogLikelihood += smart_log(smart_binomial(data, numMCEvents, probabiltyOfSuccess))
+		else:
+			totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+
+	return totalLogLikelihood
+
+
+
 # Below is a helper method for finding binomials in a more general
 # way.  Now can give an arbitrary range and find all integers in that
 # range like is needed for the binomial function.
@@ -273,7 +288,7 @@ def convert_2D_hist_to_matrix(h2D):
 
 	for i in xrange(numBinsX):
 		for j in xrange(numBinsY):
-			a2D[i,j] = h2D[i,j].value
+			a2D[i,j] = h2D[i+1,j+1].value
 
 	return a2D
 
@@ -343,8 +358,12 @@ def smart_log(lInput):
 
 
 def smart_binomial(numberOfSucceses, numberOfTrials, probabiltyOfSuccess):
+	"""
 	if not hasattr(numberOfSucceses, '__iter__'):
 		numberOfSucceses = [numberOfSucceses]
+	if not hasattr(numberOfTrials, '__iter__'):
+		numberOfTrials = [numberOfTrials]
+	"""
 	nChooseK = smart_stirling(numberOfTrials) - smart_stirling(numberOfSucceses) - smart_stirling(numberOfTrials - numberOfSucceses)
 	probabilityTerm = numberOfSucceses*smart_log(probabiltyOfSuccess) + (numberOfTrials-numberOfSucceses)*smart_log(1.-probabiltyOfSuccess)
 	if nChooseK + probabilityTerm < -10:
@@ -773,11 +792,11 @@ class neriX_simulation_analysis(object):
 			sFakeData = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
 			self.fFakeData = File(sFakeData, 'recreate')
 		
-			self.s1NumBins = 40
-			self.s1LowerBound =	-0.5
-			self.s1UpperBound = 39.5
+			self.s1NumBins = 20
+			self.s1LowerBound =	-1
+			self.s1UpperBound = 39
 		
-			self.s2NumBins = 40
+			self.s2NumBins = 20
 			self.s2LowerBound = 0
 			self.s2UpperBound = 4000
 		
@@ -1098,7 +1117,7 @@ class neriX_simulation_analysis(object):
 					except:
 						# keep zero and continue
 						continue
-			
+		
 					
 				
 			
@@ -1233,48 +1252,29 @@ class neriX_simulation_analysis(object):
 		# for later use in matching code
 		# ------------------------------------------------
 
-		# free parameters (4 free parameters, 5 nuissance)
-		lindhardFactorLogLikelihood = self.get_prior_log_likelihood_lindhard_factor(lindhardFactor)
-		recombinationLogLikelihood = self.get_prior_log_likelihood_recombination(recombinationProb)
-		resS1LogLikelihood = self.get_prior_log_likelihood_resolution(intrinsicResolutionS1)
-		resS2LogLikelihood = self.get_prior_log_likelihood_resolution(intrinsicResolutionS2)
 		
 		excitonToIonLikelihood, excitonToIonRatio = self.get_exciton_ion_ratio([par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV])
-		excitonToIonLogLikelihood = self.get_prior_log_likelihood_nuissance(excitonToIonLikelihood)
 		
 		photonQuenchingLikelihood, photonQuenching = self.get_photon_quenching([par0PhotonQuenching, par1PhotonQuenching])
-		photonQuenchingLogLikelihood = self.get_prior_log_likelihood_nuissance(photonQuenchingLikelihood)
 
 		# S1 values (6 nuissnce parameters)
 		g1Likelihood, g1Value = self.get_g1_default(g1RV)
-		g1LogLikelihood = self.get_prior_log_likelihood_nuissance(g1Likelihood)
 		
 		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
-		speResLogLikelihood = self.get_prior_log_likelihood_nuissance(speResLikelihood)
 
 		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV, par1TacEffRV)
-		tacEffLogLikelihood = self.get_prior_log_likelihood_nuissance(tacEffLikelihood)
 		
 		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
-		pfEffLogLikelihood = self.get_prior_log_likelihood_nuissance(pfEffLikelihood)
 
 
 		# S2 values (5 nuissance parameters)
 		g2Likelihood, g2Value = self.get_g2_default(g2RV)
-		g2LogLikelihood = self.get_prior_log_likelihood_nuissance(g2Likelihood)
 		
 		gasGainLikelihood, gasGainValue = self.get_gas_gain_default(gasGainRV)
-		gasGainLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainLikelihood)
 		
 		gasGainWidthLikelihood, gasGainWidth = self.get_gas_gain_default(gasGainWidthRV)
-		gasGainWidthLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainWidthLikelihood)
 		
 		trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
-		trigEffLogLikelihood = self.get_prior_log_likelihood_nuissance(trigEffLikelihood)
-
-
-		# sum all likelihood terms (should be 15 terms)
-		priorLogLikelihoods = lindhardFactorLogLikelihood + recombinationLogLikelihood + excitonToIonLogLikelihood + photonQuenchingLogLikelihood + resS1LogLikelihood + resS2LogLikelihood + g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + g2LogLikelihood + gasGainLogLikelihood + gasGainWidthLogLikelihood + trigEffLogLikelihood
 	
 	
 	
@@ -1327,7 +1327,7 @@ class neriX_simulation_analysis(object):
 		# Set seeds and number of trials
 		# ------------------------------------------------
 		
-		numRandomTrials = int(500)
+		numRandomTrials = int(500*3.5)
 		seed(int(time.time()))
 		root.gRandom.SetSeed(0)
 		aS1 = np.full(numRandomTrials, -1)
@@ -1491,6 +1491,7 @@ class neriX_simulation_analysis(object):
 		
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
+		print xEdges, yEdges
 		
 		
 
@@ -1505,6 +1506,7 @@ class neriX_simulation_analysis(object):
 		aS2Efficiency = egTrigEff.get_y_values()
 		
 		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
+		print aFullEfficiencyMatrix
 		
 		#print aS1S2.shape, aFullEfficiencyMatrix.shape
 		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
@@ -1526,6 +1528,9 @@ class neriX_simulation_analysis(object):
 		self.hS1S2 = Hist2D(self.s1NumBins, self.s1LowerBound, self.s1UpperBound, self.s2NumBins, self.s2LowerBound, self.s2UpperBound, name='hS1S2')
 		root_numpy.array2hist(aS1S2MC, self.hS1S2)
 		self.hS1S2.Write()
+		
+		#print aS1S2MC
+		#print root_numpy.hist2array(self.hS1S2, include_overflow=False)
 
 	
 	
@@ -1600,7 +1605,7 @@ class neriX_simulation_analysis(object):
 		
 		trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
 		trigEffLogLikelihood = self.get_prior_log_likelihood_nuissance(trigEffLikelihood)
-
+		
 
 		# sum all likelihood terms (should be 15 terms)
 		priorLogLikelihoods = lindhardFactorLogLikelihood + recombinationLogLikelihood + excitonToIonLogLikelihood + photonQuenchingLogLikelihood + resS1LogLikelihood + resS2LogLikelihood + g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + g2LogLikelihood + gasGainLogLikelihood + gasGainWidthLogLikelihood + trigEffLogLikelihood
@@ -1661,7 +1666,7 @@ class neriX_simulation_analysis(object):
 		# Set seeds and number of trials
 		# ------------------------------------------------
 		
-		numRandomTrials = int(1e4)
+		numRandomTrials = int(5e3)
 		seed(int(time.time()))
 		root.gRandom.SetSeed(0)
 		aS1 = np.full(numRandomTrials, -1)
@@ -1843,10 +1848,9 @@ class neriX_simulation_analysis(object):
 		#print aS1S2.shape, aFullEfficiencyMatrix.shape
 		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
 		
-		#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
-		aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
-
 		try:
+			#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
+			aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
 			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
 		except:
 			return -np.inf, aS1S2MC
@@ -1897,13 +1901,24 @@ class neriX_simulation_analysis(object):
 		
 			del hS1MC, hS2MC, c1
 		
-		
-		
 		flatS1S2Data = self.aS1S2.flatten()
 		flatS1S2MC = aS1S2MC.flatten()
 
-		
+		#print 'full matrices:'
+		#print self.aS1S2
+		#print aS1S2MC
+
+		"""
 		logLikelihoodMatching = np.sum( flatS1S2Data*smart_log(flatS1S2MC) - flatS1S2MC - smart_stirling(flatS1S2Data) )
+		
+		for (data, mc) in zip(flatS1S2Data, flatS1S2MC):
+			print data, mc
+			print data*smart_log(mc) - mc - smart_stirling(data)
+		"""
+		
+		#print flatS1S2Data*smart_log(flatS1S2MC) - flatS1S2MC - smart_stirling(flatS1S2Data)
+		
+		logLikelihoodMatching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, numRandomTrials)
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
 		
 		
@@ -2870,11 +2885,13 @@ if __name__ == '__main__':
 	#test.perform_mc_match_full(0.3, 0.34, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	#test.perform_mc_match_full_yields_only(11.1, 7.5, 2.5, 1.0, 1.0, 0.5, -0.5, 0.7, 0.2, 0.2, 0.5, 0, 1, 0, 0.2, drawFit=True)
 	
+	# create fake data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False, create_fake_data=True)
 	#test.create_fake_data(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
+	# create test data
 	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=True)
-	#test.perform_mc_match_full(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	test.perform_mc_match_full(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False)
 	
 	#(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False):
 	
@@ -2886,7 +2903,7 @@ if __name__ == '__main__':
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
-	test.run_mcmc('full_matching', sParametersFullMatching, 10240, 15, 5) #10240
+	#test.run_mcmc('full_matching', sParametersFullMatching, 10240, 8, 5) #10240
 	#test.run_mcmc('full_matching_yields_only', sParametersFullMatchingYieldsOnly, 5120, 200, 5) #"""640*8"""
 
 
