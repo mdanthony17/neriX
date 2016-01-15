@@ -46,10 +46,10 @@ dParametersToDraw = {'lindhard_factor':{'index':0,
 												  'binning':[100, 0.15, 0.4],
 												  'true_value_for_fake':0.24},
 					 'res_s1':{'index':2,
-							   'binning':[100, 0.85, 1.15],
+							   'binning':[100, 0., 2],
 							   'true_value_for_fake':1.0},
 					 'res_s2':{'index':3,
-							   'binning':[100, 0.85, 1.15],
+							   'binning':[100, 0., 2],
 							   'true_value_for_fake':1.0}
 					}
 
