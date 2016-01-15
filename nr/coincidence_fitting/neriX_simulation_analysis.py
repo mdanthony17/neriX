@@ -62,6 +62,298 @@ vector <double> safe_dot(double *aUnraveledMatrix, double *aBeforeValues, int nu
 
 
 
+C.register_code(
+"""
+#include <vector>
+#include <TH1.h>
+#include <TRandom3.h>
+#include <stdio.h>
+#include <math.h>
+
+void full_matching_loop(int numTrials, double *aS1, double *aS2, TH1F &hEnergy, float lindhardFactor, float excitonToIonRatio, float probRecombination, float photonQuenching, float g1Value, float extractionEfficiency, float gasGainValue, float gasGainWidth, float speRes, float intrinsicResS1, float intrinsicResS2)
+{
+	TRandom r3 = TRandom3();
+	float wValue = 13.7e-3;
+	
+	
+	// variables needed in loop
+	float mcEnergy;
+	int numQuantaBeforeLindhard;
+	int mcQuanta;
+	float probExcitonSuccess;
+	int mcExcitons;
+	int mcIons;
+	int mcRecombined;
+	int mcQuenched;
+	int mcPhotons;
+	int mcElectrons;
+	int mcExtractedElectrons;
+	float mcS1;
+	float mcS2;
+
+	for (int i = 0; i < numTrials; i++)
+	{
+		// ------------------------------------------------
+		//  Draw random energy from distribution
+		// ------------------------------------------------
+		
+		mcEnergy = hEnergy.GetRandom();
+		//printf("%f \\n", mcEnergy);
+		
+		
+		// ------------------------------------------------
+		//  Get total number of quanta before Lindhard
+		// ------------------------------------------------
+		
+		if (mcEnergy <= 0) continue;
+		
+		numQuantaBeforeLindhard = r3.Poisson(mcEnergy / wValue);
+		//printf("%d \\n", numQuantaBeforeLindhard);
+		
+		
+		// ------------------------------------------------
+		//  Apply Lindhard factor
+		// ------------------------------------------------
+		
+		if (numQuantaBeforeLindhard < 1 || lindhardFactor < 0 || lindhardFactor > 1) continue;
+		
+		mcQuanta = r3.Binomial(numQuantaBeforeLindhard, lindhardFactor);
+		//printf("%d \\n", numQuanta);
+		
+		
+		// ------------------------------------------------
+		//  Convert to excitons and ions
+		// ------------------------------------------------
+		
+		
+		probExcitonSuccess = 1. - 1./(1. + excitonToIonRatio);
+		if (probExcitonSuccess < 0 || probExcitonSuccess > 1) continue;
+		
+		mcExcitons = r3.Binomial(mcQuanta, probExcitonSuccess);
+		mcIons = mcQuanta - mcExcitons;
+		//printf("%d \\n", mcExcitons);
+		
+		
+		// ------------------------------------------------
+		//  Ion recombination
+		// ------------------------------------------------
+
+		if (mcIons < 1 || probRecombination < 0 || probRecombination > 1) continue;
+		
+		mcRecombined = r3.Binomial(mcIons, probRecombination);
+		mcExcitons += mcRecombined;
+		mcIons -= mcRecombined;
+		//printf("%d \\n", mcRecombined);
+		
+		
+		// ------------------------------------------------
+		//  Photon quenching and electron production
+		// ------------------------------------------------
+		
+		if (mcExcitons < 1 || photonQuenching < 0 || photonQuenching > 1) continue;
+		
+		mcQuenched = r3.Binomial(mcExcitons, 1. - photonQuenching);
+		mcPhotons = mcExcitons - mcQuenched;
+		mcElectrons = mcIons;
+		//printf("%d \\n", mcQuenched);
+		
+		
+		// ------------------------------------------------
+		//  Convert to S1 and S2 BEFORE smearing
+		// ------------------------------------------------
+		
+		if (mcPhotons < 1 || g1Value < 0 || g1Value > 1) continue;
+		if (mcElectrons < 1 || extractionEfficiency < 0 || extractionEfficiency > 1) continue;
+		if (gasGainWidth <= 0) continue;
+		
+		mcS1 = r3.Binomial(mcPhotons, g1Value);
+		mcExtractedElectrons = r3.Binomial(mcElectrons, extractionEfficiency);
+		mcS2 = r3.Gaus(mcExtractedElectrons*gasGainValue, gasGainWidth*pow(mcExtractedElectrons, 0.5));
+		
+		if (mcS1 < 0) continue;
+		if (mcS2 < 0) continue;
+		
+		//printf("%f \\n", mcS1);
+		//printf("%f \\n", mcS2);
+		
+		
+		// ------------------------------------------------
+		//  Smear S1 and S2
+		// ------------------------------------------------
+		
+		if (speRes <= 0 || intrinsicResS1 <= 0 || intrinsicResS2 <= 0) continue;
+		
+		mcS1 = r3.Gaus(mcS1, speRes*pow(mcS1, 0.5));
+		if (mcS1 < 0) continue;
+		mcS1 = r3.Gaus(mcS1, intrinsicResS1*pow(mcS1, 0.5));
+		if (mcS1 < 0) continue;
+		
+		mcS2 = r3.Gaus(mcS2, speRes*pow(mcS2, 0.5));
+		if (mcS2 < 0) continue;
+		mcS2 = r3.Gaus(mcS2, intrinsicResS1*pow(mcS2, 0.5));
+		if (mcS2 < 0) continue;
+		
+		aS1[i] = mcS1;
+		aS2[i] = mcS2;
+		
+		
+	}
+}
+
+""", ['full_matching_loop'])
+
+c_full_matching_loop = C.full_matching_loop
+
+
+"""
+		for i in xrange(numRandomTrials):
+		
+			passedWithoutError = True
+		
+			# ------------------------------------------------
+			# Get random energy value according to distribution
+			# ------------------------------------------------
+		
+			# the finer binning the better in MC
+			mcEnergy = self.hMC.GetRandom()
+			if mcEnergy <= 0:
+				continue
+		
+			#print 'Energy: %.3f' % mcEnergy
+		
+			# ------------------------------------------------
+			# Transform to number of quanta via W-value
+			# ------------------------------------------------
+
+			wValue = 13.7e-3
+			passedWithoutError, mcQuantaBeforeLindhard = safe_poisson(mcEnergy/wValue)
+			if not passedWithoutError:
+				continue
+			
+			#print 'Quanta before Lindhard: %.3f' % mcQuantaBeforeLindhard
+			
+			
+			# ------------------------------------------------
+			# Apply Lindhard spectrum to quanta
+			# ------------------------------------------------
+			
+			
+			passedWithoutError, mcQuanta = safe_binomial(mcQuantaBeforeLindhard, lindhardFactor)
+			if not passedWithoutError:
+				continue
+			
+			#print 'Quanta: %.3f' % mcQuanta
+
+
+			# ------------------------------------------------
+			# Convert quanta to excitons and ions
+			# ------------------------------------------------
+
+			probExcitonSuccess = 1. - 1./(1. + excitonToIonRatio)
+			#print 'Exciton to ion ratio: %.3f' % excitonToIonRatio
+			passedWithoutError, mcExcitons = safe_binomial(mcQuanta, probExcitonSuccess)
+			if not passedWithoutError:
+				continue
+			mcIons = mcQuanta - mcExcitons
+			
+			#print 'Excitons before recombination: %.3f' % mcExcitons
+			#print 'Ions before recombination: %.3f' % mcIons
+			
+			# ------------------------------------------------
+			# Ions recombine to form excitons
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcRecombined = safe_binomial(mcIons, recombinationProb)
+			if not passedWithoutError:
+				continue
+			mcExcitons += mcRecombined
+			mcIons -= mcRecombined
+			
+			#print 'Excitons: %.3f' % mcExcitons
+			#print 'Ions: %.3f' % mcIons
+
+
+			# ------------------------------------------------
+			# Quenching and conversion to photons+electrons
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcQuenched = safe_binomial(mcExcitons, 1-photonQuenching)
+			if not passedWithoutError:
+				continue
+			mcPhotons = mcExcitons - mcQuenched
+			mcElectrons = mcIons
+			
+			#print 'Photon Yield: %.3f' % (mcPhotons / mcEnergy)
+			#print 'Charge Yield: %.3f' % (mcElectrons / mcEnergy)
+			
+			
+			# ------------------------------------------------
+			# Convert to photoelectrons
+			# ------------------------------------------------
+			
+			
+			passedWithoutError, mcS1Ideal = safe_binomial(mcPhotons, g1Value)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcExtractedElectrons = safe_binomial(mcElectrons, extractionEfficiency)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2Ideal = safe_normal(mcExtractedElectrons*gasGainValue, gasGainWidth * mcExtractedElectrons**0.5)
+			if not passedWithoutError:
+				continue
+				
+			#try:
+			#	print 'Estimated g1: %.3f' % (float(mcS1Ideal) / mcPhotons)
+			#	print 'Estimated g2: %.3f' % (mcS2Ideal / mcElectrons)
+			#except:
+			#	pass
+				
+			if mcS1Ideal < 0:
+				mcS1Ideal = 0.
+			if mcS2Ideal < 0:
+				mcS2Ideal = 0.
+			
+		
+			# ------------------------------------------------
+			# Apply SPE Smearing
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcS1SPESmeared = safe_normal(mcS1Ideal, speRes*mcS1Ideal**0.5)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2SPESmeared = safe_normal(mcS2Ideal, speRes*mcS2Ideal**0.5)
+			if not passedWithoutError:
+				continue
+				
+			if mcS1SPESmeared < 0:
+				mcS1SPESmeared = 0.
+			if mcS2SPESmeared < 0:
+				mcS2SPESmeared = 0.
+			
+			
+			
+			# ------------------------------------------------
+			# Apply intrinsic smearing
+			# ------------------------------------------------
+
+
+			passedWithoutError, mcS1Final = safe_normal(mcS1SPESmeared, intrinsicResolutionS1*mcS1SPESmeared**0.5)
+			if not passedWithoutError:
+				continue
+			passedWithoutError, mcS2Final = safe_normal(mcS2SPESmeared, intrinsicResolutionS2*mcS2SPESmeared**0.5)
+			if not passedWithoutError:
+				continue
+
+			#print 'S1 final: %.2f' % mcS1Final
+			#print 'S2 final: %.2f' % mcS2Final
+
+			aS1[i] = mcS1Final
+			aS2[i] = mcS2Final
+"""
+
 
 def reduce_method(m):
 	return (getattr, (m.__self__, m.__func__.__name__))
@@ -1491,7 +1783,6 @@ class neriX_simulation_analysis(object):
 		
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
-		print xEdges, yEdges
 		
 		
 
@@ -1506,7 +1797,6 @@ class neriX_simulation_analysis(object):
 		aS2Efficiency = egTrigEff.get_y_values()
 		
 		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
-		print aFullEfficiencyMatrix
 		
 		#print aS1S2.shape, aFullEfficiencyMatrix.shape
 		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
@@ -1666,13 +1956,20 @@ class neriX_simulation_analysis(object):
 		# Set seeds and number of trials
 		# ------------------------------------------------
 		
-		numRandomTrials = int(5e3)
+		numRandomTrials = int(5e4)
 		seed(int(time.time()))
 		root.gRandom.SetSeed(0)
 		aS1 = np.full(numRandomTrials, -1)
 		aS2 = np.full(numRandomTrials, -1)
 		
-		#startTime = time.time()
+		startTime = time.time()
+		
+		c_full_matching_loop(numRandomTrials, aS1, aS2, self.hMC, lindhardFactor, excitonToIonRatio, recombinationProb, photonQuenching, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResolutionS1, intrinsicResolutionS2)
+		
+		#print 'C code time: %f' % ((time.time() - startTime) / numRandomTrials)
+		
+		"""
+		startTime = time.time()
 	
 		for i in xrange(numRandomTrials):
 		
@@ -1821,8 +2118,10 @@ class neriX_simulation_analysis(object):
 			aS1[i] = mcS1Final
 			aS2[i] = mcS2Final
 			
-		#print 'Time per loop: %f' % ((time.time() - startTime) / numRandomTrials)
+		print 'Time per loop: %f' % ((time.time() - startTime) / numRandomTrials)
 		
+		"""
+		#startTime = time.time()
 		
 		# ------------------------------------------------
 		# create 2D histogram of S1s and S2s
@@ -1921,6 +2220,7 @@ class neriX_simulation_analysis(object):
 		logLikelihoodMatching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, numRandomTrials)
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
 		
+		#print 'After loop time: %f' % (time.time() - startTime)
 		
 		if np.isnan(totalLogLikelihood):
 			return -np.inf, aS1S2MC
@@ -2891,7 +3191,7 @@ if __name__ == '__main__':
 	
 	# create test data
 	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=True)
-	test.perform_mc_match_full(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False)
+	test.perform_mc_match_full(0.18, 0.24, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	
 	#(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False):
 	

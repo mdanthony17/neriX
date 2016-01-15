@@ -67,7 +67,7 @@ for parameter in dParametersToDraw:
 	dPlots[parameter]['hist'] = Hist(dParametersToDraw[parameter]['binning'][0], dParametersToDraw[parameter]['binning'][1], dParametersToDraw[parameter]['binning'][2], name='h_%s' % parameter, title=parameter, drawstyle='hist')
 	
 	# fill histogram and draw it
-	dPlots[parameter]['hist'].fill_array(aSampler[:,-1:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].fill_array(aSampler[:,:,dParametersToDraw[parameter]['index']].flatten())
 	dPlots[parameter]['hist'].Draw()
 
 	# find quantiles
