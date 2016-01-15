@@ -35,7 +35,7 @@ SimulateNR(double Energy, double PY, double CY, double NexNi, double g1, double 
 	int pIons = GetRandomBinomialNumber(pQuanta, 1./(1+NexNi) );
 	
 	//// recombination fraction
-	double pR = PY/(1+NexNi) / (PY/(1+NexNi)+CY);
+	double pR = ( (NexNi+1) * PY )/(PY+CY) - NexNi;
 	
 	//// True recombination fraction in this trial.
 	//// Take into account the fluctuation of recombination itself

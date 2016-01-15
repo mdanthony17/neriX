@@ -12,6 +12,7 @@ import neriX_simulation_datasets
 import numpy as np
 from math import exp, factorial, erf, ceil, log, pow
 from scipy import optimize, misc, stats
+from scipy.stats import norm
 import copy_reg, types, pickle, click, time
 from subprocess import call
 
@@ -815,7 +816,7 @@ class easy_function:
 		# multiply likelihoods of each variable
 		likelihood = 1.
 		for value in lRandomVariables:
-			likelihood *= exp(-value**2/1.)
+			likelihood *= norm.pdf(value)
 
 		return likelihood, easy_graph(self.fill_graph_from_arrays())
 
@@ -830,7 +831,7 @@ class easy_function:
 		likelihood = 1.
 		for i, value in enumerate(inputParameters):
 			self.lCurrentParameters[i] = self.lOriginalParameters[i] + (value*self.lOriginalParErrors[i])
-			likelihood *= exp(-value**2/1.)
+			likelihood *= norm.pdf(value)
 
 		return likelihood, easy_graph(self.fill_graph_from_arrays())
 
@@ -1181,31 +1182,31 @@ class neriX_simulation_analysis(object):
 	# get likelihood and g1 given random variable (nuissance parameter)
 	# g1RV should be normally distributed
 	def get_g1_default(self, g1RV):
-		return exp(-g1RV**2/1.), self.g1Value + (g1RV*self.g1Uncertainty)
+		return norm.pdf(g1RV), self.g1Value + (g1RV*self.g1Uncertainty)
 	
 	
 	
 	# get likelihood and g2 given random variable (nuissance parameter)
 	# g2RV should be normally distributed
 	def get_g2_default(self, g2RV):
-		return exp(-g2RV**2/1.), self.g2Value + (g2RV*self.g2Uncertainty)
+		return norm.pdf(g2RV), self.g2Value + (g2RV*self.g2Uncertainty)
 	
 	
 	
 	# get likelihood and gas gain given random variable (nuissance parameter)
 	# gasGainRV should be normally distributed
 	def get_gas_gain_default(self, gasGainRV):
-		return exp(-gasGainRV**2/1.), self.gasGainValue + (gasGainRV*self.gasGainUncertainty)
+		return norm.pdf(gasGainRV), self.gasGainValue + (gasGainRV*self.gasGainUncertainty)
 	
 	
 	
 	def get_gas_gain_width_default(self, gasGainRV):
-		return exp(-gasGainRV**2/1.), self.gasGainWidth + (gasGainRV*self.gasGainWidthUncertainty)
+		return norm.pdf(gasGainRV), self.gasGainWidth + (gasGainRV*self.gasGainWidthUncertainty)
 	
 	
 	
 	def get_spe_res_default(self, speResRV):
-		return exp(-speResRV**2/1.), self.speResValue + (speResRV*self.speResUncertainty)
+		return norm.pdf(speResRV), self.speResValue + (speResRV*self.speResUncertainty)
 
 
 
@@ -1213,7 +1214,7 @@ class neriX_simulation_analysis(object):
 		likelihood = 1.
 		lParValues = [0. for i in xrange(len(lParsRV))]
 		for parNumber, parRV in enumerate(lParsRV):
-			likelihood *= exp(-parRV**2/1.)
+			likelihood *= norm.pdf(parRV)
 			if parNumber == 0:
 				# alpha
 				meanFromNEST = 1.240
@@ -1248,7 +1249,7 @@ class neriX_simulation_analysis(object):
 		likelihood = 1.
 		lParValues = [0. for i in xrange(len(lParsRV))]
 		for parNumber, parRV in enumerate(lParsRV):
-			likelihood *= exp(-parRV**2/1.)
+			likelihood *= norm.pdf.pdf(parRV)
 			if parNumber == 0:
 				# eta
 				meanFromNEST = 3.3

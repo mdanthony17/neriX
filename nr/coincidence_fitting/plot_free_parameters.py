@@ -39,16 +39,24 @@ else:
 #--------------- Start Parameters to Change ----------------
 
 
-dParametersToDraw = {'lindhard_factor':{'index':0,
-									    'binning':[100, 0.1, 0.35],
-										'true_value_for_fake':0.18},
-					 'recombination_probability':{'index':1,
-												  'binning':[100, 0.15, 0.4],
-												  'true_value_for_fake':0.24},
+dParametersToDraw = {'photon_yield':{'index':0,
+									 'form':'P_{y}',
+									 'unit': '#frac{photons}{keV}',
+									 'binning':[100, 5, 13],
+									 'true_value_for_fake':7.6},
+					 'charge_yield':{'index':1,
+									 'form':'Q_{y}',
+									 'unit': '#frac{electrons}{keV}',
+									 'binning':[100, 3, 10],
+									 'true_value_for_fake':5.3},
 					 'res_s1':{'index':2,
+							   'unit': '',
+							   'form':'R_{S1}',
 							   'binning':[100, 0., 2],
 							   'true_value_for_fake':1.0},
 					 'res_s2':{'index':3,
+							   'form':'R_{S2}',
+							   'unit': '',
 							   'binning':[100, 0., 2],
 							   'true_value_for_fake':1.0}
 					}
@@ -64,15 +72,19 @@ for parameter in dParametersToDraw:
 	# initialize canvas and histogram
 	dPlots[parameter] = {}
 	dPlots[parameter]['canvas'] = Canvas()
-	dPlots[parameter]['hist'] = Hist(dParametersToDraw[parameter]['binning'][0], dParametersToDraw[parameter]['binning'][1], dParametersToDraw[parameter]['binning'][2], name='h_%s' % parameter, title=parameter, drawstyle='hist')
+	dPlots[parameter]['hist'] = Hist(dParametersToDraw[parameter]['binning'][0], dParametersToDraw[parameter]['binning'][1], dParametersToDraw[parameter]['binning'][2], name='h_%s' % parameter, title=parameter)
+	dPlots[parameter]['hist'].SetMarkerSize(0)
+	dPlots[parameter]['hist'].SetStats(0)
 	
 	# fill histogram and draw it
-	dPlots[parameter]['hist'].fill_array(aSampler[:,:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].fill_array(aSampler[:,-5:,dParametersToDraw[parameter]['index']].flatten())
 	dPlots[parameter]['hist'].Draw()
 
 	# find quantiles
 	aQuantiles = dPlots[parameter]['hist'].quantiles([.5-.341, .5, .5+.341])
 	dPlots[parameter]['lines'] = [0 for i in xrange(len(aQuantiles))]
+	
+	# create lines for plots
 	for i, line in enumerate(dPlots[parameter]['lines']):
 		dPlots[parameter]['lines'][i] = root.TLine(aQuantiles[i], dPlots[parameter]['hist'].GetYaxis().GetXmin(), aQuantiles[i], dPlots[parameter]['hist'].GetMaximum())
 		dPlots[parameter]['lines'][i].SetLineColor(root.kBlue)
@@ -86,59 +98,17 @@ for parameter in dParametersToDraw:
 		dPlots[parameter]['lines'][-1].Draw('same')
 
 
+	# create text boxes for plots
+	dPlots[parameter]['textbox'] = root.TPaveText(.6,.55,.88,.6,'blNDC')
+	dPlots[parameter]['textbox'].AddText('%s = %.2f^{-%.2f}_{+%.2f} %s' % (dParametersToDraw[parameter]['form'], aQuantiles[1], aQuantiles[1] - aQuantiles[0], aQuantiles[2] - aQuantiles[1], dParametersToDraw[parameter]['unit']))
+	dPlots[parameter]['textbox'].SetFillStyle(0)
+	dPlots[parameter]['textbox'].SetBorderSize(0)
+	dPlots[parameter]['textbox'].Draw('same')
+
+
 	dPlots[parameter]['canvas'].Update()
 
 
-"""
-c1 = Canvas()
-hLindhard = Hist(numBinsLindhard, lowerBoundLindhard, upperBoundLindhard, name='hLindhard', drawstyle='hist')
-hLindhard.fill_array(aSampler[:,:,0].flatten())
-hLindhard.Draw()
 
-aQuantiles = hLindhard.quantiles([.5-.341, .5, .5+.341])
-print aQuantiles
-"""
 
 raw_input('Enter to continue...')
-
-"""
-
-#--------------- Start Parameters to Change ----------------
-
-#constants for histogram
-#parameter 1 will be on x-axis
-parameterToExamine = '(S1sTotBottom[0]/.10 + S2sTotBottom[0]/24.)*.0137'
-lowerBound = 0
-upperBound = 775
-nBins = 100
-
-#choose options
-option1 = ''
-
-#--------------- End Parameters to Change ----------------
-
-#run.get_T1().Scan('EventId:TacHeight:TrigLeftEdge-S1sPeak[0]:GeHeight[0]', run.get_cuts())
-
-
-c1 = root.TCanvas('c1','c1',200,10,1000,700)
-h1 = Hist(nBins, lowerBound, upperBound, name='h1', title='h1', drawstyle='hist')
-
-run.Draw(parameterToExamine, hist=h1, selection='')
-#run.get_tree().Scan('EventId:TimeTDC[4]:S2s[][15]:S2sPeak[0]')
-
-
-
-c1.SetGridx(1)
-#c1.SetLogy()
-
-h1.SetTitle('')
-h1.GetYaxis().SetTitle('Counts')
-h1.GetXaxis().SetTitle(parameterToExamine)
-h1.SetLineWidth(2)
-
-h1.SetStats(0)
-h1.Draw(option1)
-c1.Update()
-
-
-"""
