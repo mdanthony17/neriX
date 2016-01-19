@@ -30,16 +30,16 @@ gainAdjustmentTerm = 1.#/1.034
 
 #dFitParameters = fits_completed.dFitParameters
 #energyOfPeak = 40e3 # eV
-#dFitParameters = fits_completed_164keV_peak.dFitParameters
-#energyOfPeak = 163.9e3 # eV
 #dFitParameters = fits_completed_co57.dFitParameters
 #energyOfPeak = 123e3
 #dFitParameters = fits_completed_197keV_peak.dFitParameters
 #energyOfPeak = 197.1e3 # eV
-dFitParameters = fits_completed_cs137.dFitParameters
-energyOfPeak = 662e3
-#dFitParameters = fits_completed_na22.dFitParameters
-#energyOfPeak = 511e3
+#dFitParameters = fits_completed_164keV_peak.dFitParameters
+#energyOfPeak = 163.9e3 # eV
+#dFitParameters = fits_completed_cs137.dFitParameters
+#energyOfPeak = 662e3
+dFitParameters = fits_completed_na22.dFitParameters
+energyOfPeak = 511e3
 
 
 print 'Peak being examined: ' + str(energyOfPeak)

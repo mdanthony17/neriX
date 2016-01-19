@@ -1697,7 +1697,7 @@ class neriX_simulation_analysis(object):
 		# sum all likelihood terms (should be 13 terms)
 		priorLogLikelihoods = photonYieldLogLikelihood + chargeYieldLogLikelihood + excitonToIonLogLikelihood + resS1LogLikelihood + resS2LogLikelihood + g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + g2LogLikelihood + gasGainLogLikelihood + gasGainWidthLogLikelihood + trigEffLogLikelihood
 	
-	
+		print 'Priors: %f' % priorLogLikelihoods
 	
 	
 		# ------------------------------------------------
@@ -2478,7 +2478,7 @@ if __name__ == '__main__':
 	
 	# create test data
 	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=True)
-	#test.perform_mc_match_full(7.6, 5.3, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
+	test.perform_mc_match_full(7.6, 5.3, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	
 	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))
 	#sParametersChargeYield = (('charge_yield', 7.0), ('res_intrinsic', 0.8), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_res_spe', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
@@ -2487,7 +2487,7 @@ if __name__ == '__main__':
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
-	test.run_mcmc('full_matching', sParametersFullMatching, 128, 6, 5) #10240
+	#test.run_mcmc('full_matching', sParametersFullMatching, 128, 6, 5) #10240
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)

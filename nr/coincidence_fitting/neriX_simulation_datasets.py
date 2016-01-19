@@ -7,17 +7,17 @@ pathToEfficiencyFiles = 'efficiency_files/'
 
 pathToFakeData = './fake_data/'
 
-default_g1 = 0.11
-default_g1_uncertainty = 0.01
+default_g1 = 0.095
+default_g1_uncertainty = 0.005
 
-default_g2 = 24.0
-default_g2_uncertainty = 3.0
+default_g2 = 22.5
+default_g2_uncertainty = 1.2
 
-default_gas_gain = 30.0
+default_gas_gain = 31.0
 default_gas_gain_uncertainty = 1.0
 
-default_gas_gain_width = 8.0
-default_gas_gain_width_uncertainty = 3.0
+default_gas_gain_width = 10.0
+default_gas_gain_width_uncertainty = 1.5
 
 default_spe_res = 0.7
 default_spe_res_uncertainty = 0.2

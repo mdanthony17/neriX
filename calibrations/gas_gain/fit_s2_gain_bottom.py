@@ -82,9 +82,11 @@ parameterToDraw = 'S2sTotBottom[%d]' % peakToLookAt
 current_analysis.add_cut('(S2sTot[%d] < %f)' % (peakToLookAt, s2_pars[2]))
 current_analysis.add_cut('(S2sTotBottom[%d] > %f)' % (peakToLookAt, s2_pars[1]))
 current_analysis.add_cut('S1sTotBottom[0] > 1000')
-current_analysis.add_cut('(S2sCoin[%d] > 7)' % (peakToLookAt))
+#current_analysis.add_cut('(S2sCoin[%d] > 7)' % (peakToLookAt))
+current_analysis.add_cut('(S2sCoin[%d] > 2)' % (peakToLookAt))
 current_analysis.add_cut('(S2sPeak[%d] > (S1sPeak[0]+50) && S2sPeak[%d] < (S1sPeak[0]+250))' % (peakToLookAt, peakToLookAt))
-current_analysis.add_dt_cut(4, 13)
+#current_analysis.add_dt_cut(4, 13)
+current_analysis.add_z_cut()
 current_analysis.add_cut('sqrt(pow(S2sPosCoG[][0],2)+pow(S2sPosCoG[][1],2)) < 0.1')
 
 

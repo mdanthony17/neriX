@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
 import ROOT as root
-import sys, array, os, pickle
+import sys, array, os
 from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 import neriX_simulation_config
 import numpy as np
+import cPickle as pickle
 
 if len(sys.argv) != 6:
 	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers>'
@@ -77,7 +78,7 @@ for parameter in dParametersToDraw:
 	dPlots[parameter]['hist'].SetStats(0)
 	
 	# fill histogram and draw it
-	dPlots[parameter]['hist'].fill_array(aSampler[:,-5:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].fill_array(aSampler[:,-50:,dParametersToDraw[parameter]['index']].flatten())
 	dPlots[parameter]['hist'].Draw()
 
 	# find quantiles
