@@ -194,7 +194,7 @@ raw_input('Enter to continue...')
 response = raw_input('Would you like to save the S1 and S2 spectra for later analysis?  Press "y" to proceed, otherwise press anything: ')
 
 if response == 'y':
-	outputFile = root_open('./full_angle_files/results_%ddeg.root' % (degreeSetting), 'recreate')
+	outputFile = root_open('./full_angle_files/results_%.3fkV_%ddeg.root' % (cathodeSetting, degreeSetting), 'recreate')
 	
 	hS1S2.SetName('hS1S2')
 	hS1S2.Write()

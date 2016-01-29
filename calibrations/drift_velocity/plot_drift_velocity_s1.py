@@ -5,6 +5,7 @@ import os, math, sys
 from array import array
 from rootpy.plotting import Hist
 import numpy as np
+import math
 
 
 if(len(sys.argv) != 2):
@@ -118,8 +119,8 @@ sigma2_e = lParametersError[1][1]
 
 sFitInfo1 = 'Mean_{1} = %.3f +/- %.3f #mus, #sigma_{1} = %.3f +/- %.3f #mus' % (mean1,mean1_e,sigma1,sigma1_e)
 sFitInfo2 = 'Mean_{2} = %.3f +/- %.3f #mus, #sigma_{2} = %.3f +/- %.3f #mus' % (mean2,mean2_e,sigma2,sigma2_e)
-sDtInfo = '#Delta t = %.3f +/- %.3f #mus' % ((mean2-mean1),(mean2_e+mean1_e))
-sVdInfo = 'v_{d} = %.3f +/- %.3f mm/#mus' % (23.39/(mean2-mean1), (23.39/(mean2-mean1))*(mean2_e+mean1_e)/(mean2-mean1))
+sDtInfo = '#Delta t = %.3f +/- %.3f #mus' % (math.fabs(mean2-mean1),(mean2_e+mean1_e))
+sVdInfo = 'v_{d} = %.3f +/- %.3f mm/#mus' % (math.fabs(23.39/(mean2-mean1)), (23.39/(mean2-mean1))*(mean2_e+mean1_e)/(mean2-mean1))
 
 pt1 = root.TPaveText(.3,.8,.9,.85,'blNDC')
 text1 = pt1.AddText(sFitInfo1)

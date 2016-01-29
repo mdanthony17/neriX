@@ -43,7 +43,7 @@ else:
 dParametersToDraw = {'photon_yield':{'index':0,
 									 'form':'P_{y}',
 									 'unit': '#frac{photons}{keV}',
-									 'binning':[100, 5, 13],
+									 'binning':[100, 2, 13],
 									 'true_value_for_fake':7.6},
 					 'charge_yield':{'index':1,
 									 'form':'Q_{y}',

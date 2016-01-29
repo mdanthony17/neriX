@@ -38,9 +38,11 @@ else:
 
 numDim = 18
 
+lLabelsForCorner = ('photon_yield', 'charge_yield', 'res_s1', 'res_s2', 'n_g1', 'n_res_spe', 'n_par0_tac_eff', 'n_par1_tac_eff', 'n_par0_pf_eff', 'n_par1_pf_eff', 'n_g2', 'n_gas_gain_mean', 'n_gas_gain_width', 'n_par0_trig_eff', 'n_par1_trig_eff', 'n_par0_e_to_i', 'n_par1_e_to_i', 'n_par2_e_to_i')
+
 samples = aSampler[:, -5:, :].reshape((-1, numDim))
-#fig = corner.corner(samples, labels=lLabelsForCorner)
-fig = corner.corner(samples)
+fig = corner.corner(samples, labels=lLabelsForCorner)
+#fig = corner.corner(samples)
 fig.savefig('./corner_plot.png')
 
 

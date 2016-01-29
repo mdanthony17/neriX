@@ -11,13 +11,13 @@ eDepNumBins = 50
 eDepMin = -2.
 eDepMax = 25.
 
-s1NumBins = 120
+s1NumBins = 20
 s1Min = 0.
-s1Max = 1200
+s1Max = 40
 
-s2NumBins = 100
+s2NumBins = 20
 s2Min = 0.
-s2Max = 300e3
+s2Max = 4000
 
 xyNumBins = 100
 xyMin = -30
@@ -63,13 +63,21 @@ optionSame = 'SAME'
 
 
 #choose cuts for run 1
-run1.add_dt_cut(2., 13.)
-run1.add_radius_cut(0, 0.7)
+run1.add_z_cut()
+run1.add_radius_cut(0, 0.85)
+run1.add_xs1asym_cut()
+run1.add_xs2asym_cut()
+run1.add_single_scatter_cut()
 #run1.add_cut('TMath::Log10(S2sTotBottom[0]/S1sTotBottom[0]) < 3 && S1sTotBottom[0] < 35')
 
 #print 'Livetime: ' + str(run1.get_livetime())
 
 run1.set_event_list()
+
+
+s1Branch = 'cpS1sTotBottom[0]'
+s2Branch = 'cpS2sTotBottom[0]'
+
 
 #create histograms for run1
 """
@@ -81,9 +89,9 @@ ha1.GetYaxis().SetTitle('661.657 - GeEnergy [keV]')
 ha1.SetStats(0)
 """
 ha2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='ha2', title='S1 vs S2 - ' + file1)
-run1.Draw('S1sTotBottom[0]:S2sTotBottom[0]', hist=ha2)
-ha2.GetXaxis().SetTitle('S1sTotBottom[0] [PE]')
-ha2.GetYaxis().SetTitle('S2sTotBottom[0] [PE]')
+run1.Draw('%s:%s' % (s1Branch, s2Branch), hist=ha2)
+ha2.GetXaxis().SetTitle('%s [PE]' % s1Branch)
+ha2.GetYaxis().SetTitle('%s [PE]' % s2Branch)
 ha2.SetStats(0)
 
 ha3 = Hist2D(xyNumBins, xyMin, xyMax, xyNumBins, xyMin, xyMax, name='ha3', title='XY Dist - ' + file1)
@@ -143,9 +151,9 @@ ha12.Scale(1./ha12.Integral())
 ha12.SetStats(0)
 
 
-ha13 = Hist2D(150, 0, 1500, 150, 1, 3.5, name='ha13', title='neriX Discrimination - ' + file1)
-run1.Draw('S1sTotBottom[0]:TMath::Log10(S2sTotBottom[0]/S1sTotBottom[0])', hist=ha13)
-ha13.GetXaxis().SetTitle('S1sTotBottom[0] [PE]')
+ha13 = Hist2D(s1NumBins, s1Min, s1Max, 20, 1, 3.5, name='ha13', title='neriX Discrimination - ' + file1)
+run1.Draw('%s:TMath::Log10(%s/%s)' % (s1Branch, s2Branch, s1Branch), hist=ha13)
+ha13.GetXaxis().SetTitle('%s [PE]' % s1Branch)
 ha13.GetYaxis().SetTitle('Log10(S2/S1)')
 ha13.SetStats(0)
 

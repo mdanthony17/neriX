@@ -6,6 +6,7 @@ import neriX_analysis
 from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 from rootpy.io import root_open, File
 import numpy as np
+from tqdm import tqdm
 
 if(len(sys.argv) != 2):
 	print 'Usage is s1_tac_correction.py <ROOT filename>'
@@ -26,8 +27,8 @@ dtLow = 200
 dtHigh = 1300
 
 #choose cuts
-current_analysis.add_dt_cut(2., 13.)
-current_analysis.add_radius_cut(0., 0.7)
+#current_analysis.add_dt_cut(2., 13.)
+#current_analysis.add_radius_cut(0., 0.7)
 
 
 #--------------- Start Parameters to Change ----------------
@@ -36,7 +37,7 @@ current_analysis.add_radius_cut(0., 0.7)
 #parameterToExamineS1 = 'S1sTotBottom[0]'
 lowerBoundS1 = -0.5
 upperBoundS1 = 39.5
-nBinsS1 = 40
+nBinsS1 = 20
 
 
 #--------------- End Parameters to Change ----------------
@@ -54,74 +55,27 @@ hNoCut = Hist(nBinsS1, lowerBoundS1, upperBoundS1, name='s1_spec_no_trig_cut', t
 hWithCut = Hist(nBinsS1, lowerBoundS1, upperBoundS1, name='s1_spec_with_trig_cut', title='s1_spec_with_trig_cut', drawstyle='hist')
 
 hGaus = Hist(highForGaussian - lowForGaussian, lowForGaussian, highForGaussian, name='hGaus')
+hGaus.SetMarkerSize(0)
+hGaus.SetStats(0)
+hGaus.GetXaxis().SetTitle('TrigLeftEdge[] - S1sPeak[S1Order[0]]')
+hGaus.GetYaxis().SetTitle('Counts')
+hGaus.SetTitle('Time between Trigger and First S1 in Waveform - %s' % current_analysis.get_filename_no_ext())
 
 
 
-numEvents = current_analysis.get_T1().GetEntriesFast()
-#numEvents = 10000
-for i in xrange(numEvents):
-	if i % 10000 == 0:
-		print 'Processing event ' + str(i) + ' / ' + str(numEvents)
 
-	current_analysis.get_T1().GetEntry(i)
-	current_analysis.get_T2().GetEntry(i)
+sTriggerCut = '(TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f' % (lowTimeDiff, highTimeDiff)
+sTriggerCut += ' && cpS1sTotBottom[S1Order[0]] > 0.5'
 
-	lS1sTotBottom = list(current_analysis.get_T2().S1sTotBottom)
-	lS1sPeak = list(current_analysis.get_T1().S1sPeak)
-	lS2sPeak = list(current_analysis.get_T1().S2sPeak)
+current_analysis.Draw('cpS1sTotBottom[S1Order[0]]', hist=hNoCut)
+current_analysis.Draw('cpS1sTotBottom[S1Order[0]]', hist=hWithCut, selection=sTriggerCut)
 
-	lS1sLeftEdge = list(current_analysis.get_T1().S1sLeftEdge)
-	lS1sRightEdge = list(current_analysis.get_T1().S1sRightEdge)
-
-	lS1sNoiseMedian = list(current_analysis.get_T2().S1sNoiseMedian)
-	lS1sNoiseTrapezoid = list(current_analysis.get_T2().S1sNoiseTrapezoid)
-
-	lTrigLeftEdge = list(current_analysis.get_T1().TrigLeftEdge)
-	lXY = list(current_analysis.get_T2().S2sPosFann)
-
-	lBaseline = list(current_analysis.get_T1().BaselinesAvg)
-
-
-	if len(lS1sTotBottom) < 1:
-		continue
-
-	if len(lS2sPeak) < 1:
-		continue
-
-	if len(lTrigLeftEdge) < 1:
-		continue
-
-	#if len(lXY) < 1 or (lXY[0][0]**2 + lXY[0][1]**2)**0.5 > 0.7:
-	#	continue
-
-	# check that this peak passes dt cut
-	#if (lS2sPeak[0]-lS1sPeak[0]) < dtLow or (lS2sPeak[0]-lS1sPeak[0]) > dtHigh:
-	#	continue
-
-	for peakNumber, peakTime in enumerate(lS1sPeak):
-		hNoCut.Fill(lS1sTotBottom[peakNumber] - lS1sNoiseTrapezoid[0][16])
-		#if peakNumber > 0:
-		#	continue
-	
-		for trigNumber, trigTime in enumerate(lTrigLeftEdge):
-			#print trigTime, peakTime
-			if (trigTime - peakTime) > lowTimeDiff and (trigTime - peakTime) < highTimeDiff:
-				#if lS1sTotBottom[peakNumber] < 10:
-				#	print i, trigTime, peakTime, lS1sTotBottom[peakNumber] - lS1sNoiseTrapezoid[0][16], peakNumber, lS1sLeftEdge[peakNumber], lS1sRightEdge[peakNumber]
-				hWithCut.Fill(lS1sTotBottom[peakNumber] - lS1sNoiseTrapezoid[0][16])
-				break
-
-		for trigNumber, trigTime in enumerate(lTrigLeftEdge):
-			#print trigTime, peakTime
-			if (trigTime - peakTime) > lowForGaussian and (trigTime - peakTime) < highForGaussian:
-				hGaus.Fill(trigTime - peakTime)
-
-
+current_analysis.Draw('TrigLeftEdge[] - S1sPeak[S1Order[0]]', hist=hGaus)
 
 
 
 hEff = root.TEfficiency(hWithCut, hNoCut)
-hEff.SetTitle('S1 Efficiency for TAC; S1sTotBottom[0] [PE]; Percentage Causing Discriminator Pulse for TAC');
+hEff.SetTitle('S1 Efficiency for TAC - %s; cpS1sTotBottom[S1Order[0]] [PE]; Percentage Causing Discriminator Pulse for TAC' % (current_analysis.get_filename_no_ext()));
 #hEff.GetXaxis().SetTitle('S1 [PE]')
 #hEff.GetYaxis().SetTitle('Percentage Causing Discriminator Pulse for TAC')
 #hEff.Draw()
@@ -135,6 +89,7 @@ c1.Update()
 
 
 c2 = Canvas()
+c2.SetLogy()
 hGaus.Draw()
 c2.Update()
 
@@ -142,26 +97,15 @@ hEffForFitting = hWithCut.Clone()
 hEffForFitting.Divide(hNoCut)
 
 
+fEfficiency = root.TF1('fEfficiency', '1. - exp(-[0]*x)', lowerBoundS1, upperBoundS1)
+fEfficiency.SetParLimits(0, 0.01, 50)
 
-fSigmoid = root.TF1('fSigmoid', '-1 + (2. / (1 + exp([1]*([0]-x))))', lowerBoundS1, upperBoundS1)
-fSigmoid.SetParameters(0., 0.1, 1)
-#fSigmoid.FixParameter(0, 0)
-fSigmoid.SetParLimits(0, -15, 15)
-fSigmoid.SetParLimits(1, 0.01, 50)
-#fSigmoid.SetParLimits(2, 0.1, 100)
-#fSigmoid.SetParLimits(3, 0.01, 0.5)
-#fSigmoid.FixParameter(0, 1050)
-#fSigmoid.FixParameter(1, 0.03)
-#fSigmoid.FixParameter(3, .1)
-fSigmoid.SetLineStyle(9)
-fSigmoid.SetLineWidth(1)
-fSigmoid.SetLineColor(root.kBlue)
 
 c1.cd()
-#hEffForFitting.Fit(fSigmoid, 'NL')
-gEff.Fit(fSigmoid, 'NL')
+#hEffForFitting.Fit(fEfficiency, 'NL')
+gEff.Fit(fEfficiency, 'NL')
 
-fSigmoid.Draw('same')
+fEfficiency.Draw('same')
 
 gConfInterval = root.TGraphAsymmErrors(*neriX_analysis.create_graph_with_confidence_interval_for_fit(gEff, root.TVirtualFitter.GetFitter()))
 gConfInterval.SetLineColor(root.kBlue)
@@ -169,7 +113,7 @@ gConfInterval.SetFillColor(root.kBlue)
 gConfInterval.SetFillStyle(3005)
 gConfInterval.Draw('3 same')
 
-sFitInfo1 = '#epsilon_{trig} = -1 + #frac{2}{1 + e^{#alpha (#beta-x)}}'
+sFitInfo1 = '#epsilon_{trig} = 1 - e^{-#alphax}'
 pt1 = root.TPaveText(.5,.35,.8,.45,'blNDC')
 text1 = pt1.AddText(sFitInfo1)
 pt1.SetTextColor(root.kBlack)
@@ -177,7 +121,7 @@ pt1.SetFillStyle(0)
 pt1.SetBorderSize(0)
 pt1.Draw('same')
 
-sFitInfo2 = '#alpha = %.4f #pm %.4f' % (fSigmoid.GetParameter(1), fSigmoid.GetParError(1))
+sFitInfo2 = '#alpha = %.4f #pm %.4f' % (fEfficiency.GetParameter(0), fEfficiency.GetParError(0))
 pt2 = root.TPaveText(.5,.25,.8,.35,'blNDC')
 text2 = pt2.AddText(sFitInfo2)
 pt2.SetTextColor(root.kBlack)
@@ -185,15 +129,8 @@ pt2.SetFillStyle(0)
 pt2.SetBorderSize(0)
 pt2.Draw('same')
 
-sFitInfo3 = '#beta = %.4f #pm %.4f' % (fSigmoid.GetParameter(0), fSigmoid.GetParError(0))
-pt3 = root.TPaveText(.5,.15,.8,.25,'blNDC')
-text3 = pt3.AddText(sFitInfo3)
-pt3.SetTextColor(root.kBlack)
-pt3.SetFillStyle(0)
-pt3.SetBorderSize(0)
-pt3.Draw('same')
 
-thresholdX = fSigmoid.GetX(0.5, lowerBoundS1, upperBoundS1)
+thresholdX = fEfficiency.GetX(0.5, lowerBoundS1, upperBoundS1)
 lThreshold = root.TLine()
 lThreshold.SetLineColor(root.kOrange + 1)
 lThreshold.SetLineStyle(7)
@@ -204,7 +141,29 @@ c1.Update()
 
 
 
+c2.cd()
+
+lTimeDiffCutLow = root.TLine()
+lTimeDiffCutLow.SetLineColor(root.kRed)
+lTimeDiffCutLow.SetLineStyle(7)
+lTimeDiffCutLow.DrawLine(lowTimeDiff, hGaus.GetMinimum(), lowTimeDiff, hGaus.GetMaximum())
+
+lTimeDiffCutHigh = root.TLine()
+lTimeDiffCutHigh.SetLineColor(root.kRed)
+lTimeDiffCutHigh.SetLineStyle(7)
+lTimeDiffCutHigh.DrawLine(highTimeDiff, hGaus.GetMinimum(), highTimeDiff, hGaus.GetMaximum())
+
+c2.Update()
+
+
+neriX_analysis.save_plot(['results', 'run_%d' % current_analysis.get_run(), current_analysis.get_filename_no_ext()], c1, 's1_disc_eff_%s' % current_analysis.get_filename_no_ext())
+neriX_analysis.save_plot(['results', 'run_%d' % current_analysis.get_run(), current_analysis.get_filename_no_ext()], c2, 'time_diff_cut_%s' % current_analysis.get_filename_no_ext())
+neriX_analysis.write_root_object(['results', 'run_%d' % current_analysis.get_run(), current_analysis.get_filename_no_ext()], fEfficiency, 'efficiency_fit_%s' % current_analysis.get_filename_no_ext())
+
 raw_input('Enter to continue...')
+
+
+"""
 
 response = raw_input('Would you like to save the histograms used for TEfficiency for later analysis?  Press "y" to proceed, otherwise press anything: ')
 
@@ -213,8 +172,9 @@ if response == 'y':
 	
 	hWithCut.Write()
 	hNoCut.Write()
-	fSigmoid.Write()
+	fEfficiency.Write()
 
 	#sCuts = root.TObjString('cuts_used')
 	#sCuts.Write(current_analysis.get_cuts(), root.TObject.kOverwrite)
 
+"""
