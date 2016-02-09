@@ -23,18 +23,16 @@ highTimeDiff = 6
 lowForGaussian = -5
 highForGaussian = 10
 
-dtLow = 200
-dtHigh = 1300
 
-#choose cuts
-#current_analysis.add_dt_cut(2., 13.)
-#current_analysis.add_radius_cut(0., 0.7)
+current_analysis.add_xs1asym_cut()
+current_analysis.set_event_list()
 
 
 #--------------- Start Parameters to Change ----------------
 
 
-#parameterToExamineS1 = 'S1sTotBottom[0]'
+#s1Branch = 'S1sTotBottom[S1Order[0]]'
+s1Branch = 'cpS1sTotBottom[S1Order[0]]'
 lowerBoundS1 = -0.5
 upperBoundS1 = 39.5
 nBinsS1 = 20
@@ -50,6 +48,66 @@ c1.SetGridx()
 c1.SetGridy()
 
 
+
+# -------------------------------------
+#  Find events to check waveforms
+# -------------------------------------
+
+"""
+#numEvents = current_analysis.get_T1().GetEntriesFast()
+numEvents = 10000
+for i in tqdm(xrange(numEvents)):
+
+	current_analysis.get_T1().GetEntry(i)
+	current_analysis.get_T2().GetEntry(i)
+
+	lS1sTotBottom = list(current_analysis.get_T2().S1sTotBottom)
+	lS1sPeak = list(current_analysis.get_T1().S1sPeak)
+	lS1Order = list(current_analysis.get_T1().S1Order)
+	lS2sPeak = list(current_analysis.get_T1().S2sPeak)
+
+	lS1sLeftEdge = list(current_analysis.get_T1().S1sLeftEdge)
+	lS1sRightEdge = list(current_analysis.get_T1().S1sRightEdge)
+	
+	lS2sLeftEdge = list(current_analysis.get_T1().S2sLeftEdge)
+	lS2sRightEdge = list(current_analysis.get_T1().S2sRightEdge)
+
+	lS1sNoiseMedian = list(current_analysis.get_T2().S1sNoiseMedian)
+	lS1sNoiseTrapezoid = list(current_analysis.get_T2().S1sNoiseTrapezoid)
+
+	lTrigLeftEdge = list(current_analysis.get_T1().TrigLeftEdge)
+	lXY = list(current_analysis.get_T2().S2sPosFann)
+
+	if len(lS1sTotBottom) < 1:
+		continue
+
+	if len(lS2sPeak) < 1:
+		continue
+
+	if len(lTrigLeftEdge) < 1:
+		continue
+	
+	if lS1sTotBottom[lS1Order[0]] < 0.5 or lS1sTotBottom[lS1Order[0]] > 15:
+		continue
+
+	if len(lS1sPeak) > 1 and lS1sPeak[lS1Order[1]] - lS1sPeak[lS1Order[0]] < 10:
+		continue
+
+	trigFound = -1
+	for trigNumber, trigTime in enumerate(lTrigLeftEdge):
+		if (trigTime - lS1sPeak[lS1Order[0]]) > lowTimeDiff and (trigTime - lS1sPeak[lS1Order[0]]) < highTimeDiff:
+			trigFound = trigNumber
+			break
+
+	if trigFound == -1:
+		print '\nNo trigger event: %d, %d, %d\n' % (i, lS1sPeak[lS1Order[0]], lTrigLeftEdge[trigFound])
+	else:
+		print '\nTrigger event: %d, %d, %d\n' % (i, lS1sPeak[lS1Order[0]], lTrigLeftEdge[trigFound])
+"""
+
+
+
+
 hNoCut = Hist(nBinsS1, lowerBoundS1, upperBoundS1, name='s1_spec_no_trig_cut', title='s1_spec_no_trig_cut', drawstyle='hist')
 
 hWithCut = Hist(nBinsS1, lowerBoundS1, upperBoundS1, name='s1_spec_with_trig_cut', title='s1_spec_with_trig_cut', drawstyle='hist')
@@ -62,13 +120,14 @@ hGaus.GetYaxis().SetTitle('Counts')
 hGaus.SetTitle('Time between Trigger and First S1 in Waveform - %s' % current_analysis.get_filename_no_ext())
 
 
+sBothCut = '%s > 0.5' % s1Branch
+sBothCut += ' && Alt$(S1sPeak[S1Order[1]] - S1sPeak[S1Order[0]], 100000) > %f' % highTimeDiff
+
+sTriggerCut = sBothCut + ' && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f' % (lowTimeDiff, highTimeDiff)
 
 
-sTriggerCut = '(TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f' % (lowTimeDiff, highTimeDiff)
-sTriggerCut += ' && cpS1sTotBottom[S1Order[0]] > 0.5'
-
-current_analysis.Draw('cpS1sTotBottom[S1Order[0]]', hist=hNoCut)
-current_analysis.Draw('cpS1sTotBottom[S1Order[0]]', hist=hWithCut, selection=sTriggerCut)
+current_analysis.Draw(s1Branch, hist=hNoCut, selection=sBothCut)
+current_analysis.Draw(s1Branch, hist=hWithCut, selection=sTriggerCut)
 
 current_analysis.Draw('TrigLeftEdge[] - S1sPeak[S1Order[0]]', hist=hGaus)
 
@@ -76,9 +135,6 @@ current_analysis.Draw('TrigLeftEdge[] - S1sPeak[S1Order[0]]', hist=hGaus)
 
 hEff = root.TEfficiency(hWithCut, hNoCut)
 hEff.SetTitle('S1 Efficiency for TAC - %s; cpS1sTotBottom[S1Order[0]] [PE]; Percentage Causing Discriminator Pulse for TAC' % (current_analysis.get_filename_no_ext()));
-#hEff.GetXaxis().SetTitle('S1 [PE]')
-#hEff.GetYaxis().SetTitle('Percentage Causing Discriminator Pulse for TAC')
-#hEff.Draw()
 
 gEff = hEff.CreateGraph()
 gEff.GetXaxis().SetRangeUser(lowerBoundS1, upperBoundS1)

@@ -192,7 +192,7 @@ void full_matching_loop_nest_yields(int numTrials, double *aS1, double *aS2, TH1
 		mcS2 = r3.Gaus(mcS2, intrinsicResS1*pow(mcS2, 0.5));
 		if (mcS2 < 0) continue;
 		
-		if (mcS1 < 5) continue;
+		//if (mcS1 < 5) continue;
 		
 		aS1[i] = mcS1;
 		aS2[i] = mcS2;
@@ -240,17 +240,17 @@ s1Branch = 'cpS1sTotBottom[0]'
 s2Branch = 'cpS2sTotBottom[0]'
 
 current_analysis.add_cut('TMath::Log10(%s/%s) < 3' % (s1Branch, s2Branch))
-current_analysis.add_cut('%s > 5' % (s1Branch))
+#current_analysis.add_cut('%s > 5' % (s1Branch))
 
 current_analysis.set_event_list()
 
-s1NumBins = 15
+s1NumBins = 20
 s1LowerBound = 0
-s1UpperBound = 30
+s1UpperBound = 40
 
-s2NumBins = 15
+s2NumBins = 20
 s2LowerBound = 0
-s2UpperBound = 3000
+s2UpperBound = 4000
 
 s2IntegralLowerBound = 2000
 
@@ -274,7 +274,7 @@ cMC = TreeChain(name='t2', files=lMCFiles)
 # test
 
 hEnergy = Hist(80, 0, 80, name='hEnergy')
-cMC.Draw('etot_target', 'sqrt(xpos[0]**2+ypos[0]**2)<18. && zpos[0]>-20 && zpos[0]<-4', hist=hEnergy)
+cMC.Draw('ed_nr_target', 'sqrt(xpos[0]**2+ypos[0]**2)<18. && zpos[0]>-20 && zpos[0]<-4', hist=hEnergy)
 #c1 = Canvas()
 #hEnergy.Draw()
 #c1.Update()
@@ -285,7 +285,7 @@ aS1 = np.full(numMCTrials, -1.)
 aS2 = np.full(numMCTrials, -1.)
 
 dfVcm = 500
-yieldAdjustment = 0.
+yieldAdjustment = 0.2
 g1Value = 0.1
 extractionEfficiency = 22./31.
 gasGainValue = 30.
@@ -310,8 +310,8 @@ hDataS2.SetStats(0)
 hDataS2.SetMarkerSize(0)
 hDataS2.Sumw2()
 
-hMC2D = Hist2D(s1NumBins, s1LowerBound, s1UpperBound, s2NumBins, s2LowerBound, s2UpperBound, name='hMC2D', title='S1 vs. S2 - Data')
-hData2D = Hist2D(s1NumBins, s1LowerBound, s1UpperBound, s2NumBins, s2LowerBound, s2UpperBound, name='hData2D', title='S1 vs. S2 - MC')
+hMC2D = Hist2D(s1NumBins, s1LowerBound, s1UpperBound, s2NumBins, s2LowerBound, s2UpperBound, name='hMC2D', title='S1 vs. S2 - MC')
+hData2D = Hist2D(s1NumBins, s1LowerBound, s1UpperBound, s2NumBins, s2LowerBound, s2UpperBound, name='hData2D', title='S1 vs. S2 - Data')
 hMC2D.SetStats(0)
 hData2D.SetStats(0)
 

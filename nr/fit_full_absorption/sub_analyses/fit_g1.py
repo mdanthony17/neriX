@@ -210,5 +210,6 @@ fDraw.Draw('same')
 
 c1.Update()
 
+neriX_analysis.save_plot(['results', 'run_%d' % current_analysis.get_run(), current_analysis.get_filename_no_ext()], c1, 'g1_g2_anticorrelation_%s' % current_analysis.get_filename_no_ext())
 
 raw_input('Press enter to continue...')

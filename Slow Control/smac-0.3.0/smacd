@@ -9,7 +9,11 @@ log_file = 'smacd.log'
 pid_file = 'smacd.pid'
 config_file = 'smacd.conf'
 
-import sys, os, signal, time, re, shutil, socket, copy, serial, threading, Queue, MySQLdb
+import sys, os, signal, time, re, shutil, socket, copy, serial, threading, Queue, MySQLdb, subprocess, string, libcaenhv
+from ctypes import *
+
+#need global var for caen
+handle = c_int()
 
 def error(message):
 	print '%s error: %s' % (time.asctime(), message)
@@ -395,9 +399,11 @@ class Superlogics8017(Instrument):
 			reply = self.serial_port.read(8)
 			self.serial_lock.release()
 
-#            debug('module replied <%s>' % repr(reply))
+			#debug('\n\n\n\nmodule replied <%s>' % repr(reply))
 			if reply[3:7] == '8017':
 				self.connected = True
+
+			#debug('\n\nconnected: ' + self.connected + '\n\n')
 
 			# configure the module to the desired mode
 
@@ -785,6 +791,76 @@ class APCSmartUPS(Instrument):
 			self.out_queue.put(reading)
 			self.distribute_to_subscribers(reading)
 
+# CAEN HV
+class CaenHV(Instrument):
+	def __init__(self, name, read_interval):
+		handle = c_int()	
+		Instrument.__init__(self, name, read_interval)
+	
+	def channels(self):
+		channels_description = []
+		for i in xrange(1,7):
+			channels_description.append({'name':'PMT'+str(i)+'_V0Set', 'unit':'V', 'mysql_type':'FLOAT(4,1)'})
+			channels_description.append({'name':'PMT'+str(i)+'_VMon', 'unit':'V', 'mysql_type':'FLOAT(4,1)'})
+			channels_description.append({'name':'PMT'+str(i)+'_Status', 'unit':'', 'mysql_type':'INT'})
+
+
+		return channels_description
+
+	def _connect(self):
+		# connect to the serial port
+		try:
+			res = libcaenhv.init_system(system=2, link_type=0, arg='129.236.254.45', username='user', password='q1w2e3r4', handle=byref(handle))
+		except:
+			error('could not open port to instrument %s' % self.name)
+		else:
+			self.connected = True
+
+	def read_parameter(self, parameter, unit, pmtNumber):
+		#request one PMT parameter at a time
+		#parameter must be in the form of a string
+		now = time.time()
+		value = []
+
+		res = libcaenhv.get_channel_parameter(handle=handle, slot=0, parameter_name=parameter, nb_channels=1, channels_list=[pmtNumber], parameter_values_list=value)
+		process_value = ProcessValue(now, value[0], unit)
+
+		return process_value
+
+	def _read_channels(self):
+		reading = Reading(self.name)
+
+		now = time.time()
+
+		for i in xrange(1,7):
+			#read set voltage
+			vset_process_value = self.read_parameter('V0Set', 'V', i)
+			if vset_process_value:
+				reading.add('PMT'+str(i)+'_V0Set', vset_process_value)
+
+			#read actual voltage
+			vmon_process_value = self.read_parameter('VMon', 'V', i) 
+			if vmon_process_value:
+				reading.add('PMT'+str(i)+'_VMon', vmon_process_value)
+
+			#read pmt status
+			stat_value = self.read_parameter('Status', '', i) 
+			if stat_value:
+				reading.add('PMT'+str(i)+'_Status', stat_value)
+
+		if reading.process_values_map:
+			self.out_queue.put(reading)
+			self.distribute_to_subscribers(reading)
+
+	def disconnect(self):
+		while self.reader_thread:
+			pass
+		self.connected = False
+		libcaenhv.deinit_system(handle)	
+		self.alive = False
+		self.dispatcher_thread.join()
+
+
 class VirtualThermostat(Instrument):
 	def __init__(self, name, control_interval, temperature_input, setpoint, control_knob):
 		Instrument.__init__(self, name, read_interval=0)
@@ -985,7 +1061,7 @@ def read_config():
 	global email_sender, smtp_server, smtp_port, smtp_tls, smtp_user, smtp_pass
 	global email_recipients
 	global experiment_name
-	global status_parameters, alarm_conditions
+	global status_parameters, alarm_conditions, soft_alarm_conditions
 	global recorder_user, recorder_pass
 
 	# regular expressions for the config file
@@ -1010,7 +1086,8 @@ def read_config():
 	email_recipients = []
 	status_parameters = []
 	alarm_conditions = []
-	soft_alarm_conditions = ['adc0{P_chamber(Bar)} > 1.0', 'adc0{P_chamber(Bar)} > 1.2', 'adc0{P_chamber(Bar)} > 1.6', 'adc0{P_chamber(Bar)} > 1.65', 'adc0{P_chamber(Bar)} > 1.7', 'adc0{P_chamber(Bar)} > 1.75', 'caen0{PMT1_VMon(V)} < 0.9*caen0{PMT1_V0Set(V)}', 'caen0{PMT2_VMon(V)} < 0.9*caen0{PMT2_V0Set(V)}', 'caen0{PMT3_VMon(V)} < 0.9*caen0{PMT3_V0Set(V)}', 'caen0{PMT4_VMon(V)} < 0.9*caen0{PMT4_V0Set(V)}', 'caen0{PMT5_VMon(V)} < 0.9*caen0{PMT5_V0Set(V)}', 'caen0{PMT6_VMon(V)} < 0.9*caen0{PMT6_V0Set(V)}']
+	#soft_alarm_conditions = [AlarmCondition('adc0{P_chamber(Bar)} > 1.2'), AlarmCondition('caen0{PMT1_VMon(V)} < 0.9*caen0{PMT1_V0Set(V)}'),  AlarmCondition('caen0{PMT2_VMon(V)} < 0.9*caen0{PMT2_V0Set(V)}'), AlarmCondition('caen0{PMT3_VMon(V)} < 0.9*caen0{PMT3_V0Set(V)}'), AlarmCondition('caen0{PMT4_VMon(V)} < 0.9*caen0{PMT4_V0Set(V)}'), AlarmCondition('caen0{PMT5_VMon(V)} < 0.9*caen0{PMT5_V0Set(V)}'), AlarmCondition('caen0{PMT6_VMon(V)} < 0.9*caen0{PMT6_V0Set(V)}'), AlarmCondition('caen0{PMT1_Status()} > 7'), AlarmCondition('caen0{PMT2_Status()} > 7'), AlarmCondition('caen0{PMT3_Status()} > 7'), AlarmCondition('caen0{PMT4_Status()} > 7'), AlarmCondition('caen0{PMT5_Status()} > 7'), AlarmCondition('caen0{PMT6_Status()} > 7')]
+	soft_alarm_conditions = [AlarmCondition('adc0{I_beam(uA)} > 35.0'), AlarmCondition('adc0{P_chamber(Bar)} > 1.2'), AlarmCondition('caen0{PMT1_Status()} > 7'), AlarmCondition('caen0{PMT2_Status()} > 7'), AlarmCondition('caen0{PMT3_Status()} > 7'), AlarmCondition('caen0{PMT4_Status()} > 7'), AlarmCondition('caen0{PMT5_Status()} > 7'), AlarmCondition('caen0{PMT6_Status()} > 7')]
 
 	config_lines = open(config_file).readlines()
 
@@ -1098,7 +1175,19 @@ def get_parameters_status():
 	# get the last reading of all status parameters
 	for status_parameter in status_parameters:
 		last_reading_lock.acquire()
-		reading = last_reading[status_parameter.instrument_name]
+		#reading assingment by itself before
+		#reading = last_reading[status_parameter.instrument_name]
+
+		try:
+			reading = last_reading[status_parameter.instrument_name]
+		except KeyError:
+			error('could not determine "%s" - check connection immediately' % status_parameter)
+			status += '%s ' % (time.asctime())
+			status += 'could not determine "%s" - check connection immediately\n' % status_parameter 
+			last_reading_lock.release()
+
+			continue
+			
 		try:
 			process_value = reading[status_parameter.channel_name]
 		except KeyError:
@@ -1163,6 +1252,30 @@ def send_alarm_msg():
 	warning('alarm condition, sending alarm message')
 #    print alarm_msg
 	send_email(alarm_msg)
+
+def send_soft_alarm_msg():
+	# build alarm message
+	soft_alarm_msg = ''
+	soft_alarm_msg += 'From: %s\n' % email_sender
+	soft_alarm_msg += 'To: %s\n' % ', '.join(email_recipients)
+	soft_alarm_msg += 'Subject: [%s] %s Soft Alarm\n' % (socket.getfqdn(), experiment_name)
+
+	# print the alarm condition
+	soft_alarm_msg += 'Soft Alarm - Please attend to immediately!\n'
+	last_reading_lock.acquire()
+	for soft_alarm_condition in soft_alarm_conditions:
+		reading = last_reading[soft_alarm_condition.instrument_name]
+		if soft_alarm_condition.occurs(reading):
+			soft_alarm_msg += str(soft_alarm_condition)+'\n'
+	last_reading_lock.release()
+	soft_alarm_msg += '\n'
+
+	soft_alarm_msg += get_parameters_status()
+
+	warning('soft alarm condition, sending alarm message')
+#    print alarm_msg
+	send_email(soft_alarm_msg)
+
 
 # Commander
 class Commander:
@@ -1250,7 +1363,7 @@ def smacd_main():
 	adc0.set_serial_parameters('/dev/ttyS0', 9600, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
 	adc0.add_input(0, 'P_chamber', 'Bar', 2.069, -0.05, 'FLOAT(5,4)')
 	#adc0.add_input(1, '', '', 1., 0.)
-	#adc0.add_input(2, 'I_beam', 'uA', 100., 0., 'FLOAT(5,2)')
+	adc0.add_input(2, 'I_beam', 'uA', 9.9407, 0.7172, 'FLOAT(5,2)')
 	adc0.add_input(3, 'T_top', 'C', 25., -150., 'FLOAT(5,2)')
 	adc0.add_input(4, 'Q_circulation', 'SLPM', 3.4, 0., 'FLOAT(5,3)')
 	adc0.add_input(5, 'T_ambient', 'C', 37.538, -61.111, 'FLOAT(5,2)')
@@ -1290,6 +1403,13 @@ def smacd_main():
 	instruments.append(apc0)
 	instruments_lock.release()
 
+	# create the CAENHV
+	debug('Adding caen')
+	caen0 = CaenHV('caen0', 30.)
+	instruments_lock.acquire()
+	instruments.append(caen0)
+	instruments_lock.release()
+
 	# check which polling interval to use and connect the instruments
 	polling_interval = 60.
 	instruments_lock.acquire()
@@ -1313,6 +1433,8 @@ def smacd_main():
 	# leave the zombie and alarm repeater out of the game for now
 	zombie_repeater = 0
 	alarm_repeater = 0
+	softAlarmTriggered = False
+	resetCount = 0
 
 	# create and start the command listener
 	commander = Commander('/tmp/smacd.socket')
@@ -1347,6 +1469,7 @@ def smacd_main():
 				alarm_repeater.stop()
 				alarm_repeater.join()
 
+
 			print '%s smacd stopped' % time.asctime()
 			os.remove(pid_file)
 			sys.exit(0)
@@ -1362,6 +1485,8 @@ def smacd_main():
 
 		# checking for instrument readings
 		instruments_lock.acquire()
+		
+		resetSoftAlarm = True
 		for instrument in instruments:
 			reading = instrument.get_reading()
 			if reading:
@@ -1398,6 +1523,38 @@ def smacd_main():
 					elif alarm_repeater and alarm_condition.cleared(reading):
 						alarm_repeater.stop()
 						alarm_repeater = 0
+
+				#add soft alarm feature
+				for soft_alarm_condition in soft_alarm_conditions:
+					if soft_alarm_condition.occurs(reading) and not softAlarmTriggered:
+						resetSoftAlarm = False
+						resetCount = 0
+						if email_recipients:
+							warning('soft alarm occured, sending alert email')
+							send_soft_alarm_msg()
+							softAlarmTriggered = True
+						else:
+							warning('alarm occured, no alarm repeater started (no email recipients)')
+					elif soft_alarm_condition.occurs(reading) and softAlarmTriggered:
+						resetSoftAlarm = False
+						resetCount = 0
+						
+		#pretty convoluted method for soft alarm due to polling intervals
+		#each succesfull pass (no alarms) increases resetCount
+		#if resetCount hits 11 then the soft alarm is allowed to send emails again
+		#if not resetCount is set back to zero
+		#problem with this method is that if another soft alarm is triggered before
+		#first is fixed then it will not send new email
+		if resetSoftAlarm:
+			resetCount += 1
+
+		#print 'resetCount: ' + str(resetCount)
+
+		if resetCount > 10:
+			resetCount = 0
+			softAlarmTriggered = False
+					
+				
 		instruments_lock.release()
 
 		# start a status email repeater if we have readings for all instruments
@@ -1410,7 +1567,11 @@ def smacd_main():
 					all_readings = False
 				last_reading_lock.release()
 			instruments_lock.release()
-			if all_readings and email_recipients:
+			#if all_readings and email_recipients:
+			#removed requirement for all_readings to work so
+			#we can still see receive status updates if something
+			#is not connected
+			if email_recipients:
 #                last_reading_lock.acquire()
 #                for instrument in last_reading:
 #                    debug('last_reading = %s' % str(last_reading[instrument]))
@@ -1419,6 +1580,15 @@ def smacd_main():
 				status_repeater.start()
 
 def smacd_start():
+	"""
+	uptimeString = subprocess.check_output(['uptime'])
+	uptime = float(string.split(uptimeString)[2])
+	timeToWaitAfterBoot = 4 #mins
+	if(uptime - float(timeToWaitAfterBoot) < 0):
+		time.sleep(timeToWaitAfterBoot - uptime)
+		print 'Please wait for boot to complete...'
+	"""
+
 	# check that smacd is not already running
 	if os.path.exists(pid_file):
 		# the pid_file exists, get the pid from it

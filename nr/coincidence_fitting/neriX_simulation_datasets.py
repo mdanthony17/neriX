@@ -54,8 +54,8 @@ dVoltageField = {0.345:200.,
 # files in set should be in the following order
 # data_root_file, mc_root_file, tac_efficiency_root_file, peak_finder_efficiency_root_file, g1_root_file, spe_root_file
 
-run_files[(15, 4.5, 1.054, 30.)] = ('results_30deg', 'nerixsim-5keV', 's1_disc_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None)
-run_files[(15, 4.5, 1.054, 45.)] = ('results_45deg', 'nerixsim-10keV', 's1_disc_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None)
+run_files[(15, 4.5, 1.054, 30.)] = ('results_1.054kV_30deg', 'nerixsim-5keV', 's1_disc_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None)
+run_files[(15, 4.5, 1.054, 45.)] = ('results_1.054kV_45deg', 'nerixsim-10keV', 's1_disc_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None)
 
 
 

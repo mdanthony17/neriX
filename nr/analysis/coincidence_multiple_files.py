@@ -96,6 +96,7 @@ print '\nUsing S2 Branch: %s \n\n' % s2Branch
 
 print '\n\nTotal number of events: %s' % current_analysis.get_num_events()
 print 'Total time: %.0f \n\n' % current_analysis.get_livetime()
+print 'Rate: %.2f events per hour \n\n' % (float(current_analysis.get_num_events()) / current_analysis.get_livetime() * 3600.)
 
 
 #current_analysis.get_lT1()[0].Scan('EventId:S1sPeak[0]:%s:S2sPeak[0]:S2sTotBottom[0]:TimeOfFlight' % sS1Branch, '%s > 6' % sS1Branch)
@@ -189,6 +190,13 @@ c7.Update()
 c8 = root.TCanvas('c8','',1280/2,480)
 hPSD.Draw()
 c8.Update()
+
+
+neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c1, 's1s2_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
+neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c5, 's1_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
+neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c6, 's2_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
+
+
 
 raw_input('Enter to continue...')
 response = raw_input('Would you like to save the S1 and S2 spectra for later analysis?  Press "y" to proceed, otherwise press anything: ')

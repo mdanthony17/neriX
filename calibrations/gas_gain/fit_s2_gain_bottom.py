@@ -23,10 +23,10 @@ s2_fit_limits = [-50., 130.] #top
 #s2m_min = 10
 
 fermi_dirac_threshold = 0
-fix_threshold_function = 1
+fix_threshold_function = 0
 
-s2_peak_finding_efficiency_threshold = 0#13.5583
-s2_peak_finding_efficiency_rolloff = 1#3.805
+s2_peak_finding_efficiency_threshold = 13.5583
+s2_peak_finding_efficiency_rolloff = 3.805
 
 preliminary = 0
 
@@ -75,20 +75,27 @@ current_analysis.add_cut('sqrt(pow(S2sPosCoG[][0],2)+pow(S2sPosCoG[][1],2)) < 0.
 """
 
 # look after S1
-
+"""
 peakToLookAt = 2
 
-parameterToDraw = 'S2sTotBottom[%d]' % peakToLookAt
+parameterToDraw = 'cpS2sTotBottom[%d]' % peakToLookAt
 current_analysis.add_cut('(S2sTot[%d] < %f)' % (peakToLookAt, s2_pars[2]))
 current_analysis.add_cut('(S2sTotBottom[%d] > %f)' % (peakToLookAt, s2_pars[1]))
-#current_analysis.add_cut('S1sTotBottom[0] > 1000')
 #current_analysis.add_cut('(S2sCoin[%d] > 7)' % (peakToLookAt))
 #current_analysis.add_cut('(S2sCoin[%d] > 2)' % (peakToLookAt))
-current_analysis.add_cut('(S2sPeak[%d] > (S1sPeak[0]+50) && S2sPeak[%d] < (S1sPeak[0]+200))' % (peakToLookAt, peakToLookAt))
-#current_analysis.add_dt_cut(4, 13)
-#current_analysis.add_z_cut()
-#current_analysis.add_cut('sqrt(pow(S2sPosCoG[][0],2)+pow(S2sPosCoG[][1],2)) < 0.1')
+current_analysis.add_cut('(S2sPeak[%d] > (S1sPeak[0]+110) && S2sPeak[%d] < (S1sPeak[0]+150))' % (peakToLookAt, peakToLookAt))
+"""
 
+peakToLookAt = 'S2Order[0]'
+
+parameterToDraw = 'cpS2sTotBottom[%s]' % peakToLookAt
+current_analysis.add_cut('(S2sTot[%s] < %f)' % (peakToLookAt, s2_pars[2]))
+current_analysis.add_cut('(%s > %f)' % (parameterToDraw, s2_pars[1]))
+#current_analysis.add_xs2asym_cut()
+#current_analysis.add_cut('(S2sTotBottom[%s] > %f)' % (peakToLookAt, s2_pars[1]))
+#current_analysis.add_cut('(S2sCoin[%s] > 7)' % (peakToLookAt))
+#current_analysis.add_cut('(S2sCoin[%s] > 2)' % (peakToLookAt))
+current_analysis.add_cut('(S2sPeak[%s] > (S1sPeak[0]+125) && S2sPeak[%s] < (S1sPeak[0]+135))' % (peakToLookAt, peakToLookAt))
 
 
 
@@ -270,8 +277,8 @@ axis.SetTextFont(132)
 axis.SetLabelFont(132)
 axis.SetTitleOffset(1.0)
 axis.Draw()
-c1.SaveAs(results_dir + '/s2.png')
-c1.SaveAs(results_dir + '/s2.C')
+c1.SaveAs(results_dir + '/s2_%s.png' % current_analysis.get_filename_no_ext())
+c1.SaveAs(results_dir + '/s2_%s.C' % current_analysis.get_filename_no_ext())
 
 results.write('anode (kV)'.rjust(10) + 'cathode (kV)'.rjust(10) + 'mu (pe)'.rjust(10) + 'mu_err (pe)'.rjust(12) + 'sigma (pe)'.rjust(12) + 'sigma_err (pe)'.rjust(14) + 'threshold (pe)'.rjust(16) + 'rolloff (pe)'.rjust(14) + '\n')
 results.write(('%0.4f' % current_analysis.get_anode_setting()).rjust(10) + ('%0.4f' % current_analysis.get_cathode_setting()).rjust(10) + ('%0.4f' % s2_mu).rjust(10) + ('%0.4f' % s2_emu).rjust(12) + ('%0.4f' % s2_sigma).rjust(12) + ('%0.4f' % s2_esigma).rjust(14) + ('%0.4f' % efficiency_threshold).rjust(16) + ('%0.4f' % efficiency_rolloff).rjust(14) + '\n')

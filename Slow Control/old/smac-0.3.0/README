@@ -1,0 +1,16 @@
+
+smacd, a daemon for simple monitoring and control
+===========================================================
+
+I.    Requirements
+        - python 2.4
+		- mysqldb
+		- pyserial
+
+II.   Description of smacd
+        
+
+III.  Installation
+		To install smacd just adjust the configuration
+		settings in smacd.conf and run make install.
+

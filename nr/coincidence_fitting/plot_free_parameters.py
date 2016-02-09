@@ -15,8 +15,8 @@ if len(sys.argv) != 6:
 useFakeValueInPlots = True
 
 
-#nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-nameOfResultsDirectory = 'fake_data/results'
+nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+#nameOfResultsDirectory = 'fake_data/results'
 pathToSamplerDictionary = nameOfResultsDirectory
 
 degreeSetting = int(sys.argv[1])
@@ -78,7 +78,7 @@ for parameter in dParametersToDraw:
 	dPlots[parameter]['hist'].SetStats(0)
 	
 	# fill histogram and draw it
-	dPlots[parameter]['hist'].fill_array(aSampler[:,-50:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].fill_array(aSampler[:,-5:,dParametersToDraw[parameter]['index']].flatten())
 	dPlots[parameter]['hist'].Draw()
 
 	# find quantiles

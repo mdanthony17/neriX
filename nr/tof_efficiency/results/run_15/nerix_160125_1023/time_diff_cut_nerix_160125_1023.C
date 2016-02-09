@@ -1,15 +1,15 @@
 {
-//=========Macro generated from canvas: ea526072495641a59dc99343b2300ea5/
-//=========  (Fri Jan 29 12:57:56 2016) by ROOT version5.34/26
-   TCanvas *ea526072495641a59dc99343b2300ea5 = new TCanvas("ea526072495641a59dc99343b2300ea5", "",10,45,704,527);
-   ea526072495641a59dc99343b2300ea5->SetHighLightColor(2);
-   ea526072495641a59dc99343b2300ea5->Range(-6.875,1.186341,11.875,5.319905);
-   ea526072495641a59dc99343b2300ea5->SetFillColor(0);
-   ea526072495641a59dc99343b2300ea5->SetBorderMode(0);
-   ea526072495641a59dc99343b2300ea5->SetBorderSize(2);
-   ea526072495641a59dc99343b2300ea5->SetLogy();
-   ea526072495641a59dc99343b2300ea5->SetFrameBorderMode(0);
-   ea526072495641a59dc99343b2300ea5->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 8cf3b2162dd444738055070d64187bbc/
+//=========  (Fri Jan 29 15:20:44 2016) by ROOT version5.34/26
+   TCanvas *8cf3b2162dd444738055070d64187bbc = new TCanvas("8cf3b2162dd444738055070d64187bbc", "",10,45,704,527);
+   8cf3b2162dd444738055070d64187bbc->SetHighLightColor(2);
+   8cf3b2162dd444738055070d64187bbc->Range(-6.875,1.186341,11.875,5.319905);
+   8cf3b2162dd444738055070d64187bbc->SetFillColor(0);
+   8cf3b2162dd444738055070d64187bbc->SetBorderMode(0);
+   8cf3b2162dd444738055070d64187bbc->SetBorderSize(2);
+   8cf3b2162dd444738055070d64187bbc->SetLogy();
+   8cf3b2162dd444738055070d64187bbc->SetFrameBorderMode(0);
+   8cf3b2162dd444738055070d64187bbc->SetFrameBorderMode(0);
    
    TH1F *hGaus = new TH1F("hGaus","Time between Trigger and First S1 in Waveform - nerix_160125_1023",15,-5,10);
    hGaus->SetBinContent(0,112506);
@@ -89,7 +89,7 @@
    line->SetLineColor(ci);
    line->SetLineStyle(7);
    line->Draw();
-   ea526072495641a59dc99343b2300ea5->Modified();
-   ea526072495641a59dc99343b2300ea5->cd();
-   ea526072495641a59dc99343b2300ea5->SetSelected(ea526072495641a59dc99343b2300ea5);
+   8cf3b2162dd444738055070d64187bbc->Modified();
+   8cf3b2162dd444738055070d64187bbc->cd();
+   8cf3b2162dd444738055070d64187bbc->SetSelected(8cf3b2162dd444738055070d64187bbc);
 }

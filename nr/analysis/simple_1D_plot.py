@@ -24,10 +24,10 @@ option1 = 'COLZ'
 
 
 #choose cuts
-run.add_z_cut()
-run.add_radius_cut(0., 0.7)
-run.add_single_scatter_cut()
-run.add_cut('(s1asym > 0)')
+#run.add_z_cut()
+#run.add_radius_cut(0., 0.7)
+#run.add_single_scatter_cut()
+#run.add_cut('(s1asym > 0)')
 #run.add_eDep_cut(0., 20.)
 #run.add_s1_trig_cut()
 #run.add_cut('(S1sPeak[] > 3380 && S1sPeak[] < 3430)')
@@ -42,9 +42,9 @@ run.set_event_list()
 
 #constants for histogram
 #parameter 1 will be on x-axis
-parameterToExamine = '(S1sTotBottom[0]/.10 + S2sTotBottom[0]/24.)*.0137'
+parameterToExamine = 'S2sPeak[S2Order[0]] - S1sPeak[0]'
 lowerBound = 0
-upperBound = 775
+upperBound = 1000
 nBins = 100
 
 #choose options

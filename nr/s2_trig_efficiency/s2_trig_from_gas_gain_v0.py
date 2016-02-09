@@ -129,7 +129,7 @@ for i in tqdm(xrange(numEvents)):
 			continue
 
 		# only look at peaks in our range of interest
-		if lS2sTotBottom[peakNumber] > upperBoundS2:
+		if lS2sTotBottom[lS2Order[0]] > upperBoundS2:
 			continue
 
 		if not (lS2sRightEdge[lS2Order[0]]-lS2sLeftEdge[lS2Order[0]])<400:
