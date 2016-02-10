@@ -49,8 +49,8 @@ stl.vector(stl.vector('int'))
 # create dot product in c++ for speed
 # and thread safety
 
-C.register_file('/Users/Matt/Desktop/Xenon/python_modules/mc_code/c_safe_dot.C', ['safe_dot'])
-C.register_file('/Users/Matt/Desktop/Xenon/python_modules/mc_code/c_full_observables_production.C', ['full_matching_loop'])
+C.register_file('../../../python_modules/mc_code/c_safe_dot.C', ['safe_dot'])
+C.register_file('../../../python_modules/mc_code/c_full_observables_production.C', ['full_matching_loop'])
 
 c_full_matching_loop = C.full_matching_loop
 
@@ -2227,8 +2227,8 @@ if __name__ == '__main__':
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
-	test.run_mcmc('full_matching', sParametersFullMatching, 128, 5, 10, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}) #10240
-	#test.run_mcmc('full_matching', sParametersFullMatching, 40, 1, 1, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}) #10240
+	#test.run_mcmc('full_matching', sParametersFullMatching, 128, 5, 1, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}) #10240
+	test.run_mcmc('full_matching', sParametersFullMatching, 2048, 50, 8, gpu_compute=False) #10240
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
