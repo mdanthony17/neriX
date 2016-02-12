@@ -88,7 +88,7 @@ current_analysis.add_cut('(S2sPeak[%d] > (S1sPeak[0]+110) && S2sPeak[%d] < (S1sP
 
 peakToLookAt = 'S2Order[0]'
 
-parameterToDraw = 'cpS2sTotBottom[%s]' % peakToLookAt
+parameterToDraw = 'S2sTotBottom[%s]' % peakToLookAt
 current_analysis.add_cut('(S2sTot[%s] < %f)' % (peakToLookAt, s2_pars[2]))
 current_analysis.add_cut('(%s > %f)' % (parameterToDraw, s2_pars[1]))
 #current_analysis.add_xs2asym_cut()

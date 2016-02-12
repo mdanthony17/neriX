@@ -1,9 +1,13 @@
+import os.path
+
 run_files = {}
 
-pathToSimulationFiles = './simulated_data/'
-pathToReducedSimulationFiles = './reduced_simulation_data/'
-pathToData = '../analysis/full_angle_files/'
-pathToEfficiencyFiles = 'efficiency_files/'
+pathToThisModule = os.path.dirname(__file__)
+
+pathToSimulationFiles = pathToThisModule + '/simulated_data/'
+pathToReducedSimulationFiles = pathToThisModule + '/reduced_simulation_data/'
+pathToData = pathToThisModule + '/../analysis/full_angle_files/'
+pathToEfficiencyFiles = pathToThisModule + '/efficiency_files/'
 
 pathToFakeData = './fake_data/'
 

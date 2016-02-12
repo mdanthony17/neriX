@@ -625,6 +625,8 @@ class track_steps_fit:
 
 class neriX_simulation_analysis(object):
 	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, use_fake_data=False, create_fake_data=False):
+	
+		copy_reg.pickle(types.MethodType, reduce_method)
 
 		# ------------------------------------------------
 		# Pull filenames and create save paths
@@ -2093,12 +2095,10 @@ class neriX_simulation_analysis(object):
 			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
 		
 		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
-		#self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.nameOfResultsDirectory, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
 		
 		if not os.path.isdir(self.sPathForSave):
-			call(['mkdir', self.sPathForSave])
-			call(['mkdir', self.sPathForOldFiles])
+			os.makedirs(self.sPathForOldFiles)
 		else:
 			for file in os.listdir(self.sPathForSave):
 				if file == 'previous_results' or 'sampler_dictionary.p':

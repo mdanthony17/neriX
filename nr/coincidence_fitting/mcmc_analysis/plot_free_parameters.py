@@ -1,8 +1,9 @@
 #!/usr/bin/python
+import sys, array, os
+sys.path.insert(0, '..')
 
 import ROOT as root
 import neriX_analysis
-import sys, array, os
 from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 import neriX_simulation_config
 import numpy as np
@@ -36,7 +37,7 @@ else:
 pathToSamplerDictionary = nameOfResultsDirectory
 
 
-sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
+sPathToFile = '../%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
 
 if os.path.exists(sPathToFile):
 	print 'Beginning to load sampler.'
