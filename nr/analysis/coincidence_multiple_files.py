@@ -83,7 +83,7 @@ current_analysis.add_temp_tof_cut(degreeSetting)
 
 current_analysis.set_event_list()
 
-s1Branch = 'cpS1sTotBottom[0]'
+s1Branch = 'cpS1sTotBottom[0] - S1sNoiseTrapezoid[0][16]'
 s2Branch = 'cpS2sTotBottom[0]'
 
 #create histograms for current_analysis

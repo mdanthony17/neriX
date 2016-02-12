@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import ROOT as root
+import neriX_analysis
 import sys, array, os
 from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 import neriX_simulation_config
@@ -12,12 +13,6 @@ if len(sys.argv) != 6:
 	sys.exit()
 
 
-useFakeValueInPlots = True
-
-
-nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-#nameOfResultsDirectory = 'fake_data/results'
-pathToSamplerDictionary = nameOfResultsDirectory
 
 degreeSetting = int(sys.argv[1])
 cathodeSetting = float(sys.argv[2])
@@ -25,9 +20,26 @@ anodeSetting = float(sys.argv[3])
 sMeasurement = sys.argv[4]
 numWalkers = int(sys.argv[5])
 
+# change to switch between real and fake data
+realDate = False
+
+if realDate:
+	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
+	useFakeValueInPlots = False
+else:
+	nameOfResultsDirectory = 'fake_data/results'
+	lPlots = ['plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
+	useFakeValueInPlots = True
+
+
+pathToSamplerDictionary = nameOfResultsDirectory
+
+
 sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
 
 if os.path.exists(sPathToFile):
+	print 'Beginning to load sampler.'
 	dSampler = pickle.load(open(sPathToFile, 'r'))
 	aSampler = dSampler[numWalkers][-1]['_chain'] # look at last sampler only (can change)
 	print 'Successfully loaded sampler!'
@@ -43,7 +55,7 @@ else:
 dParametersToDraw = {'photon_yield':{'index':0,
 									 'form':'P_{y}',
 									 'unit': '#frac{photons}{keV}',
-									 'binning':[100, 2, 13],
+									 'binning':[100, 4, 16],
 									 'true_value_for_fake':7.6},
 					 'charge_yield':{'index':1,
 									 'form':'Q_{y}',
@@ -54,12 +66,12 @@ dParametersToDraw = {'photon_yield':{'index':0,
 							   'unit': '',
 							   'form':'R_{S1}',
 							   'binning':[100, 0., 2],
-							   'true_value_for_fake':1.0},
+							   'true_value_for_fake':0.3},
 					 'res_s2':{'index':3,
 							   'form':'R_{S2}',
 							   'unit': '',
 							   'binning':[100, 0., 2],
-							   'true_value_for_fake':1.0}
+							   'true_value_for_fake':0.1}
 					}
 
 
@@ -109,7 +121,11 @@ for parameter in dParametersToDraw:
 
 	dPlots[parameter]['canvas'].Update()
 
-
+for parameter in dPlots:
+	nameForFile = parameter
+	if not realDate:
+		nameForFile += '_fake'
+	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%ddeg_%.3fkV_%.1fkV' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting))
 
 
 raw_input('Enter to continue...')

@@ -1,4 +1,5 @@
 import ROOT as root
+import neriX_analysis
 from rootpy.plotting import Hist, Canvas
 from math import log, exp
 import array, sys
@@ -36,11 +37,12 @@ gainAdjustmentTerm = 1.#/1.034
 #energyOfPeak = 197.1e3 # eV
 #dFitParameters = fits_completed_164keV_peak.dFitParameters
 #energyOfPeak = 163.9e3 # eV
-dFitParameters = fits_completed_cs137.dFitParameters
-energyOfPeak = 662e3
-#dFitParameters = fits_completed_na22.dFitParameters
-#energyOfPeak = 511e3
+#dFitParameters = fits_completed_cs137.dFitParameters
+#energyOfPeak = 662e3
+dFitParameters = fits_completed_na22.dFitParameters
+energyOfPeak = 511e3
 
+lowestCathodeSettingFilename = ''
 
 print 'Peak being examined: ' + str(energyOfPeak)
 
@@ -51,6 +53,8 @@ for file in dFitParameters:
 		continue
 
 	if dFile['cathode'] in dCathodeVoltages:
+		if dFile['cathode']  == 0.345:
+			lowestCathodeSettingFilename = file[:-5]
 		for key in dCathodeVoltages[dFile['cathode']]:
 			if key in dFile:
 				dCathodeVoltages[dFile['cathode']][key].append(dFile[key])
@@ -210,6 +214,6 @@ fDraw.Draw('same')
 
 c1.Update()
 
-neriX_analysis.save_plot(['results', 'run_%d' % current_analysis.get_run(), current_analysis.get_filename_no_ext()], c1, 'g1_g2_anticorrelation_%s' % current_analysis.get_filename_no_ext())
+neriX_analysis.save_plot(['ac_results', 'run_%d' % (15), lowestCathodeSettingFilename], c1, 'g1_g2_anticorrelation_%s' % lowestCathodeSettingFilename)
 
 raw_input('Press enter to continue...')

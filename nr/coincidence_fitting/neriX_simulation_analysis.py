@@ -15,11 +15,12 @@ from scipy import optimize, misc, stats
 from scipy.stats import norm
 import copy_reg, types, pickle, click, time
 from subprocess import call
+"""
 import cuda_full_observables_production
 from pycuda.compiler import SourceModule
 import pycuda.driver as drv
 import pycuda.tools
-
+"""
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
@@ -809,7 +810,7 @@ class neriX_simulation_analysis(object):
 		
 		# load tac efficiency file and store in easy function
 		fTACEfficiency = File(dFilesForAnalysis['tac_efficiency'])
-		tf1TacEfficiency = fTACEfficiency.fSigmoid
+		tf1TacEfficiency = fTACEfficiency.tof_efficiency
 		self.efTacEfficiency = easy_function(tf1TacEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
 
 		# ------------------------------------------------
@@ -860,18 +861,21 @@ class neriX_simulation_analysis(object):
 		# check if reduced file exists
 		pathToReducedSimulationFiles = neriX_simulation_datasets.pathToReducedSimulationFiles + mc_root_file
 		if not os.path.exists(pathToReducedSimulationFiles):
+			
+		
 			# load the raw data file
 			pathToSimulatedFile = neriX_simulation_datasets.pathToSimulationFiles
 			fSimulation = File(pathToSimulatedFile + mc_root_file)
 
 			# set cuts
-			xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 15)'
+			xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
 			xZ = '(zpos[0]>-20 && zpos[0]<-4)'
 			xSingleScatter = '(nsteps_target==1)'
 			xLiqSciHeight = '(etotliqsci>700)'
 			xLXeEnergy = '(etot_target>0)'
 
-			xTOF = '(timeliqsci-tpos[0]>30 && timeliqsci-tpos[0]<50)'
+			#print 'No TOF cut!\n'
+			xTOF = '(timeliqsci-tpos[0]>5 && timeliqsci-tpos[0]<40)'
 
 			xAll = '%s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLiqSciHeight, xLXeEnergy, xTOF)
 
@@ -891,6 +895,8 @@ class neriX_simulation_analysis(object):
 			fReduced = File(pathToReducedSimulationFiles, 'recreate')
 			hMC.Write()
 			fReduced.Close()
+		
+			neriX_analysis.success_message('Created new reduced MC file!')
 
 		self.fReduced = File(pathToReducedSimulationFiles, 'read')
 		hMC = self.fReduced.hMC
@@ -1237,7 +1243,7 @@ class neriX_simulation_analysis(object):
 	# ************************************************
 	
 	
-	def create_fake_data(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV):
+	def create_fake_data(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV):
 
 
 		# ------------------------------------------------
@@ -1253,7 +1259,7 @@ class neriX_simulation_analysis(object):
 		
 		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
 
-		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV, par1TacEffRV)
+		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV)
 		
 		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
 
@@ -1290,12 +1296,28 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 		
 		numRandomTrials = int(500*3.5)
-		seed(int(time.time()))
-		root.gRandom.SetSeed(0)
-		aS1 = np.full(numRandomTrials, -1)
-		aS2 = np.full(numRandomTrials, -1)
 		
-		c_full_matching_loop(numRandomTrials, aS1, aS2, self.hMC, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResolutionS1, intrinsicResolutionS2)
+		aS1 = np.full(num_mc_elements, -1, dtype=np.float32)
+		aS2 = np.full(num_mc_elements, -1, dtype=np.float32)
+		aEnergy = np.zeros(num_mc_elements, dtype=np.float32)
+		
+		for i in xrange(num_mc_elements):
+			aEnergy[i] = self.hMC.GetRandom()
+		
+		seed = np.asarray(int(time.time()*1000), dtype=np.int32)
+		num_trials = np.asarray(numRandomTrials, dtype=np.int32)
+		photonYield = np.asarray(photonYield, dtype=np.float32)
+		chargeYield = np.asarray(chargeYield, dtype=np.float32)
+		excitonToIonRatio = np.asarray(excitonToIonRatio, dtype=np.float32)
+		g1Value = np.asarray(g1Value, dtype=np.float32)
+		extractionEfficiency = np.asarray(extractionEfficiency, dtype=np.float32)
+		gasGainValue = np.asarray(gasGainValue, dtype=np.float32)
+		gasGainWidth = np.asarray(gasGainWidth, dtype=np.float32)
+		speRes = np.asarray(speRes, dtype=np.float32)
+		intrinsicResS1 = np.asarray(intrinsicResolutionS1, dtype=np.float32)
+		intrinsicResS2 = np.asarray(intrinsicResolutionS2, dtype=np.float32)
+		
+		c_full_matching_loop(seed, num_trials, aS1, aS2, aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
 		
 		
 		# ------------------------------------------------
@@ -1370,7 +1392,7 @@ class neriX_simulation_analysis(object):
 	# will simply call this for likelihood maximization
 	# and take just the likelihood - can call after that with
 	# best fit to get spectrum
-	def perform_mc_match_full(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}, num_mc_elements = -1):
+	def perform_mc_match_full(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}, num_mc_elements = -1):
 	
 		#fullStartTime = time.time()
 	
@@ -1411,7 +1433,7 @@ class neriX_simulation_analysis(object):
 		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
 		speResLogLikelihood = self.get_prior_log_likelihood_nuissance(speResLikelihood)
 
-		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV, par1TacEffRV)
+		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV)
 		tacEffLogLikelihood = self.get_prior_log_likelihood_nuissance(tacEffLikelihood)
 		
 		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
@@ -1532,8 +1554,6 @@ class neriX_simulation_analysis(object):
 		except:
 			return -np.inf, aS1S2MC
 
-		#print aS1S2MC
-		
 		if drawFit:
 
 			f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
@@ -1602,7 +1622,7 @@ class neriX_simulation_analysis(object):
 		
 	def mcmc_func_full_matching(self, aParametersToFit, drawFit=False, gpu_compute=False, is_worker=False, d_gpu_scale={}):
 		#print aParametersToFit
-		assert len(aParametersToFit) == 18
+		assert len(aParametersToFit) == 17
 		#startTime = time.time()
 		if d_gpu_scale == {}:
 			logLikelihood = self.perform_mc_match_full(*aParametersToFit, gpu_compute=gpu_compute, drawFit=drawFit)[0]
@@ -2052,7 +2072,7 @@ class neriX_simulation_analysis(object):
 			assert len(sParameters) == numDim
 			func = self.mcmc_func_charge_yield_mc_matching
 		elif sMeasurement == 'full_matching':
-			numDim = 18
+			numDim = 17
 			assert len(sParameters) == numDim
 			func = self.mcmc_func_full_matching
 		elif sMeasurement == 'full_matching_yields_only':
@@ -2214,21 +2234,21 @@ if __name__ == '__main__':
 	
 	# create fake data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False, create_fake_data=True)
-	#test.create_fake_data(7.6, 5.3, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	#test.create_fake_data(7.6, 5.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
 	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False)
-	#test.perform_mc_match_full(7.6, 5.3, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
+	test.perform_mc_match_full(11., 6., 0.1, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
 	
 	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))
 	#sParametersChargeYield = (('charge_yield', 7.0), ('res_intrinsic', 0.8), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_res_spe', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
-	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 1.0), ('res_s2', 1.0), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
+	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
 	# try using emcee to fit
 	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
 	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
 	#test.run_mcmc('full_matching', sParametersFullMatching, 128, 5, 1, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}) #10240
-	test.run_mcmc('full_matching', sParametersFullMatching, 2048, 50, 8, gpu_compute=False) #10240
+	#test.run_mcmc('full_matching', sParametersFullMatching, 2048, 50, 8, gpu_compute=False) #10240
 
 
 	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)

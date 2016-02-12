@@ -558,6 +558,57 @@ class LakeShore340(Instrument):
 		#return process_value
 
 
+	def read_resistance(self):
+		# read range
+		debug('reading resistance')
+		self.serial_lock.acquire()
+		self.serial_port.write('CDISP? 1\r')
+		self.serial_port.flush()
+		debug('after resistance write')
+		now = time.time()
+		reply = self.serial_port.read(11)
+		self.serial_lock.release()
+		debug('after resistance read')
+		
+		debug('resistance: module replied <%s>' % repr(reply))
+		return True
+	
+	
+	
+	def read_filter(self):
+		# read range
+		debug('reading filter')
+		self.serial_lock.acquire()
+		self.serial_port.write('FILTER? 1\r')
+		self.serial_port.flush()
+		debug('after filter write')
+		now = time.time()
+		reply = self.serial_port.read(8)
+		self.serial_lock.release()
+		debug('after filter read')
+		
+		debug('filter: module replied <%s>' % repr(reply))
+		return True
+	
+	
+	
+	def read_mode(self):
+		# read range
+		debug('reading mode')
+		self.serial_lock.acquire()
+		self.serial_port.write('CMODE? 1\r')
+		self.serial_port.flush()
+		debug('after mode write')
+		now = time.time()
+		reply = self.serial_port.read(2)
+		self.serial_lock.release()
+		debug('after mode read')
+		
+		debug('mode: module replied <%s>' % repr(reply))
+		return True
+	
+	
+
 
 	def read_loop(self):
 		# read pid
@@ -630,6 +681,9 @@ class LakeShore340(Instrument):
 		# for range and pid only
 		self.read_range()
 		self.read_pid()
+		self.read_resistance()
+		self.read_filter()
+		self.read_mode()
 		self.read_loop()
 
 		for input_name, input_pars in self.inputs.iteritems():
