@@ -22,7 +22,7 @@ sMeasurement = sys.argv[4]
 numWalkers = int(sys.argv[5])
 
 # change to switch between real and fake data
-realDate = False
+realDate = True
 
 if realDate:
 	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
@@ -37,7 +37,7 @@ else:
 pathToSamplerDictionary = nameOfResultsDirectory
 
 
-sPathToFile = '../%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
+sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
 
 if os.path.exists(sPathToFile):
 	print 'Beginning to load sampler.'

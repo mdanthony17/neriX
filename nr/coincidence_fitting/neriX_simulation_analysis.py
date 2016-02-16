@@ -2094,7 +2094,7 @@ class neriX_simulation_analysis(object):
 		else:
 			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
 		
-		self.sPathForSave = './%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+		self.sPathForSave = '%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
 		
 		if not os.path.isdir(self.sPathForSave):
@@ -2237,7 +2237,7 @@ if __name__ == '__main__':
 	#test.create_fake_data(7.6, 5.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False)
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 30, use_fake_data=False)
 	test.perform_mc_match_full(11., 6., 0.1, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
 	
 	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))

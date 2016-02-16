@@ -9,7 +9,7 @@ pathToReducedSimulationFiles = pathToThisModule + '/reduced_simulation_data/'
 pathToData = pathToThisModule + '/../analysis/full_angle_files/'
 pathToEfficiencyFiles = pathToThisModule + '/efficiency_files/'
 
-pathToFakeData = './fake_data/'
+pathToFakeData = pathToThisModule + '/mcmc_analysis/fake_data/'
 
 default_g1 = 0.095
 default_g1_uncertainty = 0.005
