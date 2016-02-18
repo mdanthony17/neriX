@@ -1,14 +1,12 @@
 {
 //=========Macro generated from canvas: c5/
-//=========  (Thu Feb 11 17:44:04 2016) by ROOT version5.34/26
-   TCanvas *c5 = new TCanvas("c5", "",25,445,640,480);
+//=========  (Tue Feb 16 16:58:24 2016) by ROOT version5.34/26
+   TCanvas *c5 = new TCanvas("c5", "",2595,47,640,480);
    c5->SetHighLightColor(2);
-   c5->Range(-5.500001,-14.5753,44.5,131.1777);
+   c5->Range(-5.5,-14.5753,44.5,131.1777);
    c5->SetFillColor(0);
    c5->SetBorderMode(0);
    c5->SetBorderSize(2);
-   c5->SetGridx();
-   c5->SetGridy();
    c5->SetFrameBorderMode(0);
    c5->SetFrameBorderMode(0);
    

@@ -1,7 +1,7 @@
 {
 //=========Macro generated from canvas: c6/
-//=========  (Thu Feb 11 17:44:05 2016) by ROOT version5.34/26
-   TCanvas *c6 = new TCanvas("c6", "",2586,45,640,480);
+//=========  (Tue Feb 16 16:58:25 2016) by ROOT version5.34/26
+   TCanvas *c6 = new TCanvas("c6", "",2503,45,640,480);
    c6->SetHighLightColor(2);
    c6->Range(-500,-36.91785,4500,332.2606);
    c6->SetFillColor(0);

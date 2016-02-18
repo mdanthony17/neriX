@@ -48,8 +48,10 @@ runsInUse = [15]
 for run in runsInUse:
 	run_files[run] = {}
 
-dAngleEnergy = {45.:10.7,
-				30.:5.0}
+dAngleEnergy = {62.:17.83,
+				45.:10.62,
+				35.:6.60,
+				30.:4.95}
 
 dVoltageField = {0.345:200.,
 				 1.054:500.,
@@ -58,8 +60,29 @@ dVoltageField = {0.345:200.,
 # files in set should be in the following order
 # data_root_file, mc_root_file, tac_efficiency_root_file, peak_finder_efficiency_root_file, g1_root_file, spe_root_file
 
-run_files[(15, 4.5, 1.054, 30.)] = ('results_1.054kV_30deg', 'nerixsim-5keV', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None)
-run_files[(15, 4.5, 1.054, 45.)] = ('results_1.054kV_45deg', 'nerixsim-10keV', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None)
+
+# 30 deg
+run_files[(15, 4.5, 0.345, 30.)] = ('results_0.345kV_30deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 1.054, 30.)] = ('results_1.054kV_30deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 2.356, 30.)] = ('results_2.356kV_30deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+
+
+# 35 deg
+run_files[(15, 4.5, 0.345, 35.)] = ('results_0.345kV_35deg', 'nerixsim-7keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 1.054, 35.)] = ('results_1.054kV_35deg', 'nerixsim-7keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 2.356, 35.)] = ('results_2.356kV_35deg', 'nerixsim-7keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+
+
+# 45 deg
+run_files[(15, 4.5, 0.345, 45.)] = ('results_0.345kV_45deg', 'nerixsim-10keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 1.054, 45.)] = ('results_1.054kV_45deg', 'nerixsim-10keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 2.356, 45.)] = ('results_2.356kV_45deg', 'nerixsim-10keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+
+
+# 62 deg
+run_files[(15, 4.5, 0.345, 62.)] = ('results_0.345kV_62deg', 'nerixsim-20keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 1.054, 62.)] = ('results_1.054kV_62deg', 'nerixsim-20keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 2.356, 62.)] = ('results_2.356kV_62deg', 'nerixsim-20keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
 
 
 

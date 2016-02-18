@@ -33,8 +33,8 @@ s2WidthMin = 40.
 s2WidthMax = 160.
 
 tofNumBins = 100
-tofMin = -50
-tofMax = 200
+tofMin = -80
+tofMax = 120
 
 psdNumBins = 50
 psdMin = 0
@@ -43,6 +43,10 @@ psdMax = 1
 lhNumBins = 50
 lhMin = 0
 lhMax = 2.5
+
+liqsciS1TimeDiffBins = 200
+liqsciS1TimeDiffMin = -100
+liqsciS1TimeDiffMax = 100
 
 
 #--------------- End Parameters to Change ----------------
@@ -71,11 +75,11 @@ current_analysis.add_cut('S1sTotBottom[0] > 0')
 current_analysis.add_z_cut()
 current_analysis.add_radius_cut(0, 0.85)
 current_analysis.add_single_scatter_cut()
-current_analysis.add_s1_liqsci_peak_cut()
+#current_analysis.add_s1_liqsci_peak_cut()
 current_analysis.add_xs1asym_cut()
 current_analysis.add_xs2asym_cut()
 current_analysis.add_temp_neutron_cut(degreeSetting)
-current_analysis.add_temp_tof_cut(degreeSetting)
+#current_analysis.add_temp_tof_cut(degreeSetting)
 #current_analysis.add_cut('TimeOfFlight > -50 && TimeOfFlight < -10') # accidental spec
 
 #current_analysis.add_cut('S1sPeak[0] > 395 && S1sPeak[0] < 425')
@@ -94,40 +98,58 @@ print '\nUsing S1 Branch: %s \n\n' % s1Branch
 print '\nUsing S2 Branch: %s \n\n' % s2Branch
 
 
-print '\n\nTotal number of events: %s' % current_analysis.get_num_events()
-print 'Total time: %.0f \n\n' % current_analysis.get_livetime()
-print 'Rate: %.2f events per hour \n\n' % (float(current_analysis.get_num_events()) / current_analysis.get_livetime() * 3600.)
+
+hLiqSciS1TimeDiff = Hist(liqsciS1TimeDiffBins, liqsciS1TimeDiffMin, liqsciS1TimeDiffMax, name='hLiqSciS1TimeDiff', title='Time Between Liqsci and S1 Spectrum'+sForHistograms, drawstyle='hist')
+current_analysis.Draw('LiqSciPeak[] - S1sPeak[0]', hist=hLiqSciS1TimeDiff, selection=current_analysis.get_cuts())
+hLiqSciS1TimeDiff.GetXaxis().SetTitle('Time Between Liqsci and S1 Spectrum [samples]')
+hLiqSciS1TimeDiff.GetYaxis().SetTitle('Counts')
+hLiqSciS1TimeDiff.SetStats(1)
+
+
+
+current_analysis.add_s1_liqsci_peak_cut()
+
+hTOF = Hist(tofNumBins, tofMin, tofMax, name='hTOF', title='TOF Spectrum'+sForHistograms, drawstyle='hist')
+current_analysis.Draw('TimeOfFlight', hist=hTOF, selection=current_analysis.get_cuts())
+hTOF.GetXaxis().SetTitle('TOF [ns]')
+hTOF.GetYaxis().SetTitle('Counts')
+hTOF.SetStats(1)
+
+current_analysis.add_temp_tof_cut(degreeSetting)
+#current_analysis.set_event_list()
+
+
 
 
 #current_analysis.get_lT1()[0].Scan('EventId:S1sPeak[0]:%s:S2sPeak[0]:S2sTotBottom[0]:TimeOfFlight' % sS1Branch, '%s > 6' % sS1Branch)
 
 hS1S2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='hS1S2', title='S1 vs S2'+sForHistograms)
-current_analysis.Draw('%s:%s' % (s1Branch, s2Branch), hist=hS1S2)
+current_analysis.Draw('%s:%s' % (s1Branch, s2Branch), hist=hS1S2, selection=current_analysis.get_cuts())
 hS1S2.GetXaxis().SetTitle('%s [PE]' % s1Branch)
 hS1S2.GetYaxis().SetTitle('%s [PE]' % s2Branch)
 hS1S2.SetStats(0)
 
 hXY = Hist2D(xyNumBins, xyMin, xyMax, xyNumBins, xyMin, xyMax, name='hXY', title='XY Dist'+sForHistograms)
-current_analysis.Draw('X:Y', hist=hXY)
+current_analysis.Draw('X:Y', hist=hXY, selection=current_analysis.get_cuts())
 hXY.GetXaxis().SetTitle('X [mm]')
 hXY.GetYaxis().SetTitle('Y [mm]')
 hXY.SetStats(0)
 
 hUniformity = Hist2D(rNumBins, rMin**2, rMax**2, dtNumBins, dtMin, dtMax, name='hUniformity', title='Uniformity'+sForHistograms)
-current_analysis.Draw('R*R:-dt', hist=hUniformity)
+current_analysis.Draw('R*R:-dt', hist=hUniformity, selection=current_analysis.get_cuts())
 hUniformity.GetXaxis().SetTitle('R^2 [mm^2]')
 hUniformity.GetYaxis().SetTitle('dt [#mus]')
 hUniformity.SetStats(0)
 
 hWidth = Hist2D(s2WidthNumBins, s2WidthMin, s2WidthMax, dtNumBins, dtMin, dtMax, name='hWidth', title='S2sLowWidth vs dt'+sForHistograms)
-current_analysis.Draw('S2sLowWidth[0]:-dt', hist=hWidth)
+current_analysis.Draw('S2sLowWidth[0]:-dt', hist=hWidth, selection=current_analysis.get_cuts())
 hWidth.SetTitle('S2sLowWidth[0] [10 ns]')
 hWidth.GetYaxis().SetTitle('dt [#mus]')
 hWidth.SetStats(0)
 
 hS1 = Hist(s1NumBins, s1Min, s1Max, name='hS1', title='S1 Spectrum'+sForHistograms)
 hS1.SetMarkerSize(0)
-current_analysis.Draw(s1Branch, hist=hS1)
+current_analysis.Draw(s1Branch, hist=hS1, selection=current_analysis.get_cuts())
 hS1.GetXaxis().SetTitle('%s [PE]' % s1Branch)
 hS1.GetYaxis().SetTitle('Counts')
 #hS1.Scale(1./float(current_analysis.get_livetime()))
@@ -135,25 +157,24 @@ hS1.SetStats(0)
 
 hS2 = Hist(s2NumBins, s2Min, s2Max, name='hS2', title='S2 Spectrum'+sForHistograms)
 hS2.SetMarkerSize(0)
-current_analysis.Draw(s2Branch, hist=hS2)
+current_analysis.Draw(s2Branch, hist=hS2, selection=current_analysis.get_cuts())
 hS2.GetXaxis().SetTitle('%s [PE]' % s2Branch)
 hS2.GetYaxis().SetTitle('Counts')
 #hS2.Scale(1./float(current_analysis.get_livetime()))
 hS2.SetStats(0)
 
-hTOF = Hist(tofNumBins, tofMin, tofMax, name='hTOF', title='TOF Spectrum'+sForHistograms, drawstyle='hist')
-current_analysis.Draw('TimeOfFlight', hist=hTOF)
-hTOF.GetXaxis().SetTitle('TOF [ns]')
-hTOF.GetYaxis().SetTitle('Counts')
-hTOF.SetStats(1)
 
 hPSD = Hist2D(lhNumBins, lhMin, lhMax, psdNumBins, psdMin, psdMax, name='hPSD', title='PSD vs Pulse Height'+sForHistograms)
-current_analysis.Draw('LiqSciHeight[]:LiqSciTailRaw[]/LiqSciRaw[]', hist=hPSD)
+current_analysis.Draw('LiqSciHeight[]:LiqSciTailRaw[]/LiqSciRaw[]', hist=hPSD, selection=current_analysis.get_cuts())
 hPSD.GetXaxis().SetTitle('LiqSciHeight [V]')
 hPSD.GetYaxis().SetTitle('PSD Parameter')
 hPSD.SetMarkerSize(0)
 hPSD.SetStats(0)
 
+
+print '\n\nTotal number of events: %s' % hS2.Integral()
+print 'Total time: %.0f \n\n' % current_analysis.get_livetime()
+print 'Rate: %.2f events per hour \n\n' % (float(hS2.Integral()) / current_analysis.get_livetime() * 3600.)
 
 
 #draw histograms onto canvases
@@ -191,10 +212,16 @@ c8 = root.TCanvas('c8','',1280/2,480)
 hPSD.Draw()
 c8.Update()
 
+c9 = root.TCanvas('c9','',1280/2,480)
+hLiqSciS1TimeDiff.Draw()
+c9.Update()
+
 
 neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c1, 's1s2_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
 neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c5, 's1_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
 neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c6, 's2_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
+neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c7, 'tof_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
+neriX_analysis.save_plot(['full_angle_files', 'results', '%.3fkV_%ddeg' % (cathodeSetting, degreeSetting)], c9, 'liqsci_s1_time_diff_%.3fkV_%ddeg' % (cathodeSetting, degreeSetting))
 
 
 
@@ -212,6 +239,12 @@ if response == 'y':
 	
 	hS2.SetName('hS2')
 	hS2.Write()
+	
+	hTOF.SetName('hTOF')
+	hTOF.Write()
+	
+	hLiqSciS1TimeDiff.SetName('hLiqSciS1TimeDiff')
+	hLiqSciS1TimeDiff.Write()
 
 	sCuts = root.TObjString('cuts_used')
 	sCuts.Write(current_analysis.get_cuts(), root.TObject.kOverwrite)

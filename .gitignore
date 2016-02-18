@@ -6,6 +6,6 @@ nr/coincidence_fitting/simulated_data/
 nr.zip
 nr/coincidence_fitting/neriX_simulation_config.py
 nr/coincidence_fitting/neriX_simulation_config.pyc
-nr/coincidence_fitting/mcmc_analysis/fake_data/
+nr/coincidence_fitting/mcmc_analysis/fake_data/results/
 nr/coincidence_fitting/mcmc_analysis/mcmc_results/
 nr/coincidence_fitting/mcmc_analysis/mcmc_results_local/

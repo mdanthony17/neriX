@@ -14,15 +14,18 @@ run = neriX_analysis.neriX_analysis(file)
 
 #choose cuts
 #run.add_z_cut()
-#run.add_radius_cut(0., 0.85)
-#run.add_single_scatter_cut()
+run.add_radius_cut(0., 0.85)
+run.add_single_scatter_cut()
+run.add_single_scatter_cut()
+run.add_xs1asym_cut()
+run.add_xs2asym_cut()
 
-run.add_cut('(S2sTot[S2Order[0]] < 300)')
-run.add_cut('(S2sTotBottom[S2Order[0]] > 5)')
-run.add_cut('(S2sTotTop[S2Order[0]] > 5)')
+#run.add_cut('(S2sTot[S2Order[0]] < 300)')
+#run.add_cut('(S2sTotBottom[S2Order[0]] > 5)')
+#run.add_cut('(S2sTotTop[S2Order[0]] > 5)')
 #run.add_cut('(S2sPeak[S2Order[0]] > (S1sPeak[0]+100) && S2sPeak[S2Order[0]] < (S1sPeak[0]+160))')
-run.add_cut('(S2sPeak[S2Order[0]] > (S1sPeak[0]+110) && S2sPeak[S2Order[0]] < S2sLeftEdge[0])')
-run.add_cut('S2sLowWidth[S2Order[0]] < 150')
+#run.add_cut('(S2sPeak[S2Order[0]] > (S1sPeak[0]+110) && S2sPeak[S2Order[0]] < S2sLeftEdge[0])')
+#run.add_cut('S2sLowWidth[S2Order[0]] < 150')
 
 run.set_event_list()
 
@@ -33,15 +36,15 @@ run.set_event_list()
 #parameter 1 will be on x-axis
 # range for 12/30 PMT5 out (1420019400, 1420020000)
 # range for 12/30 PMT3 out (1420002200, 1420002310)
-parameter1ToExamine = 'S2sTotBottom[S2Order[0]]' # need to correct in Z
+parameter1ToExamine = 'cpS1sTotBottom[0]' # need to correct in Z
 lowerBound1 = 0
-upperBound1 = 120
+upperBound1 = 400
 nBins1 = 40
 
 #parameter 2 will be on y-axis
-parameter2ToExamine = 'S2sTotTop[S2Order[0]]'#'S2sLowWidth[S2Order[0]]'#'S2sRightEdge[S2Order[0]] - S2sLeftEdge[S2Order[0]]'
+parameter2ToExamine = 'cpS2sTotBottom[0]'#'S2sLowWidth[S2Order[0]]'#'S2sRightEdge[S2Order[0]] - S2sLeftEdge[S2Order[0]]'
 lowerBound2 = 0
-upperBound2 = 120
+upperBound2 = 30e3
 nBins2 = 40
 
 #choose options

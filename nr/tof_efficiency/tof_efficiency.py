@@ -155,6 +155,7 @@ hEffForFitting.Divide(hNoCut)
 
 fEfficiency = root.TF1('fEfficiency', '1. - exp(-[0]*x)', lowerBoundS1, upperBoundS1)
 fEfficiency.SetParLimits(0, 0.01, 50)
+fEfficiency.SetParameter(0, 0.09)
 
 
 c1.cd()

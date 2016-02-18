@@ -7,7 +7,7 @@ from rootpy import stl
 from rootpy.io import File
 from rootpy.tree import Tree, TreeModel, TreeChain
 from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
-import neriX_simulation_datasets, neriX_simulation_config, neriX_analysis
+import neriX_simulation_datasets, neriX_simulation_config, neriX_analysis, neriX_datasets
 import neriX_simulation_datasets
 import numpy as np
 from math import exp, factorial, erf, ceil, log, pow
@@ -624,7 +624,10 @@ class track_steps_fit:
 
 
 class neriX_simulation_analysis(object):
-	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, use_fake_data=False, create_fake_data=False):
+	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, numMCEvents=50000, use_fake_data=False, create_fake_data=False, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=False):
+	
+		# if not in create data mode kill program trying
+		# to run with adjusted accidental
 	
 		copy_reg.pickle(types.MethodType, reduce_method)
 
@@ -632,8 +635,10 @@ class neriX_simulation_analysis(object):
 		# Pull filenames and create save paths
 		# ------------------------------------------------
 
-		(data_root_file, mc_root_file, tac_efficiency_root_file, peak_finder_efficiency_root_file, trig_efficiency_root_file, g1_root_file, spe_root_file, gas_gain_root_file, g2_root_file) = neriX_simulation_datasets.run_files[(run, anodeVoltage, cathodeVoltage, angle)]
-		self.anodeSetting, self.cathodeSetting, self.degreeSetting = anodeVoltage, cathodeVoltage, angle
+		# TOF will be used for accidentals if useTOF set to True, otherwise
+		# will use liqscipeak - s1speak[0]
+		(data_root_file, mc_root_file, mc_accidental_root_file, tac_efficiency_root_file, peak_finder_efficiency_root_file, trig_efficiency_root_file, g1_root_file, spe_root_file, gas_gain_root_file, g2_root_file, useTOF) = neriX_simulation_datasets.run_files[(run, anodeVoltage, cathodeVoltage, angle)]
+		self.anodeSetting, self.cathodeSetting, self.degreeSetting, self.numMCEvents = anodeVoltage, cathodeVoltage, angle, numMCEvents
 		
 		
 			
@@ -643,7 +648,7 @@ class neriX_simulation_analysis(object):
 		# Set paths to files and grab constants
 		# ------------------------------------------------
 
-		dNamesForFiles = {'data':data_root_file, 'tac_efficiency':tac_efficiency_root_file, 'peak_finder_efficiency':peak_finder_efficiency_root_file, 'trig_efficiency':trig_efficiency_root_file, 'MC':mc_root_file}
+		dNamesForFiles = {'data':data_root_file, 'tac_efficiency':tac_efficiency_root_file, 'peak_finder_efficiency':peak_finder_efficiency_root_file, 'trig_efficiency':trig_efficiency_root_file, 'MC':mc_root_file, 'MC_accidentals':mc_accidental_root_file}
 		dFilesForAnalysis = {}
 		
 		# count function calls for tracking status
@@ -677,6 +682,8 @@ class neriX_simulation_analysis(object):
 			elif fileType == 'trig_efficiency':
 				fileName = neriX_simulation_datasets.pathToEfficiencyFiles + fileName
 			elif fileType == 'MC':
+				fileName = fileName
+			elif fileType == 'MC_accidentals':
 				fileName = fileName
 
 			# add file to dictionary
@@ -783,6 +790,17 @@ class neriX_simulation_analysis(object):
 			self.hS1S2.Sumw2()
 			self.aS1S2 = convert_2D_hist_to_matrix(self.hS1S2)
 			
+			
+			# load TOF histogram
+			self.hTOF = self.fData.hTOF
+			self.hTOF.Sumw2()
+			
+			# load liqsci s1 time difference histogram
+			self.hLiqSciS1TimeDiff = self.fData.hLiqSciS1TimeDiff
+			self.hLiqSciS1TimeDiff.Sumw2()
+			
+			
+			
 		else:
 			print '\n\nCurrently in creating fake data mode so cannot run analysis!\n\n'
 			sFakeData = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
@@ -799,11 +817,15 @@ class neriX_simulation_analysis(object):
 		
 
 		# ------------------------------------------------
-		# Load MC file or create reduced file if not present
+		# Load MC files or create reduced file if not present
 		# and load into easy_graph
 		# ------------------------------------------------
 
-		self.egMC, self.hMC = self.load_mc_data(dFilesForAnalysis['MC'])
+		self.egMC, self.hMC = self.load_mc_data(dFilesForAnalysis['MC'], 'MC')
+		self.egAccidentalsMC, self.hAccidentalsMC = self.load_mc_data(dFilesForAnalysis['MC_accidentals'], 'MC_accidentals')
+		
+		# fill energy array
+		self.fill_energy_array(useTOF, viewEnergySpectrum=False, adjustmentTerm=accidentalBkgAdjustmentTerm, assumeRelativeAccidentalRate=assumeRelativeAccidentalRate)
 
 		# ------------------------------------------------
 		# Load fSigmoid from tac efficiency file
@@ -856,10 +878,90 @@ class neriX_simulation_analysis(object):
 	
 	def read_gas_gain_from_file(self, gas_gain_root_file):
 		return (0, 0)
+	
+	
+	
+	def fill_energy_array(self, useTOF, viewEnergySpectrum=False, adjustmentTerm=0., assumeRelativeAccidentalRate=False):
+		#self.numMCEvents
+		#self.hMC
+		#self.hAccidentalsMC
+		
+		if assumeRelativeAccidentalRate == False:
+			# first need to look at the percent of events
+			# due to accidental coincidences
+			if useTOF:
+				lAccidentalRanges = neriX_datasets.lTOFAccidentalsRanges
+				try:
+					lTimeBounds = neriX_datasets.dTOFBounds[(self.degreeSetting, self.cathodeSetting)]
+				except:
+					neriX_analysis.failure_message('Could not find bound for current cathode and degree settings!')
+					sys.exit()
+				hTimeSpec = self.hTOF
+			
+			else:
+				neriX_analysis.failure_message('Not implemented yet!')
+				sys.exit()
+
+			# count number of accidentals in set ranges
+			numAccidentalsInRanges = 0
+			accidentalsWindowSize = 0
+			for lRange in lAccidentalRanges:
+				lowerBoundTime = lRange[0]
+				upperBoundTime = lRange[1]
+				
+				lowerBoundBin = hTimeSpec.FindBin(lowerBoundTime)
+				upperBoundBin = hTimeSpec.FindBin(upperBoundTime)
+				
+				numAccidentalsInRanges += hTimeSpec.Integral(lowerBoundBin, upperBoundBin)
+				accidentalsWindowSize += (upperBoundTime - lowerBoundTime)
 
 
+			# repeat for actual time spec
+			lowerBoundTime = lTimeBounds[0]
+			upperBoundTime = lTimeBounds[1]
+			
+			lowerBoundBin = hTimeSpec.FindBin(lowerBoundTime)
+			upperBoundBin = hTimeSpec.FindBin(upperBoundTime)
+			
+			numEventsInTimeWindow = hTimeSpec.Integral(lowerBoundBin, upperBoundBin)
+			timeWindowSize = (upperBoundTime - lowerBoundTime)
 
-	def load_mc_data(self, mc_root_file):
+			scaledNumAccidentals = float(numAccidentalsInRanges)*timeWindowSize/accidentalsWindowSize
+			scaledNumAccidentals *= (1. + adjustmentTerm)
+			
+			percentOfAccidentalsInTimeWindow = float(scaledNumAccidentals) / (scaledNumAccidentals + numEventsInTimeWindow)
+			
+			#print scaledNumAccidentals, numEventsInTimeWindow, percentOfAccidentalsInTimeWindow
+		else:
+			percentOfAccidentalsInTimeWindow = assumeRelativeAccidentalRate / (1. + assumeRelativeAccidentalRate)
+		
+		# have the percent of events that are accidentals so
+		# now fill energy array
+		
+		random.seed()
+		self.aEnergy = np.zeros(self.numMCEvents, dtype=np.float32)
+		for i in xrange(self.numMCEvents):
+			randNum = random.random()
+			if randNum < percentOfAccidentalsInTimeWindow:
+				self.aEnergy[i] = self.hAccidentalsMC.GetRandom()
+			else:
+				self.aEnergy[i] = self.hMC.GetRandom()
+				
+		if viewEnergySpectrum:
+			cEnergySpec = Canvas()
+			hEnergySpec = self.hMC.empty_clone()
+			hEnergySpec.fill_array(self.aEnergy)
+			hEnergySpec.Draw()
+			cEnergySpec.Update()
+			raw_input('Press enter to continue...')
+			
+			del hEnergySpec
+			del cEnergySpec
+		
+		
+
+
+	def load_mc_data(self, mc_root_file, sFileType):
 		# check if reduced file exists
 		pathToReducedSimulationFiles = neriX_simulation_datasets.pathToReducedSimulationFiles + mc_root_file
 		if not os.path.exists(pathToReducedSimulationFiles):
@@ -869,17 +971,29 @@ class neriX_simulation_analysis(object):
 			pathToSimulatedFile = neriX_simulation_datasets.pathToSimulationFiles
 			fSimulation = File(pathToSimulatedFile + mc_root_file)
 
-			# set cuts
-			xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
-			xZ = '(zpos[0]>-20 && zpos[0]<-4)'
-			xSingleScatter = '(nsteps_target==1)'
-			xLiqSciHeight = '(etotliqsci>700)'
-			xLXeEnergy = '(etot_target>0)'
+			if sFileType == 'MC':
 
-			#print 'No TOF cut!\n'
-			xTOF = '(timeliqsci-tpos[0]>5 && timeliqsci-tpos[0]<40)'
+				# set cuts
+				xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
+				xZ = '(zpos[0]>-20 && zpos[0]<-4)'
+				xSingleScatter = '(nsteps_target==1)'
+				xLiqSciHeight = '(etotliqsci>700)'
+				xLXeEnergy = '(etot_target>0)'
 
-			xAll = '%s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLiqSciHeight, xLXeEnergy, xTOF)
+				#print 'No TOF cut!\n'
+				neriX_analysis.warning_message('Need to finalize how tof is chosen in MC data!')
+				xTOF = '(timeliqsci-tpos[0]>5 && timeliqsci-tpos[0]<40)'
+
+				xAll = '%s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLiqSciHeight, xLXeEnergy, xTOF)
+			
+			elif sFileType == 'MC_accidentals':
+				# set cuts
+				xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
+				xZ = '(zpos[0]>-20 && zpos[0]<-4)'
+				xSingleScatter = '(nsteps_target==1)'
+				xLXeEnergy = '(etot_target>0)'
+
+				xAll = '%s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy)
 
 			# pull min, max, and bins
 			energyMin = neriX_simulation_datasets.energyMin
@@ -899,6 +1013,8 @@ class neriX_simulation_analysis(object):
 			fReduced.Close()
 		
 			neriX_analysis.success_message('Created new reduced MC file!')
+		
+		
 
 		self.fReduced = File(pathToReducedSimulationFiles, 'read')
 		hMC = self.fReduced.hMC
@@ -1297,14 +1413,10 @@ class neriX_simulation_analysis(object):
 		# Set seeds and number of trials
 		# ------------------------------------------------
 		
-		numRandomTrials = int(500*3.5)
-		
-		aS1 = np.full(num_mc_elements, -1, dtype=np.float32)
-		aS2 = np.full(num_mc_elements, -1, dtype=np.float32)
-		aEnergy = np.zeros(num_mc_elements, dtype=np.float32)
-		
-		for i in xrange(num_mc_elements):
-			aEnergy[i] = self.hMC.GetRandom()
+		numRandomTrials = self.numMCEvents
+	
+		aS1 = np.full(numRandomTrials, -1, dtype=np.float32)
+		aS2 = np.full(numRandomTrials, -1, dtype=np.float32)
 		
 		seed = np.asarray(int(time.time()*1000), dtype=np.int32)
 		num_trials = np.asarray(numRandomTrials, dtype=np.int32)
@@ -1319,7 +1431,7 @@ class neriX_simulation_analysis(object):
 		intrinsicResS1 = np.asarray(intrinsicResolutionS1, dtype=np.float32)
 		intrinsicResS2 = np.asarray(intrinsicResolutionS2, dtype=np.float32)
 		
-		c_full_matching_loop(seed, num_trials, aS1, aS2, aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
+		c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
 		
 		
 		# ------------------------------------------------
@@ -1394,13 +1506,15 @@ class neriX_simulation_analysis(object):
 	# will simply call this for likelihood maximization
 	# and take just the likelihood - can call after that with
 	# best fit to get spectrum
-	def perform_mc_match_full(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}, num_mc_elements = -1):
+	def perform_mc_match_full(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}):
 	
 		#fullStartTime = time.time()
 	
 		#neriX_analysis.warning_message('Forcing grid')
 		#d_gpu_scale={'block':(256,256,1), 'grid':(1,1)}
 		#print d_gpu_scale
+		
+		num_mc_elements = self.numMCEvents
 	
 		# set default number of mc elements if using cpu and
 		# not specified and set number if using gpu
@@ -1488,10 +1602,6 @@ class neriX_simulation_analysis(object):
 		
 		aS1 = np.full(num_mc_elements, -1, dtype=np.float32)
 		aS2 = np.full(num_mc_elements, -1, dtype=np.float32)
-		aEnergy = np.zeros(num_mc_elements, dtype=np.float32)
-		
-		for i in xrange(num_mc_elements):
-			aEnergy[i] = self.hMC.GetRandom()
 		
 		seed = np.asarray(int(time.time()*1000), dtype=np.int32)
 		num_trials = np.asarray(num_mc_elements, dtype=np.int32)
@@ -1514,12 +1624,12 @@ class neriX_simulation_analysis(object):
 			mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
 			observables_func = mod.get_function('gpu_full_observables_production')
 			
-			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), drv.In(aEnergy), drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2))
+			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), drv.In(self.aEnergy), drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2))
 			
 			observables_func(*tArgs, **d_gpu_scale)
 		
 		else:
-			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
+			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
 		
 		#print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
 
@@ -1551,7 +1661,7 @@ class neriX_simulation_analysis(object):
 		
 		try:
 			#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
-			aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
+			#aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
 			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
 		except:
 			return -np.inf, aS1S2MC
@@ -2233,12 +2343,12 @@ if __name__ == '__main__':
 	#test.perform_mc_match_full(0.3, 0.34, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
 	
 	# create fake data
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False, create_fake_data=True)
-	#test.create_fake_data(7.6, 5.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 62, use_fake_data=False, create_fake_data=True, numMCEvents=4100, assumeRelativeAccidentalRate=0.2)
+	test.create_fake_data(9.08, 4.82, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 30, use_fake_data=False)
-	test.perform_mc_match_full(11., 6., 0.1, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False)
+	#test.perform_mc_match_full(12.05, 6.5, 0.3, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
 	
 	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))
 	#sParametersChargeYield = (('charge_yield', 7.0), ('res_intrinsic', 0.8), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_res_spe', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))

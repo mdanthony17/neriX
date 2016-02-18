@@ -37,10 +37,10 @@ gainAdjustmentTerm = 1.#/1.034
 #energyOfPeak = 197.1e3 # eV
 #dFitParameters = fits_completed_164keV_peak.dFitParameters
 #energyOfPeak = 163.9e3 # eV
-#dFitParameters = fits_completed_cs137.dFitParameters
-#energyOfPeak = 662e3
-dFitParameters = fits_completed_na22.dFitParameters
-energyOfPeak = 511e3
+dFitParameters = fits_completed_cs137.dFitParameters
+energyOfPeak = 662e3
+#dFitParameters = fits_completed_na22.dFitParameters
+#energyOfPeak = 511e3
 
 lowestCathodeSettingFilename = ''
 
