@@ -10,17 +10,20 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
 import neriX_simulation_datasets, neriX_simulation_config, neriX_analysis, neriX_datasets
 import neriX_simulation_datasets
 import numpy as np
-from math import exp, factorial, erf, ceil, log, pow
+from math import exp, factorial, erf, ceil, log, pow, floor
 from scipy import optimize, misc, stats
 from scipy.stats import norm
 import copy_reg, types, pickle, click, time
 from subprocess import call
-"""
+
 import cuda_full_observables_production
 from pycuda.compiler import SourceModule
 import pycuda.driver as drv
 import pycuda.tools
-"""
+import pycuda.gpuarray
+#import pycuda.autoinit
+#mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
+
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
@@ -105,140 +108,6 @@ def smart_log_likelihood(aData, aMC, numMCEvents, confidenceIntervalLimit=0.95):
 			totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
 
 	return totalLogLikelihood
-
-
-
-# Below is a helper method for finding binomials in a more general
-# way.  Now can give an arbitrary range and find all integers in that
-# range like is needed for the binomial function.
-def integers_in_range(start, stop, stepSize=1, tolerance=0.01):
-	if stepSize < 1:
-		print 'WARNING: step size less than 1 will give bad results since looking for integers in given range.'
-		sys.exit()
-	
-	# want [start, stop) so alter start and stop to ensure
-	# that we have inclusive then exclusive
-	start = round(start) - tolerance
-	# if feeding floats close to ints want to make sure
-	# first value is included
-	stop = round(stop) - 3*tolerance
-	# need to make sure stop is slightly smaller than start
-	# to exclude last value
-
-	lIntegers = []
-	countSteps = 0
-	while (start + countSteps*stepSize) < stop:
-		currentInteger = ceil(start + countSteps*stepSize)
-		lIntegers.append(currentInteger)
-		countSteps += 1
-
-	return lIntegers
-
-
-# returns probability of binomial success in range
-# range is inclusive, exclusive: [low, high)
-# ex: lowBoundRange=-0.5, upperBoundRange = 2.5: P = P(0) + P(1) + P(2)
-def binomial_in_range(probabiltyOfSuccess, numberOfTrials, lowBoundRange, highBoundRange):
-	lIntegers = integers_in_range(lowBoundRange, highBoundRange)
-	prob = 0
-	
-	for numberOfSucceses in lIntegers:
-		if numberOfTrials < numberOfSucceses:
-			continue
-		else:
-			# computationally unstable
-			"""
-			nChooseK = misc.comb(numberOfTrials, numberOfSucceses)
-			probabilityTerm = probabiltyOfSuccess**numberOfSucceses * (1-probabiltyOfSuccess)**(numberOfTrials-numberOfSucceses)
-			if np.isnan(nChooseK) or np.isnan(probabilityTerm):
-				print 'NAN!!!!!!!!!!!!!\n\n'
-			#print numberOfTrials, numberOfSucceses, nChooseK, probabilityTerm
-			prob += nChooseK*probabilityTerm
-			"""
-
-			# log version
-			"""
-			nChooseK = smart_stirling(numberOfTrials) - smart_stirling(numberOfSucceses) - smart_stirling(numberOfTrials - numberOfSucceses)
-			probabilityTerm = numberOfSucceses*smart_log(probabiltyOfSuccess) + (numberOfTrials-numberOfSucceses)*smart_log(1.-probabiltyOfSuccess)
-			if nChooseK + probabilityTerm < -10:
-				continue
-			"""
-			#print numberOfTrials, numberOfSucceses, np.exp(nChooseK), np.exp(probabilityTerm)
-			prob += smart_binomial(numberOfSucceses, numberOfTrials, probabiltyOfSuccess)#np.exp(nChooseK + probabilityTerm)
-			
-	
-	# scipy version
-	#prob += stats.binom.cdf(highBoundRange, numberOfTrials, probabiltyOfSuccess) - stats.binom.cdf(lowBoundRange, numberOfTrials, probabiltyOfSuccess)
-	#print prob
-
-	return  prob
-
-
-
-
-def produce_binomial_probabilities_range(probabiltyOfSuccess, numberOfTrials, lowBound, highBound, stepSize = 1):
-	# make sure that bounds and stepsize are integers
-	assert isinstance(numberOfTrials, int)
-	#assert isinstance(lowBound, int)
-	#assert isinstance(highBound, int)
-	assert isinstance(stepSize, int)
-	#assert (highBound - lowBound) % stepSize == 0
-	
-	if probabiltyOfSuccess < 0 or probabiltyOfSuccess > 1:
-		#print 'Probability takes on value less than zero or greater than one - return zeros.'
-		return np.zeros((highBound - lowBound) / stepSize)
-	
-	if stepSize != 1:
-		print 'WARNING: This function should be used with a step size of one unless one handles rebinning properly (currently does not).'
-	
-	aBinomial = np.zeros((highBound - lowBound) / stepSize)
-
-	for i, numberOfSucceses in enumerate(xrange(lowBound, highBound, stepSize)):
-		"""
-		if numberOfSucceses < 0 or numberOfSucceses > numberOfTrials:
-			aBinomial[i] = 0.
-		else:
-			nChooseK = misc.comb(numberOfTrials, numberOfSucceses)
-			probabilityTerm = probabiltyOfSuccess**numberOfSucceses * (1-probabiltyOfSuccess)**(numberOfTrials-numberOfSucceses)
-			aBinomial[i] = nChooseK*probabilityTerm
-		"""
-		aBinomial[i] = binomial_in_range(probabiltyOfSuccess, numberOfTrials, numberOfSucceses, numberOfSucceses + stepSize)
-
-	return aBinomial
-
-
-# the set inputs to this function are inplace of the full arrays
-# this should save time and memory
-# tuples should be in form (low, high, step size) where low is
-# left edge of low bin and high is right edge of high bin
-def quanta_to_exciton_and_ions(aQuanta, excitonToIonRatio, sQuanta, sExcitons, sIons):
-	numQuanta = int(sQuanta[1] - sQuanta[0]) / int(sQuanta[2])
-	numExcitons = int(sExcitons[1] - sExcitons[0]) / int(sExcitons[2])
-	numIons = int(sIons[1] - sIons[0]) / int(sIons[2])
-	
-	probIonSuccess = 1. / (1. + excitonToIonRatio)
-	probExcitonSuccess = 1. - probIonSuccess
-	
-	aQuntaCenters = np.asarray(integers_in_range(*sQuanta))
-	aUnfolding = np.zeros(shape=(numQuanta, numExcitons, numIons))
-
-	for i, lowEdgeExcitons in enumerate(drange(*(sExcitons))):
-		for j, lowEdgeIons in enumerate(drange(*(sIons))):
-			currentBinomial = lambda currentNumberQuanta: binomial_in_range(probExcitonSuccess, currentNumberQuanta, lowEdgeExcitons, lowEdgeExcitons + sExcitons[2]) * binomial_in_range(probIonSuccess, currentNumberQuanta, lowEdgeIons, lowEdgeIons + sIons[2])
-			uFuncBinomial = np.frompyfunc(currentBinomial, 1, 1)
-			aUnfolding[i, j, :] = uFuncBinomial(aQuntaCenters)
-
-	return np.tensordot(aUnfolding, aQuanta)
-
-
-
-
-def produce_gaussian_probabilities_range(aXValues, mu, sigma):
-	try:
-		aProb = mlab.normpdf(aXValues, mu, sigma)
-	except RuntimeWarning:
-		aProb = np.zeros(aXValues.size)
-	return aProb
 
 
 
@@ -560,69 +429,6 @@ class easy_function:
 
 
 
-class track_steps_fit:
-	def __init__(self, numSteps, dimensions, canvasName, canvasSizeX=1400, canvasSizeY=800, canvasTitle=None):
-	
-		assert hasattr(dimensions, '__iter__')
-		assert len(dimensions) == 2
-		assert numSteps <= dimensions[0] * dimensions[1]
-	
-		self.cTracker = Canvas(canvasSizeX, canvasSizeY, name=canvasName, title=None)
-		self.cTracker.Divide(dimensions[0], dimensions[1])
-		
-		# track which pad we are on
-		# will increment with each draw
-		self.padNumber = 1
-
-
-
-	def add_graph_from_arrays(self, aX, aY, graphTitle=None, xAxisTitle=None, yAxisTitle=None, graphDrawOptions='ap', padNumber=None):
-	
-		if padNumber == None:
-			padNumber = self.padNumber
-		
-		# create graph
-		graph = create_graph_from_arrays(aX, aY)
-		graph.SetMarkerSize(0)
-
-		# set graph titles
-		if graphTitle:
-			graph.SetTitle(graphTitle)
-		if xAxisTitle:
-			graph.GetXaxis().SetTitle(xAxisTitle)
-		if yAxisTitle:
-			graph.GetYaxis().SetTitle(yAxisTitle)
-
-		self.cTracker.cd(padNumber)
-		graph.Draw(graphDrawOptions)
-		self.cTracker.Update()
-		self.padNumber += 1
-		
-		
-		
-	def add_graph(self, graph, graphDrawOptions='ap', padNumber=None):
-	
-		if padNumber == None:
-			padNumber = self.padNumber
-	
-		self.cTracker.cd(padNumber)
-		graph.Draw(graphDrawOptions)
-		self.cTracker.Update()
-		self.padNumber += 1
-
-
-
-	def examine(self):
-		raw_input('Press enter to continue...')
-
-
-
-
-
-
-
-
-
 class neriX_simulation_analysis(object):
 	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, numMCEvents=50000, use_fake_data=False, create_fake_data=False, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=False):
 	
@@ -641,7 +447,9 @@ class neriX_simulation_analysis(object):
 		self.anodeSetting, self.cathodeSetting, self.degreeSetting, self.numMCEvents = anodeVoltage, cathodeVoltage, angle, numMCEvents
 		
 		
-			
+		self.useFakeData = use_fake_data
+		if self.useFakeData:
+			assert assumeRelativeAccidentalRate != False, 'Must assume a relative accidental rate for fake data!'
 			
 
 		# ------------------------------------------------
@@ -790,14 +598,14 @@ class neriX_simulation_analysis(object):
 			self.hS1S2.Sumw2()
 			self.aS1S2 = convert_2D_hist_to_matrix(self.hS1S2)
 			
-			
-			# load TOF histogram
-			self.hTOF = self.fData.hTOF
-			self.hTOF.Sumw2()
-			
-			# load liqsci s1 time difference histogram
-			self.hLiqSciS1TimeDiff = self.fData.hLiqSciS1TimeDiff
-			self.hLiqSciS1TimeDiff.Sumw2()
+			if not self.useFakeData:
+				# load TOF histogram
+				self.hTOF = self.fData.hTOF
+				self.hTOF.Sumw2()
+				
+				# load liqsci s1 time difference histogram
+				self.hLiqSciS1TimeDiff = self.fData.hLiqSciS1TimeDiff
+				self.hLiqSciS1TimeDiff.Sumw2()
 			
 			
 			
@@ -899,8 +707,9 @@ class neriX_simulation_analysis(object):
 				hTimeSpec = self.hTOF
 			
 			else:
-				neriX_analysis.failure_message('Not implemented yet!')
-				sys.exit()
+				lAccidentalRanges = neriX_datasets.lLiqSciS1DtAccidentalsRanges
+				lTimeBounds = neriX_datasets.lLiqSciS1DtRange
+				hTimeSpec = self.hLiqSciS1TimeDiff
 
 			# count number of accidentals in set ranges
 			numAccidentalsInRanges = 0
@@ -929,7 +738,7 @@ class neriX_simulation_analysis(object):
 			scaledNumAccidentals = float(numAccidentalsInRanges)*timeWindowSize/accidentalsWindowSize
 			scaledNumAccidentals *= (1. + adjustmentTerm)
 			
-			percentOfAccidentalsInTimeWindow = float(scaledNumAccidentals) / (scaledNumAccidentals + numEventsInTimeWindow)
+			percentOfAccidentalsInTimeWindow = float(scaledNumAccidentals) / (numEventsInTimeWindow)
 			
 			#print scaledNumAccidentals, numEventsInTimeWindow, percentOfAccidentalsInTimeWindow
 		else:
@@ -957,7 +766,8 @@ class neriX_simulation_analysis(object):
 			
 			del hEnergySpec
 			del cEnergySpec
-		
+
+
 		
 
 
@@ -1191,133 +1001,6 @@ class neriX_simulation_analysis(object):
 
 
 
-	# returns converted array convoluted with Gaussian probabilities
-	# sMeanComponents: (a, m) s.t. mean = a*x^m where x is x-axis variable
-	# ex for light yield ==> (light yield, 1)
-	# sWidthComponents: (b, o) s.t. sigma = b*x^o
-	# ex for resolution ==> (res, 0.5)
-	def gaussian_step(self, aBeforeCenters, aBeforeValues, aAfterBinCenters, sMeanComponents, sWidthComponents, binSize = 1.):
-	
-		aConversionMatrix = np.array([ [0. for i in xrange(aBeforeCenters.size)] for j in xrange(aAfterBinCenters.size) ])
-		
-		# first find bin edges
-		binWidth = aAfterBinCenters[0, 1] - aAfterBinCenters[0, 0]
-		aAfterBinEdges = [aAfterBinCenters[0, 0] - 0.5*binWidth + i*binWidth for i in xrange(len(aAfterBinCenters[0, :])+1)]
-	
-		for bin, center in np.ndenumerate(aBeforeCenters):
-			# take second index of energy bin (column) since only one row
-			bin = bin[1]
-			
-			if binSize == -1.:
-				aGausProb = produce_gaussian_probabilities_range(aAfterBinCenters, sMeanComponents[0]*center**sMeanComponents[1], sWidthComponents[0]*center**sWidthComponents[1])
-				aGausProb *= float(binSize)
-			
-			# handle case where bins are very wide
-			else:
-				"""
-				try:
-					aNormalTrials = np.random.normal(sMeanComponents[0]*center**sMeanComponents[1], sWidthComponents[0]*center**sWidthComponents[1], int(1e4))
-				except:
-					aNormalTrials = [0]
-			
-				print sMeanComponents[0]*center**sMeanComponents[1], sWidthComponents[0]*center**sWidthComponents[1]
-				try:
-					aGausProb, dummy = np.histogram(aNormalTrials, bins=aAfterBinEdges, density=True)
-				except RuntimeWarning:
-					aGausProb = np.zeros(len(aAfterBinCenters.flatten()))
-				#aGausProb
-				"""
-				aGausProb = np.zeros(aAfterBinCenters.size)
-				for index, leftEdge in enumerate(aAfterBinEdges):
-					try:
-						aGausProb[index] = integrate_normalized_gaussian(aAfterBinEdges[index], aAfterBinEdges[index+1], sMeanComponents[0]*center**sMeanComponents[1], sWidthComponents[0]*center**sWidthComponents[1])
-					except:
-						# keep zero and continue
-						continue
-		
-					
-				
-			
-			#print aGausProb
-
-			aConversionMatrix[:, bin] = aGausProb.flatten()
-
-		return aConversionMatrix.dot(aBeforeValues)
-		
-		
-		
-		
-	# returns convolution binomial distribution
-	def binomial_step(self, aBeforeCenters, aBeforeValues, aAfterBinCenters, probabiltyOfSuccess, stepSize=1):
-	
-		aBeforeCenters = aBeforeCenters.flatten()
-		numBefore = aBeforeCenters.size
-		numAfter = aAfterBinCenters.flatten().size
-		tolerance = 0.1
-	
-		aConversionMatrix = np.array([ [0. for i in xrange(aBeforeCenters.size)] for j in xrange(aAfterBinCenters.size) ])
-		lowBound = aAfterBinCenters.flatten()[0] + tolerance
-		highBound = aAfterBinCenters.flatten()[-1] + stepSize + tolerance
-	
-		# try using scipy stats to perform this step quickly
-		# need upper edge matrix, lower edge matrix, prob success
-		# matrix, and number of trials matrix
-		
-		matrixUpperEdge = np.asarray([[i for i in drange(lowBound+stepSize, highBound+tolerance, stepSize)] for j in xrange(numBefore)])
-		#print matrixUpperEdge.shape
-		matrixLowerEdge = np.asarray([[i for i in drange(lowBound, highBound-stepSize+tolerance, stepSize)] for j in xrange(numBefore)])
-		matrixSuccess = np.asarray([[probabiltyOfSuccess for i in drange(lowBound+stepSize, highBound+tolerance, stepSize)] for j in xrange(numBefore)])
-		matrixBeforeCenters = np.asarray([[aBeforeCenters[j] for i in drange(lowBound+stepSize, highBound+tolerance, stepSize)] for j in xrange(numBefore)])
-	
-		#print list(matrixSuccess)
-		
-		#print aConversionMatrix.shape
-		aConversionMatrix = stats.binom.cdf(matrixUpperEdge.T, matrixBeforeCenters.T, matrixSuccess.T) - stats.binom.cdf(matrixLowerEdge.T, matrixBeforeCenters.T, matrixSuccess.T)
-		#print aConversionMatrix.shape
-		print aConversionMatrix.shape
-		
-	
-		"""
-		for bin, center in np.ndenumerate(aBeforeCenters):
-			# take second index of energy bin (column) since only one row
-			bin = bin[1]
-			
-			aBinomialProb = produce_binomial_probabilities_range(probabiltyOfSuccess, center, lowBound, highBound, stepSize)
-
-			aConversionMatrix[:, bin] = aBinomialProb.flatten()
-		"""
-		
-		# ~0.02 s for size=591
-		
-		#startTime = time.time()
-		
-		aAfterVector = np.zeros(aConversionMatrix.shape[0])
-		for rowNumber in xrange(aConversionMatrix.shape[0]):
-			aAfterVector[rowNumber] = np.sum(aConversionMatrix[rowNumber, :]*aBeforeValues.flatten())
-		#print time.time() - startTime
-		return aAfterVector
-	
-		
-	
-		# ~0.07 s for size=591
-		"""
-		startTime = time.time()
-		aAfterVector = C.safe_dot(aConversionMatrix.flatten(), aBeforeValues.flatten(), aConversionMatrix.shape[0], aConversionMatrix.shape[1])
-		print time.time() - startTime
-		return aAfterVector
-		"""
-		
-		# not thread safe for charge yield????
-		"""
-		#startTime = time.time()
-		aConversionMatrix.dot(aBeforeValues)
-		#print time.time() - startTime
-		return aConversionMatrix.dot(aBeforeValues)
-		"""
-	
-		
-		
-		
 	def get_indices_for_given_quantile(self, aBinCenters, aCountsInBins, leftPercentile, rightPercentile):
 		aX = aBinCenters.flatten()
 		aY = aCountsInBins.flatten()
@@ -1518,11 +1201,15 @@ class neriX_simulation_analysis(object):
 	
 		# set default number of mc elements if using cpu and
 		# not specified and set number if using gpu
-		if (gpu_compute == False and num_mc_elements == -1) or gpu_compute:
-			num_mc_elements = 1
-			for key in d_gpu_scale:
-				for value in d_gpu_scale[key]:
-					num_mc_elements *= value
+		if gpu_compute:
+			# need to do slightly fewer elements than
+			# originally perscribed bc energies already
+			# produced
+			d_gpu_scale = {}
+			d_gpu_scale['block'] = (1024,1,1)
+			numBlocks = floor(num_mc_elements / 1024.)
+			d_gpu_scale['grid'] = (int(numBlocks), 1)
+			num_mc_elements = int(numBlocks*1024)
 	
 		#print num_mc_elements
 		#initializationTime = time.time()
@@ -1580,9 +1267,7 @@ class neriX_simulation_analysis(object):
 		# Initialize required constants, matrices, and arrays
 		# ------------------------------------------------
 
-		#aS1BinEdges = np.asarray([aS1BinCenters[0] - 0.5*binWidthS1 + i*binWidthS1 for i in xrange(numBinsS1+1)]) # need +1 to capture last bin!!
-		#aS2BinEdges = np.asarray([aS2BinCenters[0] - 0.5*binWidthS2 + i*binWidthS2 for i in xrange(numBinsS2+1)])
-		
+
 		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1)
 		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1)
 		#print aS1BinEdges
@@ -1594,6 +1279,8 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 		# Set seeds and number of trials
 		# ------------------------------------------------
+
+
 
 		#startTime = time.time()
 		
@@ -1620,11 +1307,25 @@ class neriX_simulation_analysis(object):
 
 
 		if gpu_compute:
-			import pycuda.autoinit
-			mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
-			observables_func = mod.get_function('gpu_full_observables_production')
+		
+			try:
+				self.mem_pool
+			except:
+				import pycuda.autoinit
+				self.mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
 			
-			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), drv.In(self.aEnergy), drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2))
+				self.mem_pool = pycuda.tools.DeviceMemoryPool()
+				self.mem_pool = self.mem_pool.allocate(aS1.nbytes*4)
+		
+			try:
+				self.gpu_aEnergy
+			except:
+				self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.aEnergy)
+		
+		
+			observables_func = self.mod.get_function('gpu_full_observables_production')
+			
+			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2))
 			
 			observables_func(*tArgs, **d_gpu_scale)
 		
@@ -1661,7 +1362,7 @@ class neriX_simulation_analysis(object):
 		
 		try:
 			#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
-			#aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
+			aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
 			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
 		except:
 			return -np.inf, aS1S2MC
@@ -1803,158 +1504,7 @@ class neriX_simulation_analysis(object):
 		#print egPFEff.get_y_values()
 		
 		
-		# ------------------------------------------------
-		# Instantiate drawn step tracker
-		# ------------------------------------------------
-
-		if drawTracker:
-			stepTrackerCanvas = track_steps_fit(8, (2, 4), 'charge_yield_canvas')
-
-		# ------------------------------------------------
-		# Initialize required constants, matrices, and arrays
-		# ------------------------------------------------
-
-		numElectronBins = int(self.maxChargeYield * self.egMC.get_upper_bound())
-		aElectronBinCenters = np.array([[i for i in xrange(numElectronBins)]])
-		
-		aPEBinCenters = np.array(self.egS2.get_x_values(), dtype=np.int)
-		
-
-		# ------------------------------------------------
-		# Convert MC energy spec to electron spec
-		# ------------------------------------------------
-
-		# draw MC spec before starting
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(self.egMC.get_x_values().flatten(), self.egMC.get_y_values().flatten(), graphTitle='MC Energy Spectrum', xAxisTitle='Energy [keV]', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-		#print self.egMC.get_x_values()
-		#print self.egMC.get_y_values()
-		aChargeSpectrum = self.gaussian_step(self.egMC.get_x_values(), self.egMC.get_y_values().T, aElectronBinCenters, (chargeYield, 1.), (chargeYield**0.5, 0.5)) # may need to add bin size arg
-		
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aElectronBinCenters.flatten(), aChargeSpectrum.flatten(), graphTitle='Charge Spectrum', xAxisTitle='Electrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-		
-
-
-		# ------------------------------------------------
-		# Convert electron spectrum to EXTRACTED
-		# electron spectrum
-		# ------------------------------------------------
-
-
-		extractionEfficiency = g2Value/gasGainValue
-		# causes thread problems in charge yield
-		aExtractedElectronSpectrum = self.binomial_step(aElectronBinCenters, aChargeSpectrum, aElectronBinCenters, extractionEfficiency)
-		#print aExtractedElectronSpectrum
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aElectronBinCenters.flatten(), aExtractedElectronSpectrum.flatten(), graphTitle='Extracted Charge Spectrum', xAxisTitle='Electrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-		
-		
-		# ------------------------------------------------
-		# Convert extracted electron spectrum to PE spectrum
-		# ------------------------------------------------
-
-
-		aConvertedPESpectrum = self.gaussian_step(aElectronBinCenters, aExtractedElectronSpectrum, aPEBinCenters, (gasGainValue, 1.), (gasGainWidth, 0.5))
-		#print aConvertedPESpectrum
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aConvertedPESpectrum.flatten(), graphTitle='Unsmeared PE Spectrum (after gas gain)', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-
-		# ------------------------------------------------
-		# Smear PE spectrum with spe resolution
-		# ------------------------------------------------
-
-		#print 'SPE smearing'
-		aSmearedPESpectrumSPE = self.gaussian_step(aPEBinCenters, aConvertedPESpectrum, aPEBinCenters, (1., 1.), (speRes, 0.5), binSize=200.)
-		#print aSmearedPESpectrumSPE
-		# bins are so wide it is messing up normalization!!
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aSmearedPESpectrumSPE.flatten(), graphTitle='PE Spectrum Smeared with SPE Resolution', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-		
-		
-		# ------------------------------------------------
-		# Smear PE spectrum with intrinsic resolution
-		# ------------------------------------------------
-
-
-		aSmearedPESpectrum = self.gaussian_step(aPEBinCenters, aSmearedPESpectrumSPE, aPEBinCenters, (1., 1.), (intrinsicResolution, 0.5), binSize=200.)
-		#print aSmearedPESpectrum
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aSmearedPESpectrum.flatten(), graphTitle='PE Spectrum Smeared with SPE Resolution and Intrinsic Resolution', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-
-		# ------------------------------------------------
-		# Apply Trig efficiency
-		# ------------------------------------------------
-
-
-		assert egTrigEff.size == aSmearedPESpectrum.size
-
-		#print egTrigEff.get_y_values().flatten()
-		aMatchingMCSpectrum = egTrigEff.get_y_values().flatten()*aSmearedPESpectrum.flatten()
-
-		# normalize spectrum to number of counts in data
-		# if one of the steps above failed will fail here
-		# since array will be all zeros
-		try:
-			aMatchingMCSpectrum *= self.numCountsData / float(sum(aMatchingMCSpectrum))
-		except ZeroDivisionError:
-			return -np.inf, aMatchingMCSpectrum
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aMatchingMCSpectrum.flatten(), graphTitle='Full Matching Spectrum', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-		
-		
-		
-		# ------------------------------------------------
-		# Get indices for quantiles
-		# ------------------------------------------------
-		
-		leftIndexQuantile, rightIndexQuantile = self.get_indices_for_given_quantile(self.egS2.get_x_values(), self.egS2.get_y_values(), 0., 0.75)
-		
-		
-		# ------------------------------------------------
-		# Draw fit if requested
-		# ------------------------------------------------
-	
-		if drawFit:
-			c1 = Canvas()
-			self.hS2.Draw()
-			# need to convert to float64 to keep graph from breaking
-			# this is ONLY true when using discrete integer values of PE
-			gMCS2Spec = root.TGraphAsymmErrors(len(aMatchingMCSpectrum), np.array(aPEBinCenters.flatten(), dtype=np.float64), aMatchingMCSpectrum.flatten(), np.array([0.5 for i in xrange(len(aMatchingMCSpectrum))]), np.array([0.5 for i in xrange(len(aMatchingMCSpectrum))]),  0.2*aMatchingMCSpectrum.flatten(), 0.2*aMatchingMCSpectrum.flatten())
-		
-			gMCS2Spec.SetLineColor(root.kBlue)
-			gMCS2Spec.SetFillColor(root.kBlue)
-			gMCS2Spec.SetFillStyle(3005)
-			gMCS2Spec.Draw('3 same')
-			c1.Update()
-		
-			raw_input('Press enter to continue...')
-			del c1
-
-
-		# ------------------------------------------------
-		# Compare MC and data to find likelihood
-		# ------------------------------------------------
-		
-		aRangeS2ValuesData = self.egS2.get_y_values().flatten()[leftIndexQuantile:rightIndexQuantile]
-		aRangeS2ValuesMC = aMatchingMCSpectrum[leftIndexQuantile:rightIndexQuantile]
-
-		logLikelihoodMatching = np.sum( aRangeS2ValuesData*smart_log(aRangeS2ValuesMC) - aRangeS2ValuesMC - smart_stirling(aRangeS2ValuesData) )
-		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
-		if np.isnan(totalLogLikelihood):
-			return -np.inf, aMatchingMCSpectrum
-		else:
-			return totalLogLikelihood, aMatchingMCSpectrum
+		return 0, 0
 
 
 
@@ -2016,151 +1566,7 @@ class neriX_simulation_analysis(object):
 
 		priorLogLikelihoods = g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + pYLogLikelihood + resLogLikelihood
 
-		# test cases
-		#print priorLikelihoods
-		#print egTacEff.get_y_values()
-		#print egPFEff.get_y_values()
-		
-		
-		# ------------------------------------------------
-		# Instantiate drawn step tracker
-		# ------------------------------------------------
-
-		if drawTracker:
-			stepTrackerCanvas = track_steps_fit(6, (2, 3), 'photon_yield_canvas')
-
-
-		# ------------------------------------------------
-		# Initialize required constants, matrices, and arrays
-		# ------------------------------------------------
-
-		numPhotonBins = int(self.maxPhotonYield * self.egMC.get_upper_bound())
-		aPhotonBinCenters = np.array([[i for i in xrange(numPhotonBins)]])
-		
-		aPEBinCenters = np.array(self.egS1.get_x_values(), dtype=np.int)
-		
-
-		# ------------------------------------------------
-		# Convert MC energy spec to photon spec
-		# ------------------------------------------------
-
-		# draw MC spec before starting
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(self.egMC.get_x_values().flatten(), self.egMC.get_y_values().flatten(), graphTitle='MC Energy Spectrum', xAxisTitle='Energy [keV]', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-		aPhotonSpectrum = self.gaussian_step(self.egMC.get_x_values(), self.egMC.get_y_values().T, aPhotonBinCenters, (photonYield, 1.), (photonYield**0.5, 0.5)) # may need to add bin size arg
-		
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPhotonBinCenters.flatten(), aPhotonSpectrum.flatten(), graphTitle='Photon Spectrum', xAxisTitle='Photons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-
-		# ------------------------------------------------
-		# Convert photon spec to PE spec
-		# ------------------------------------------------
-
-
-		aConvertedPESpectrum = self.binomial_step(aPhotonBinCenters, aPhotonSpectrum, aPEBinCenters, g1Value)
-		
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aConvertedPESpectrum.flatten(), graphTitle='Unsmeared Photoelectron Spectrum', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-
-		# ------------------------------------------------
-		# Smear PE spectrum with spe resolution
-		# ------------------------------------------------
-
-
-		aSmearedPESpectrumSPE = self.gaussian_step(aPEBinCenters, aConvertedPESpectrum, aPEBinCenters, (1., 1.), (speRes, 0.5))
-
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aSmearedPESpectrumSPE.flatten(), graphTitle='PE Spectrum Smeared with SPE Resolution', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-		
-		
-		# ------------------------------------------------
-		# Smear PE spectrum with intrinsic resolution
-		# ------------------------------------------------
-
-		# fixed bug!  aConvertedSpectrum was in aSmearedPESpectrumSPE's place so
-		# essentially skipped that step!!!
-		aSmearedPESpectrum = self.gaussian_step(aPEBinCenters, aSmearedPESpectrumSPE, aPEBinCenters, (1., 1.), (intrinsicResolution, 0.5))
-
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aSmearedPESpectrum.flatten(), graphTitle='PE Spectrum Smeared with SPE Resolution and Intrinsic Resolution', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-
-
-		# ------------------------------------------------
-		# Apply TAC and PF efficiency
-		# ------------------------------------------------
-
-		assert egTacEff.size == aSmearedPESpectrum.size
-		assert egPFEff.size == aSmearedPESpectrum.size
-
-		aMatchingMCSpectrum = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()*aSmearedPESpectrum.flatten()
-		
-		# normalize spectrum to number of counts in data
-		# if one of the steps above failed will fail here
-		# since array will be all zeros
-		try:
-			aMatchingMCSpectrum *= self.numCountsData / float(sum(aMatchingMCSpectrum))
-		except ZeroDivisionError:
-			return -np.inf, aMatchingMCSpectrum
-		#print aMatchingMCSpectrum
-
-		if drawTracker:
-			stepTrackerCanvas.add_graph_from_arrays(aPEBinCenters.flatten(), aMatchingMCSpectrum.flatten(), graphTitle='Full Matching Spectrum', xAxisTitle='Photoelectrons', yAxisTitle='Counts')
-			#stepTrackerCanvas.examine()
-		
-		
-		
-		# ------------------------------------------------
-		# Get indices for quantiles
-		# ------------------------------------------------
-		
-		leftIndexQuantile, rightIndexQuantile = self.get_indices_for_given_quantile(self.egS1.get_x_values(), self.egS1.get_y_values(), 0., 0.75)
-		
-		
-		# ------------------------------------------------
-		# Draw fit if requested
-		# ------------------------------------------------
-	
-		if drawFit:
-			c1 = Canvas()
-			self.hS1.Draw()
-			# need to convert to float64 to keep graph from breaking
-			# this is ONLY true when using discrete integer values of PE
-			gMCS1Spec = root.TGraphAsymmErrors(len(aMatchingMCSpectrum), np.array(aPEBinCenters.flatten(), dtype=np.float64), aMatchingMCSpectrum.flatten(), np.array([0.5 for i in xrange(len(aMatchingMCSpectrum))]), np.array([0.5 for i in xrange(len(aMatchingMCSpectrum))]),  0.2*aMatchingMCSpectrum.flatten(), 0.2*aMatchingMCSpectrum.flatten())
-		
-			gMCS1Spec.SetLineColor(root.kBlue)
-			gMCS1Spec.SetFillColor(root.kBlue)
-			gMCS1Spec.SetFillStyle(3005)
-			gMCS1Spec.Draw('3 same')
-			c1.Update()
-		
-			raw_input('Press enter to continue...')
-			del c1
-
-
-		# ------------------------------------------------
-		# Compare MC and data to find likelihood
-		# ------------------------------------------------
-		
-		aRangeS1ValuesData = self.egS1.get_y_values().flatten()[leftIndexQuantile:rightIndexQuantile]
-		aRangeS1ValuesMC = aMatchingMCSpectrum[leftIndexQuantile:rightIndexQuantile]
-
-		logLikelihoodMatching = np.sum( aRangeS1ValuesData*smart_log(aRangeS1ValuesMC) - aRangeS1ValuesMC - smart_stirling(aRangeS1ValuesData) )
-		#logLikelihoodMatching = np.sum( self.egS1.get_y_values().flatten()*smart_log(aMatchingMCSpectrum) - aMatchingMCSpectrum - smart_stirling(self.egS1.get_y_values().flatten()) )
-		#print logLikelihoodMatching, smart_log(priorLikelihoods)
-		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
-		#print totalLogLikelihood#, aMatchingMCSpectrum
-		if np.isnan(totalLogLikelihood):
-			return -np.inf, aMatchingMCSpectrum
-		else:
-			return totalLogLikelihood, aMatchingMCSpectrum
+		return 0, 0
 
 
 
@@ -2187,10 +1593,6 @@ class neriX_simulation_analysis(object):
 			numDim = 17
 			assert len(sParameters) == numDim
 			func = self.mcmc_func_full_matching
-		elif sMeasurement == 'full_matching_yields_only':
-			numDim = 15
-			assert len(sParameters) == numDim
-			func = self.mcmc_func_full_matching_yields_only
 		else:
 			print 'Currently not setup to handle the input measurement: %s' % sMeasurement
 			sys.exit()
@@ -2337,31 +1739,22 @@ class neriX_simulation_analysis(object):
 if __name__ == '__main__':
 	copy_reg.pickle(types.MethodType, reduce_method)
 
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45)
-	#test.perform_mc_match_photon_yield(9.5, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
-	#test.perform_mc_match_charge_yield(7, 0.5, 0, 0, 0, 0, 0, 0, drawFit=True, drawTracker=True)
-	#test.perform_mc_match_full(0.3, 0.34, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True)
-	
 	# create fake data
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 62, use_fake_data=False, create_fake_data=True, numMCEvents=4100, assumeRelativeAccidentalRate=0.2)
-	test.create_fake_data(9.08, 4.82, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 62, use_fake_data=False, create_fake_data=True, numMCEvents=4100, assumeRelativeAccidentalRate=0.2)
+	#test.create_fake_data(9.08, 4.82, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False)
-	#test.perform_mc_match_full(12.05, 6.5, 0.3, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False, accidentalBkgAdjustmentTerm=0.0, numMCEvents=50000)
+	test.perform_mc_match_full(12.05, 6.5, 0.3, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
 	
-	#sParametersPhotonYield = (('photon_yield', 9.0), ('res_intrinsic', 0.5), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par1_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0))
-	#sParametersChargeYield = (('charge_yield', 7.0), ('res_intrinsic', 0.8), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_res_spe', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0))
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
 	# try using emcee to fit
-	#test.run_mcmc('photon_yield', sParametersPhotonYield, 160, 10, 16)
-	#test.run_mcmc('charge_yield', sParametersChargeYield, 160, 600, 5)
-	#test.run_mcmc('full_matching', sParametersFullMatching, 128, 5, 1, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}) #10240
-	#test.run_mcmc('full_matching', sParametersFullMatching, 2048, 50, 8, gpu_compute=False) #10240
+	#mcRuntime = time.time()
+	#test.run_mcmc('full_matching', sParametersFullMatching, 64, 10, 8, gpu_compute=False) #10240
+	#test.run_mcmc('full_matching', sParametersFullMatching, 64, 10, 2, gpu_compute=True) #10240
+	#print 'mcmc time: %f s' % (time.time() - mcRuntime)
 
-
-	# perform_mc_match_photon_yield(self, photonYield, intrinsicResolution, g1RV, speResRV, par0TacEffRV, par1TacEffRV, par0PFEffRV, par1PFEffRV, drawFit=False)
 
 
 
