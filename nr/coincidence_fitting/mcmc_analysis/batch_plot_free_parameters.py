@@ -141,7 +141,8 @@ for parameter in dPlots:
 	nameForFile = parameter
 	if useFakeData:
 		nameForFile += '_fake'
-	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%ddeg_%.3fkV_%.1fkV' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting))
+		fullFilename = '%s_%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)
+	else:
+		'%s_%ddeg_%.3fkV_%.1fkV' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting)
+	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], fullFilename, batch_mode=True)
 
-
-raw_input('Enter to continue...')
