@@ -13,8 +13,7 @@
 #PBS -e localhost:/u/3/m/mda2149/neriX/nr/coincidence_fitting/mcmc_analysis/yeti_submit_scripts/qsub/
 
 #Command to execute Python program
-args=("$@")
-python ../perform_full_matching.py 45 1.054 4.5 64 5 16 t ${args[0]} ${args[1]}
+python ../perform_full_matching.py 23 1.054 4.5 64 15 16 t ${rate} ${num}
 
 #End of script
 
