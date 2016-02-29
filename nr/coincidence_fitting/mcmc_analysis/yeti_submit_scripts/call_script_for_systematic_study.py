@@ -3,7 +3,7 @@ import sys, array, os, time
 from subprocess import call
 
 lAssumedRelativeAccidentalRates = [0.01, 0.05, 0.1, 0.5, 1.0, 2.0]
-lNumFakeEvents = [3000, 6000, 8000, 12000, 24000]
+lNumFakeEvents = [400, 700, 1500, 3000, 6000]
 
 for rate in lAssumedRelativeAccidentalRates:
 	for num in lNumFakeEvents:

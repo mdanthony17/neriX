@@ -1144,7 +1144,10 @@ class neriX_simulation_analysis(object):
 		# element wise multiplication to combine S1 or S2
 		# need to use outer with multiply to make large matrix
 		
-		aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
+		if self.degreeSetting == 23:
+			aS1Efficiency = egPFEff.get_y_values().flatten()
+		else:
+			aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
 		aS2Efficiency = egTrigEff.get_y_values()
 		
 		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
@@ -1363,7 +1366,10 @@ class neriX_simulation_analysis(object):
 		# element wise multiplication to combine S1 or S2
 		# need to use outer with multiply to make large matrix
 		
-		aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
+		if self.degreeSetting == 23:
+			aS1Efficiency = egPFEff.get_y_values().flatten()
+		else:
+			aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
 		aS2Efficiency = egTrigEff.get_y_values()
 		
 		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
@@ -1756,8 +1762,8 @@ if __name__ == '__main__':
 	copy_reg.pickle(types.MethodType, reduce_method)
 
 	# create fake data
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, create_fake_data=True, num_fake_events=24000, assumeRelativeAccidentalRate=2.)
-	#test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 23, create_fake_data=True, num_fake_events=6000, assumeRelativeAccidentalRate=2.)
+	test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.2, num_fake_events=3000, numMCEvents=50000)
