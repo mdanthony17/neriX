@@ -3,7 +3,7 @@
 # Directives
 #PBS -N neriX_full_matching
 #PBS -W group_list=yetixenon
-#PBS -l nodes=1:ppn=16,walltime=01:15:00,mem=3000mb
+#PBS -l nodes=1:ppn=16,walltime=00:15:00,mem=4000mb
 #PBS -M mda2149@columbia.edu
 #PBS -m abe
 #PBS -V
