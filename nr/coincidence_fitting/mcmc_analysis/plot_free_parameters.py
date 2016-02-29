@@ -9,8 +9,8 @@ import neriX_simulation_config
 import numpy as np
 import cPickle as pickle
 
-if len(sys.argv) != 6 and len(sys.argv) != 7:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f]'
+if len(sys.argv) != 6 and len(sys.argv) != 9:
+	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f] [relative accidental rate] [num fake events]'
 	sys.exit()
 
 
@@ -23,27 +23,36 @@ numWalkers = int(sys.argv[5])
 
 # change to switch between real and fake data
 
-if len(sys.argv) == 7:
+if len(sys.argv) == 9:
 	if sys.argv[6] == 't':
 		useFakeData = True
+		relativeAccidentalRate = float(sys.argv[7])
+		num_fake_events = int(sys.argv[8])
 	else:
 		useFakeData = False
+		relativeAccidentalRate = False
+		num_fake_events = -1
+else:
+	useFakeData = False
+	relativeAccidentalRate = False
+	num_fake_events = -1
 
 
 if not useFakeData:
 	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
 	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
 	useFakeValueInPlots = False
+	sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
 else:
 	nameOfResultsDirectory = 'fake_data/results'
-	lPlots = ['plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
+	lPlots = ['plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)]
 	useFakeValueInPlots = True
+	sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV_%.2f_%d_events/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events, sMeasurement)
 
 
 pathToSamplerDictionary = nameOfResultsDirectory
 
 
-sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
 
 if os.path.exists(sPathToFile):
 	print 'Beginning to load sampler.'
@@ -62,13 +71,13 @@ else:
 dParametersToDraw = {'photon_yield':{'index':0,
 									 'form':'P_{y}',
 									 'unit': '#frac{photons}{keV}',
-									 'binning':[100, 4, 16],
-									 'true_value_for_fake':6.44},
+									 'binning':[100, 1, 7],
+									 'true_value_for_fake':4.32},
 					 'charge_yield':{'index':1,
 									 'form':'Q_{y}',
 									 'unit': '#frac{electrons}{keV}',
 									 'binning':[100, 3, 10],
-									 'true_value_for_fake':5.88},
+									 'true_value_for_fake':6.78},
 					 'res_s1':{'index':2,
 							   'unit': '',
 							   'form':'R_{S1}',
@@ -78,7 +87,7 @@ dParametersToDraw = {'photon_yield':{'index':0,
 							   'form':'R_{S2}',
 							   'unit': '',
 							   'binning':[100, 0., 2],
-							   'true_value_for_fake':0.1}
+							   'true_value_for_fake':0.05}
 					}
 
 
