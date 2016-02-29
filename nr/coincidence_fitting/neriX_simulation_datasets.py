@@ -36,7 +36,7 @@ reducedEnergyNumBins = 40
 
 num_random_trials = int(1e4)
 
-max_photon_yield = 15.
+max_photon_yield = 18.
 max_charge_yield = 15.
 
 smear_pe_extra_bins = 10
@@ -51,7 +51,8 @@ for run in runsInUse:
 dAngleEnergy = {62.:17.83,
 				45.:10.62,
 				35.:6.60,
-				30.:4.95}
+				30.:4.95,
+				23.:3.0}
 
 dVoltageField = {0.345:200.,
 				 1.054:500.,
@@ -59,6 +60,11 @@ dVoltageField = {0.345:200.,
 
 # files in set should be in the following order
 # data_root_file, mc_root_file, tac_efficiency_root_file, peak_finder_efficiency_root_file, g1_root_file, spe_root_file
+
+# 23 deg
+run_files[(15, 4.5, 0.345, 23.)] = ('results_0.345kV_23deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 1.054, 23.)] = ('results_1.054kV_23deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
+run_files[(15, 4.5, 2.356, 23.)] = ('results_2.356kV_23deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, True)
 
 
 # 30 deg

@@ -15,7 +15,7 @@ from scipy import optimize, misc, stats
 from scipy.stats import norm
 import copy_reg, types, pickle, click, time
 from subprocess import call
-
+"""
 import cuda_full_observables_production
 from pycuda.compiler import SourceModule
 import pycuda.driver as drv
@@ -23,7 +23,7 @@ import pycuda.tools
 import pycuda.gpuarray
 #import pycuda.autoinit
 #mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
-
+"""
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
@@ -430,12 +430,22 @@ class easy_function:
 
 
 class neriX_simulation_analysis(object):
-	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, numMCEvents=50000, use_fake_data=False, create_fake_data=False, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=False):
+	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, numMCEvents=50000, use_fake_data=False, create_fake_data=False, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=False, num_fake_events=-1):
 	
 		# if not in create data mode kill program trying
 		# to run with adjusted accidental
 	
 		copy_reg.pickle(types.MethodType, reduce_method)
+		
+		if create_fake_data and num_fake_events == -1:
+			neriX_analysis.failure_message('Must set the number of fake events when creating fake data!')
+			sys.exit()
+		
+		if use_fake_data and num_fake_events == -1:
+			neriX_analysis.failure_message('Must select number of faked events!')
+			sys.exit()
+		
+		self.num_fake_events = num_fake_events
 
 		# ------------------------------------------------
 		# Pull filenames and create save paths
@@ -450,6 +460,7 @@ class neriX_simulation_analysis(object):
 		self.useFakeData = use_fake_data
 		if self.useFakeData:
 			assert assumeRelativeAccidentalRate != False, 'Must assume a relative accidental rate for fake data!'
+		self.assumeRelativeAccidentalRate = assumeRelativeAccidentalRate
 			
 
 		# ------------------------------------------------
@@ -564,7 +575,7 @@ class neriX_simulation_analysis(object):
 				fileToLoad = dFilesForAnalysis['data']
 			else:
 				print '\n\nNOTE: You are using fake data produced by this framework.\n\n'
-				fileToLoad = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
+				fileToLoad = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, assumeRelativeAccidentalRate, self.num_fake_events)
 			
 			self.fData = File(fileToLoad)
 			self.hS1 = self.fData.hS1
@@ -611,7 +622,7 @@ class neriX_simulation_analysis(object):
 			
 		else:
 			print '\n\nCurrently in creating fake data mode so cannot run analysis!\n\n'
-			sFakeData = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
+			sFakeData = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
 			self.fFakeData = File(sFakeData, 'recreate')
 		
 			self.s1NumBins = 20
@@ -1096,7 +1107,7 @@ class neriX_simulation_analysis(object):
 		# Set seeds and number of trials
 		# ------------------------------------------------
 		
-		numRandomTrials = self.numMCEvents
+		numRandomTrials = self.num_fake_events
 	
 		aS1 = np.full(numRandomTrials, -1, dtype=np.float32)
 		aS2 = np.full(numRandomTrials, -1, dtype=np.float32)
@@ -1603,10 +1614,15 @@ class neriX_simulation_analysis(object):
 		
 		if not self.useFakeData:
 			self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
+			self.sPathForSave = '%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+		
 		else:
 			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
+			self.sPathForSave = '%s/%ddeg_%.3fkV_%.1fkV_%.2f_%d_events/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events, sMeasurement)
+			# for fake data add events and relative rate to path after
+			# deg, cathode, and anode
+			# _%.2f_%d_events
 		
-		self.sPathForSave = '%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
 		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
 		
 		if not os.path.isdir(self.sPathForSave):
@@ -1740,18 +1756,18 @@ if __name__ == '__main__':
 	copy_reg.pickle(types.MethodType, reduce_method)
 
 	# create fake data
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 62, use_fake_data=False, create_fake_data=True, numMCEvents=4100, assumeRelativeAccidentalRate=0.2)
-	#test.create_fake_data(9.08, 4.82, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, create_fake_data=True, num_fake_events=24000, assumeRelativeAccidentalRate=2.)
+	#test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 45, use_fake_data=False, accidentalBkgAdjustmentTerm=0.0, numMCEvents=50000)
-	test.perform_mc_match_full(12.05, 6.5, 0.3, 0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.2, num_fake_events=3000, numMCEvents=50000)
+	#test.perform_mc_match_full(9.08, 4.82, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
 	# try using emcee to fit
 	#mcRuntime = time.time()
-	#test.run_mcmc('full_matching', sParametersFullMatching, 64, 10, 8, gpu_compute=False) #10240
+	#test.run_mcmc('full_matching', sParametersFullMatching, 64, 2, 8, gpu_compute=False) #10240
 	#test.run_mcmc('full_matching', sParametersFullMatching, 64, 10, 2, gpu_compute=True) #10240
 	#print 'mcmc time: %f s' % (time.time() - mcRuntime)
 

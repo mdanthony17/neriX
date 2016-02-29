@@ -79,6 +79,8 @@ current_analysis.add_single_scatter_cut()
 current_analysis.add_xs1asym_cut()
 current_analysis.add_xs2asym_cut()
 current_analysis.add_temp_neutron_cut(degreeSetting)
+#current_analysis.add_temp_gamma_cut(degreeSetting)
+#current_analysis.add_cut('TMath::Log10(S2sTotBottom[0]/S1sTotBottom[0]) < 3 && S1sTotBottom[0] < 35')
 #current_analysis.add_temp_tof_cut(degreeSetting)
 #current_analysis.add_cut('TimeOfFlight > -50 && TimeOfFlight < -10') # accidental spec
 
@@ -88,12 +90,11 @@ current_analysis.add_temp_neutron_cut(degreeSetting)
 current_analysis.set_event_list()
 
 s1Branch = 'cpS1sTotBottom[0] - S1sNoiseTrapezoid[0][16]'
+#s1Branch = 'cpS1sTotBottom[0]'
 s2Branch = 'cpS2sTotBottom[0]'
 
 #create histograms for current_analysis
 
-#sS1Branch = 'S1sTotBottom[0]'# - S1sNoiseMedian[0][16]'
-#sS1Branch = 's1_tot_bot_minus_noise_t'
 print '\nUsing S1 Branch: %s \n\n' % s1Branch
 print '\nUsing S2 Branch: %s \n\n' % s2Branch
 
@@ -115,8 +116,7 @@ hTOF.GetXaxis().SetTitle('TOF [ns]')
 hTOF.GetYaxis().SetTitle('Counts')
 hTOF.SetStats(1)
 
-current_analysis.add_temp_tof_cut(degreeSetting)
-#current_analysis.set_event_list()
+#current_analysis.add_temp_tof_cut(degreeSetting)
 
 
 

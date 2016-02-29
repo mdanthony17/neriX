@@ -5,12 +5,12 @@ from math import log, exp
 import array, sys
 import numpy as np
 sys.path.append('../')
-import fits_completed
+#import fits_completed
 #import fits_completed_co57
 import fits_completed_cs137
 import fits_completed_na22
 import fits_completed_164keV_peak
-import fits_completed_197keV_peak
+#import fits_completed_197keV_peak
 
 wValue = 13.7 # eV
 
@@ -35,10 +35,10 @@ gainAdjustmentTerm = 1.#/1.034
 #energyOfPeak = 123e3
 #dFitParameters = fits_completed_197keV_peak.dFitParameters
 #energyOfPeak = 197.1e3 # eV
-#dFitParameters = fits_completed_164keV_peak.dFitParameters
-#energyOfPeak = 163.9e3 # eV
-dFitParameters = fits_completed_cs137.dFitParameters
-energyOfPeak = 662e3
+dFitParameters = fits_completed_164keV_peak.dFitParameters
+energyOfPeak = 163.9e3 # eV
+#dFitParameters = fits_completed_cs137.dFitParameters
+#energyOfPeak = 662e3
 #dFitParameters = fits_completed_na22.dFitParameters
 #energyOfPeak = 511e3
 

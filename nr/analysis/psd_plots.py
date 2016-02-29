@@ -22,7 +22,7 @@ lhMax = 2
 
 
 if(len(sys.argv) != 2):
-	print 'Usage is python coincidence_quick_check.py <run> <anode> <cathode> <degree>'
+	print 'Usage is python coincidence_quick_check.py <filename>'
 	sys.exit(1)
 
 filename = sys.argv[1]

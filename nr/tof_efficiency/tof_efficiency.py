@@ -17,11 +17,11 @@ filename = sys.argv[1]
 
 current_analysis = neriX_analysis.neriX_analysis(filename)
 
-lowTimeDiff = 0
-highTimeDiff = 6
+lowTimeDiff = -25
+highTimeDiff = -10
 
-lowForGaussian = -5
-highForGaussian = 10
+lowForGaussian = -500
+highForGaussian = 100
 
 
 current_analysis.add_xs1asym_cut()
@@ -31,8 +31,8 @@ current_analysis.set_event_list()
 #--------------- Start Parameters to Change ----------------
 
 
-#s1Branch = 'S1sTotBottom[S1Order[0]]'
-s1Branch = 'cpS1sTotBottom[S1Order[0]]'
+s1Branch = 'S1sTotBottom[S1Order[0]]'
+#s1Branch = 'cpS1sTotBottom[S1Order[0]]'
 lowerBoundS1 = -0.5
 upperBoundS1 = 39.5
 nBinsS1 = 20
@@ -120,11 +120,11 @@ hGaus.GetYaxis().SetTitle('Counts')
 hGaus.SetTitle('Time between Trigger and First S1 in Waveform - %s' % current_analysis.get_filename_no_ext())
 
 
-sBothCut = '%s > 0.5' % s1Branch
+sBothCut = '%s > 0.' % s1Branch
 sBothCut += ' && Alt$(S1sPeak[S1Order[1]] - S1sPeak[S1Order[0]], 100000) > %f' % highTimeDiff
 
 sTriggerCut = sBothCut + ' && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f' % (lowTimeDiff, highTimeDiff)
-
+sTriggerCut += ' && ((TrigLeftEdge[] + TrigLength[]) > S1sPeak[S1Order[0]])'
 
 current_analysis.Draw(s1Branch, hist=hNoCut, selection=sBothCut)
 current_analysis.Draw(s1Branch, hist=hWithCut, selection=sTriggerCut)
@@ -134,14 +134,14 @@ current_analysis.Draw('TrigLeftEdge[] - S1sPeak[S1Order[0]]', hist=hGaus)
 
 
 hEff = root.TEfficiency(hWithCut, hNoCut)
-hEff.SetTitle('S1 Efficiency for TAC - %s; cpS1sTotBottom[S1Order[0]] [PE]; Percentage Causing Discriminator Pulse for TAC' % (current_analysis.get_filename_no_ext()));
+hEff.SetTitle('S1 Efficiency for TAC - %s; S1sTotBottom[S1Order[0]] [PE]; Percentage Causing Discriminator Pulse for TAC' % (current_analysis.get_filename_no_ext()));
 
 gEff = hEff.CreateGraph()
 gEff.GetXaxis().SetRangeUser(lowerBoundS1, upperBoundS1)
 gEff.Draw('AP')
 c1.Update()
 
-
+current_analysis.get_T1().Scan('TrigLeftEdge[]:S1sPeak', sTriggerCut)
 
 
 c2 = Canvas()

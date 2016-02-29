@@ -9,8 +9,8 @@ import neriX_simulation_config
 import numpy as np
 import cPickle as pickle
 
-if len(sys.argv) != 6:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers>'
+if len(sys.argv) != 6 and len(sys.argv) != 7:
+	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f]'
 	sys.exit()
 
 
@@ -22,9 +22,15 @@ sMeasurement = sys.argv[4]
 numWalkers = int(sys.argv[5])
 
 # change to switch between real and fake data
-realDate = True
 
-if realDate:
+if len(sys.argv) == 7:
+	if sys.argv[6] == 't':
+		useFakeData = True
+	else:
+		useFakeData = False
+
+
+if not useFakeData:
 	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
 	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
 	useFakeValueInPlots = False
@@ -57,12 +63,12 @@ dParametersToDraw = {'photon_yield':{'index':0,
 									 'form':'P_{y}',
 									 'unit': '#frac{photons}{keV}',
 									 'binning':[100, 4, 16],
-									 'true_value_for_fake':7.6},
+									 'true_value_for_fake':6.44},
 					 'charge_yield':{'index':1,
 									 'form':'Q_{y}',
 									 'unit': '#frac{electrons}{keV}',
 									 'binning':[100, 3, 10],
-									 'true_value_for_fake':5.3},
+									 'true_value_for_fake':5.88},
 					 'res_s1':{'index':2,
 							   'unit': '',
 							   'form':'R_{S1}',
@@ -124,7 +130,7 @@ for parameter in dParametersToDraw:
 
 for parameter in dPlots:
 	nameForFile = parameter
-	if not realDate:
+	if useFakeData:
 		nameForFile += '_fake'
 	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%ddeg_%.3fkV_%.1fkV' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting))
 

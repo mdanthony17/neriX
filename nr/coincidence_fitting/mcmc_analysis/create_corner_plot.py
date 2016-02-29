@@ -9,15 +9,11 @@ import numpy as np
 import corner
 import cPickle as pickle
 
-if len(sys.argv) != 6:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers>'
+if len(sys.argv) != 6 and len(sys.argv) != 7:
+	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f]'
 	sys.exit()
 
 
-
-#nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-nameOfResultsDirectory = '../fake_data/results'
-pathToSamplerDictionary = nameOfResultsDirectory
 
 degreeSetting = int(sys.argv[1])
 cathodeSetting = float(sys.argv[2])
@@ -27,14 +23,23 @@ numWalkers = int(sys.argv[5])
 
 
 # change to switch between real and fake data
-realDate = True
+if len(sys.argv) == 7:
+	if sys.argv[6] == 't':
+		useFakeData = True
+	else:
+		useFakeData = False
 
-if realDate:
+sForNameInFake = ''
+
+if not useFakeData:
 	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
 	lPlots = ['plots', 'corner_plots', 'data']
+	useFakeValueInPlots = False
 else:
-	nameOfResultsDirectory = '../fake_data/results'
+	nameOfResultsDirectory = 'fake_data/results'
 	lPlots = ['plots', 'corner_plots', 'fake_data']
+	useFakeValueInPlots = True
+	sForNameInFake = '_fake'
 
 
 
@@ -52,9 +57,9 @@ else:
 
 
 # need to figure this out
-numDim = 18
+numDim = 17
 
-lLabelsForCorner = ('photon_yield', 'charge_yield', 'res_s1', 'res_s2', 'n_g1', 'n_res_spe', 'n_par0_tac_eff', 'n_par1_tac_eff', 'n_par0_pf_eff', 'n_par1_pf_eff', 'n_g2', 'n_gas_gain_mean', 'n_gas_gain_width', 'n_par0_trig_eff', 'n_par1_trig_eff', 'n_par0_e_to_i', 'n_par1_e_to_i', 'n_par2_e_to_i')
+lLabelsForCorner = ('photon_yield', 'charge_yield', 'res_s1', 'res_s2', 'n_g1', 'n_res_spe', 'n_par0_tac_eff', 'n_par0_pf_eff', 'n_par1_pf_eff', 'n_g2', 'n_gas_gain_mean', 'n_gas_gain_width', 'n_par0_trig_eff', 'n_par1_trig_eff', 'n_par0_e_to_i', 'n_par1_e_to_i', 'n_par2_e_to_i')
 
 samples = aSampler[:, -5:, :].reshape((-1, numDim))
 fig = corner.corner(samples, labels=lLabelsForCorner)
@@ -65,7 +70,7 @@ sPathForSave = './'
 for directory in lPlots:
 	sPathForSave += directory + '/'
 
-fig.savefig('%s/corner_plot_%ddeg_%.3fkV_%.1fkV.png' % (sPathForSave, degreeSetting, cathodeSetting, anodeSetting))
+fig.savefig('%scorner_plot%s_%ddeg_%.3fkV_%.1fkV.png' % (sPathForSave, sForNameInFake, degreeSetting, cathodeSetting, anodeSetting))
 
 
 
