@@ -64,7 +64,6 @@ degreeSetting = int(sys.argv[4])
 
 
 current_analysis = neriX_analysis.neriX_analysis(neriX_analysis.pull_all_files_given_parameters(run, anodeSetting, cathodeSetting, degreeSetting), degreeSetting, cathodeSetting, anodeSetting)
-
 sForHistograms = ' - %d deg, %.3f kV' % (degreeSetting, cathodeSetting)
 
 colzOption = 'COLZ'
@@ -75,10 +74,10 @@ current_analysis.add_cut('S1sTotBottom[0] > 0')
 current_analysis.add_z_cut()
 current_analysis.add_radius_cut(0, 0.85)
 current_analysis.add_single_scatter_cut()
-#current_analysis.add_s1_liqsci_peak_cut()
 current_analysis.add_xs1asym_cut()
 current_analysis.add_xs2asym_cut()
 current_analysis.add_temp_neutron_cut(degreeSetting)
+
 #current_analysis.add_temp_gamma_cut(degreeSetting)
 #current_analysis.add_cut('TMath::Log10(S2sTotBottom[0]/S1sTotBottom[0]) < 3 && S1sTotBottom[0] < 35')
 #current_analysis.add_temp_tof_cut(degreeSetting)
@@ -116,6 +115,7 @@ hTOF.GetXaxis().SetTitle('TOF [ns]')
 hTOF.GetYaxis().SetTitle('Counts')
 hTOF.SetStats(1)
 
+print 'No TOF cut!'
 #current_analysis.add_temp_tof_cut(degreeSetting)
 
 

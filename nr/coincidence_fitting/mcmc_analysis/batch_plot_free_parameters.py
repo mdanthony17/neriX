@@ -45,7 +45,7 @@ if not useFakeData:
 	sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
 else:
 	nameOfResultsDirectory = neriX_simulation_config.pathToThisModule + '/mcmc_analysis/fake_data/results'
-	lPlots = ['plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)]
+	lPlots = ['..', 'plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)]
 	useFakeValueInPlots = True
 	sPathToFile = '%s/%ddeg_%.3fkV_%.1fkV_%.2f_%d_events/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events, sMeasurement)
 

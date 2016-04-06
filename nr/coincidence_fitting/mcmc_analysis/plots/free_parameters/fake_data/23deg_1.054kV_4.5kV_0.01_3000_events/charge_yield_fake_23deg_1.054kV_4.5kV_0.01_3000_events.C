@@ -1,0 +1,147 @@
+{
+//=========Macro generated from canvas: Canvas_FnkejBKMbyw5Uu6G9BJ6gS/
+//=========  (Mon Feb 29 14:02:12 2016) by ROOT version5.34/28
+   TCanvas *Canvas_FnkejBKMbyw5Uu6G9BJ6gS = new TCanvas("Canvas_FnkejBKMbyw5Uu6G9BJ6gS", "",0,0,700,500);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetHighLightColor(2);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->Range(2.125,-122.9965,10.875,1106.969);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetFillColor(0);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetBorderMode(0);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetBorderSize(2);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetFrameBorderMode(0);
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetFrameBorderMode(0);
+   
+   TH1F *h_charge_yield = new TH1F("h_charge_yield","charge_yield",100,3,10);
+   h_charge_yield->SetBinContent(38,10);
+   h_charge_yield->SetBinContent(40,20);
+   h_charge_yield->SetBinContent(41,25);
+   h_charge_yield->SetBinContent(42,48);
+   h_charge_yield->SetBinContent(43,25);
+   h_charge_yield->SetBinContent(44,79);
+   h_charge_yield->SetBinContent(45,138);
+   h_charge_yield->SetBinContent(46,146);
+   h_charge_yield->SetBinContent(47,301);
+   h_charge_yield->SetBinContent(48,303);
+   h_charge_yield->SetBinContent(49,441);
+   h_charge_yield->SetBinContent(50,526);
+   h_charge_yield->SetBinContent(51,569);
+   h_charge_yield->SetBinContent(52,677);
+   h_charge_yield->SetBinContent(53,835);
+   h_charge_yield->SetBinContent(54,907);
+   h_charge_yield->SetBinContent(55,760);
+   h_charge_yield->SetBinContent(56,706);
+   h_charge_yield->SetBinContent(57,722);
+   h_charge_yield->SetBinContent(58,581);
+   h_charge_yield->SetBinContent(59,607);
+   h_charge_yield->SetBinContent(60,407);
+   h_charge_yield->SetBinContent(61,318);
+   h_charge_yield->SetBinContent(62,251);
+   h_charge_yield->SetBinContent(63,228);
+   h_charge_yield->SetBinContent(64,186);
+   h_charge_yield->SetBinContent(65,128);
+   h_charge_yield->SetBinContent(66,97);
+   h_charge_yield->SetBinContent(67,55);
+   h_charge_yield->SetBinContent(68,50);
+   h_charge_yield->SetBinContent(69,44);
+   h_charge_yield->SetBinContent(70,10);
+   h_charge_yield->SetBinContent(71,25);
+   h_charge_yield->SetBinContent(73,10);
+   h_charge_yield->SetBinContent(77,5);
+   h_charge_yield->SetBinError(38,3.162278);
+   h_charge_yield->SetBinError(40,4.472136);
+   h_charge_yield->SetBinError(41,5);
+   h_charge_yield->SetBinError(42,6.928203);
+   h_charge_yield->SetBinError(43,5);
+   h_charge_yield->SetBinError(44,8.888194);
+   h_charge_yield->SetBinError(45,11.74734);
+   h_charge_yield->SetBinError(46,12.08305);
+   h_charge_yield->SetBinError(47,17.34935);
+   h_charge_yield->SetBinError(48,17.4069);
+   h_charge_yield->SetBinError(49,21);
+   h_charge_yield->SetBinError(50,22.93469);
+   h_charge_yield->SetBinError(51,23.85372);
+   h_charge_yield->SetBinError(52,26.01922);
+   h_charge_yield->SetBinError(53,28.89637);
+   h_charge_yield->SetBinError(54,30.11644);
+   h_charge_yield->SetBinError(55,27.5681);
+   h_charge_yield->SetBinError(56,26.57066);
+   h_charge_yield->SetBinError(57,26.87006);
+   h_charge_yield->SetBinError(58,24.10394);
+   h_charge_yield->SetBinError(59,24.63737);
+   h_charge_yield->SetBinError(60,20.17424);
+   h_charge_yield->SetBinError(61,17.83255);
+   h_charge_yield->SetBinError(62,15.84298);
+   h_charge_yield->SetBinError(63,15.09967);
+   h_charge_yield->SetBinError(64,13.63818);
+   h_charge_yield->SetBinError(65,11.31371);
+   h_charge_yield->SetBinError(66,9.848858);
+   h_charge_yield->SetBinError(67,7.416198);
+   h_charge_yield->SetBinError(68,7.071068);
+   h_charge_yield->SetBinError(69,6.63325);
+   h_charge_yield->SetBinError(70,3.162278);
+   h_charge_yield->SetBinError(71,5);
+   h_charge_yield->SetBinError(73,3.162278);
+   h_charge_yield->SetBinError(77,2.236068);
+   h_charge_yield->SetEntries(10240);
+   h_charge_yield->SetStats(0);
+   h_charge_yield->SetFillColor(1);
+   h_charge_yield->SetFillStyle(0);
+   h_charge_yield->SetMarkerStyle(20);
+   h_charge_yield->SetMarkerSize(0);
+   h_charge_yield->GetXaxis()->SetLabelFont(42);
+   h_charge_yield->GetXaxis()->SetLabelSize(0.035);
+   h_charge_yield->GetXaxis()->SetTitleSize(0.035);
+   h_charge_yield->GetXaxis()->SetTitleFont(42);
+   h_charge_yield->GetYaxis()->SetLabelFont(42);
+   h_charge_yield->GetYaxis()->SetLabelSize(0.035);
+   h_charge_yield->GetYaxis()->SetTitleSize(0.035);
+   h_charge_yield->GetYaxis()->SetTitleFont(42);
+   h_charge_yield->GetZaxis()->SetLabelFont(42);
+   h_charge_yield->GetZaxis()->SetLabelSize(0.035);
+   h_charge_yield->GetZaxis()->SetTitleSize(0.035);
+   h_charge_yield->GetZaxis()->SetTitleFont(42);
+   h_charge_yield->Draw("");
+   
+   TPaveText *pt = new TPaveText(0.3771429,0.935,0.6228571,0.995,"blNDC");
+   pt->SetName("title");
+   pt->SetBorderSize(0);
+   pt->SetFillColor(0);
+   pt->SetFillStyle(0);
+   pt->SetTextFont(42);
+   TText *text = pt->AddText("charge_yield");
+   pt->Draw();
+   TLine *line = new TLine(6.442265,0,6.442265,907);
+
+   Int_t ci;      // for color index setting
+   TColor *color; // for color definition with alpha
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(6.786447,0,6.786447,907);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(7.161963,0,7.161963,907);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(6.78,0,6.78,907);
+
+   ci = TColor::GetColor("#ff0000");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   
+   pt = new TPaveText(0.6,0.55,0.88,0.6,"blNDC");
+   pt->SetBorderSize(0);
+   pt->SetFillStyle(0);
+   text = pt->AddText("Q_{y} = 6.79^{-0.34}_{+0.38} #frac{electrons}{keV}");
+   pt->Draw();
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->Modified();
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->cd();
+   Canvas_FnkejBKMbyw5Uu6G9BJ6gS->SetSelected(Canvas_FnkejBKMbyw5Uu6G9BJ6gS);
+}

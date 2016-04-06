@@ -1,0 +1,78 @@
+{
+//=========Macro generated from canvas: c5/
+//=========  (Thu Mar  3 18:24:45 2016) by ROOT version5.34/26
+   TCanvas *c5 = new TCanvas("c5", "",271,324,640,480);
+   c5->SetHighLightColor(2);
+   c5->Range(-5.5,-4.656386,44.5,41.90747);
+   c5->SetFillColor(0);
+   c5->SetBorderMode(0);
+   c5->SetBorderSize(2);
+   c5->SetFrameBorderMode(0);
+   c5->SetFrameBorderMode(0);
+   
+   TH1F *hS1 = new TH1F("hS1","S1 Spectrum - 23 deg, 1.054 kV",20,-0.5,39.5);
+   hS1->SetBinContent(1,3);
+   hS1->SetBinContent(2,16);
+   hS1->SetBinContent(3,30);
+   hS1->SetBinContent(4,14);
+   hS1->SetBinContent(5,18);
+   hS1->SetBinContent(6,6);
+   hS1->SetBinContent(7,6);
+   hS1->SetBinContent(8,6);
+   hS1->SetBinContent(9,1);
+   hS1->SetBinContent(10,1);
+   hS1->SetBinContent(11,2);
+   hS1->SetBinContent(12,1);
+   hS1->SetBinContent(13,1);
+   hS1->SetBinContent(14,1);
+   hS1->SetBinContent(19,1);
+   hS1->SetBinContent(21,13);
+   hS1->SetBinError(1,1.732051);
+   hS1->SetBinError(2,4);
+   hS1->SetBinError(3,5.477226);
+   hS1->SetBinError(4,3.741657);
+   hS1->SetBinError(5,4.242641);
+   hS1->SetBinError(6,2.44949);
+   hS1->SetBinError(7,2.44949);
+   hS1->SetBinError(8,2.44949);
+   hS1->SetBinError(9,1);
+   hS1->SetBinError(10,1);
+   hS1->SetBinError(11,1.414214);
+   hS1->SetBinError(12,1);
+   hS1->SetBinError(13,1);
+   hS1->SetBinError(14,1);
+   hS1->SetBinError(19,1);
+   hS1->SetBinError(21,3.605551);
+   hS1->SetEntries(120);
+   hS1->SetStats(0);
+   hS1->SetFillStyle(0);
+   hS1->SetMarkerStyle(20);
+   hS1->SetMarkerSize(0);
+   hS1->GetXaxis()->SetTitle("cpS1sTotBottom[0] - S1sNoiseTrapezoid[0][16] [PE]");
+   hS1->GetXaxis()->SetLabelFont(42);
+   hS1->GetXaxis()->SetLabelSize(0.035);
+   hS1->GetXaxis()->SetTitleSize(0.035);
+   hS1->GetXaxis()->SetTitleFont(42);
+   hS1->GetYaxis()->SetTitle("Counts");
+   hS1->GetYaxis()->SetLabelFont(42);
+   hS1->GetYaxis()->SetLabelSize(0.035);
+   hS1->GetYaxis()->SetTitleSize(0.035);
+   hS1->GetYaxis()->SetTitleFont(42);
+   hS1->GetZaxis()->SetLabelFont(42);
+   hS1->GetZaxis()->SetLabelSize(0.035);
+   hS1->GetZaxis()->SetTitleSize(0.035);
+   hS1->GetZaxis()->SetTitleFont(42);
+   hS1->Draw("e");
+   
+   TPaveText *pt = new TPaveText(0.2242767,0.9340729,0.7757233,0.995,"blNDC");
+   pt->SetName("title");
+   pt->SetBorderSize(0);
+   pt->SetFillColor(0);
+   pt->SetFillStyle(0);
+   pt->SetTextFont(42);
+   TText *text = pt->AddText("S1 Spectrum - 23 deg, 1.054 kV");
+   pt->Draw();
+   c5->Modified();
+   c5->cd();
+   c5->SetSelected(c5);
+}

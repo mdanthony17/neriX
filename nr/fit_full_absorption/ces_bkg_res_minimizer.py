@@ -9,7 +9,7 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 from rootpy.plotting.utils import draw
 import numpy as np
 import matplotlib.pyplot as plt
-
+from tqdm import tqdm
 
 # generator for floats
 def drange(start, stop, step):
@@ -62,8 +62,8 @@ def ces_bkg_res(currentAnalysis, g1, g2, numBins=80, lowerBound=0, upperBound=40
 		aX[0], aX[1] = aX[1], aX[0]
 	#print aX
 
-	if aX[0] < 100:
-		return 1e5
+	if aX[0] < 80:
+		return 1e50, 0
 	
 	lowerLimitFit = aX[0] * 0.85
 	upperLimitFit = aX[1] * 1.15
@@ -86,7 +86,7 @@ def ces_bkg_res(currentAnalysis, g1, g2, numBins=80, lowerBound=0, upperBound=40
 	if fitStatus != 0:
 		# return large number if fit fails
 		print 'Fit failed!'
-		return 1e5
+		return 1e50, fDoubleGaussian
 	else:
 		# want to minimize sum of squares of resolution of each peak
 		return res164**2 + res236**2, fDoubleGaussian
@@ -106,7 +106,7 @@ def ces_bkg_res_minimizer(g1Low, g1High, g1Step, g2Low, g2High, g2Step, currentA
 	lowestRes = 1e3
 	fLowest = None
 
-	for i, g1 in enumerate(lG1):
+	for i, g1 in tqdm(enumerate(lG1)):
 		for j, g2 in enumerate(lG2):
 			lRes[j][i], fRes = ces_bkg_res(currentAnalysis, g1, g2, numBins, lowerBound, upperBound, drawFit)
 			if lRes[j][i] < lowestRes:
@@ -215,13 +215,13 @@ if __name__ == '__main__':
 
 	currentAnalysis.add_z_cut()
 	currentAnalysis.add_single_scatter_cut()
-	currentAnalysis.add_radius_cut(0, 0.5)
+	currentAnalysis.add_radius_cut(0, 0.85)
 	currentAnalysis.add_cut('(s1asym > 0)')
 
 	currentAnalysis.set_event_list()
 	
 	#ces_bkg_res(neriX_analysis(sys.argv[1]), 0.12, 24, drawFit=True)
-	g1, g2, sCES164Cut, sCES236Cut = ces_bkg_res_minimizer(0.09, 0.14, 0.01, 22., 31., 0.1, currentAnalysis, drawFit=False)
+	g1, g2, sCES164Cut, sCES236Cut = ces_bkg_res_minimizer(0.07, 0.12, 0.005, 13., 19., 0.1, currentAnalysis, drawFit=False)
 
 	ces_bkg_res(currentAnalysis, g1, g2, drawFit=True)
 	fS1 = fit_s1_with_ces_cut(currentAnalysis, sCES164Cut)

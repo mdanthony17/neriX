@@ -1,52 +1,52 @@
 {
-//=========Macro generated from canvas: cacbc44bee1244d5b40259efa7cf5288/
-//=========  (Tue Feb 23 12:06:33 2016) by ROOT version5.34/26
-   TCanvas *cacbc44bee1244d5b40259efa7cf5288 = new TCanvas("cacbc44bee1244d5b40259efa7cf5288", "",10,45,704,527);
-   cacbc44bee1244d5b40259efa7cf5288->SetHighLightColor(2);
-   cacbc44bee1244d5b40259efa7cf5288->Range(-6.875,0.9881721,11.875,5.19892);
-   cacbc44bee1244d5b40259efa7cf5288->SetFillColor(0);
-   cacbc44bee1244d5b40259efa7cf5288->SetBorderMode(0);
-   cacbc44bee1244d5b40259efa7cf5288->SetBorderSize(2);
-   cacbc44bee1244d5b40259efa7cf5288->SetLogy();
-   cacbc44bee1244d5b40259efa7cf5288->SetFrameBorderMode(0);
-   cacbc44bee1244d5b40259efa7cf5288->SetFrameBorderMode(0);
+//=========Macro generated from canvas: e82364a96bb547a4a4f7fe4910654075/
+//=========  (Thu Mar  3 14:57:39 2016) by ROOT version5.34/26
+   TCanvas *e82364a96bb547a4a4f7fe4910654075 = new TCanvas("e82364a96bb547a4a4f7fe4910654075", "",10,45,704,527);
+   e82364a96bb547a4a4f7fe4910654075->SetHighLightColor(2);
+   e82364a96bb547a4a4f7fe4910654075->Range(-6.875,0.738455,11.875,4.980134);
+   e82364a96bb547a4a4f7fe4910654075->SetFillColor(0);
+   e82364a96bb547a4a4f7fe4910654075->SetBorderMode(0);
+   e82364a96bb547a4a4f7fe4910654075->SetBorderSize(2);
+   e82364a96bb547a4a4f7fe4910654075->SetLogy();
+   e82364a96bb547a4a4f7fe4910654075->SetFrameBorderMode(0);
+   e82364a96bb547a4a4f7fe4910654075->SetFrameBorderMode(0);
    
    TH1F *hGaus = new TH1F("hGaus","Time between Trigger and First S1 in Waveform - nerix_160223_0947",15,-5,10);
-   hGaus->SetBinContent(0,345595);
-   hGaus->SetBinContent(1,283);
-   hGaus->SetBinContent(2,273);
-   hGaus->SetBinContent(3,297);
-   hGaus->SetBinContent(4,331);
-   hGaus->SetBinContent(5,489);
-   hGaus->SetBinContent(6,2406);
-   hGaus->SetBinContent(7,31467);
-   hGaus->SetBinContent(8,13576);
-   hGaus->SetBinContent(9,713);
-   hGaus->SetBinContent(10,157);
-   hGaus->SetBinContent(11,99);
-   hGaus->SetBinContent(12,78);
-   hGaus->SetBinContent(13,62);
-   hGaus->SetBinContent(14,59);
-   hGaus->SetBinContent(15,64);
-   hGaus->SetBinContent(16,889983);
-   hGaus->SetBinError(0,587.8733);
-   hGaus->SetBinError(1,16.8226);
-   hGaus->SetBinError(2,16.52271);
-   hGaus->SetBinError(3,17.23369);
-   hGaus->SetBinError(4,18.19341);
-   hGaus->SetBinError(5,22.11334);
-   hGaus->SetBinError(6,49.05099);
-   hGaus->SetBinError(7,177.3894);
-   hGaus->SetBinError(8,116.5161);
-   hGaus->SetBinError(9,26.70206);
-   hGaus->SetBinError(10,12.52996);
-   hGaus->SetBinError(11,9.949874);
-   hGaus->SetBinError(12,8.831761);
-   hGaus->SetBinError(13,7.874008);
-   hGaus->SetBinError(14,7.681146);
-   hGaus->SetBinError(15,8);
-   hGaus->SetBinError(16,943.3891);
-   hGaus->SetEntries(1285932);
+   hGaus->SetBinContent(0,186652);
+   hGaus->SetBinContent(1,184);
+   hGaus->SetBinContent(2,176);
+   hGaus->SetBinContent(3,186);
+   hGaus->SetBinContent(4,215);
+   hGaus->SetBinContent(5,311);
+   hGaus->SetBinContent(6,1241);
+   hGaus->SetBinContent(7,18848);
+   hGaus->SetBinContent(8,7410);
+   hGaus->SetBinContent(9,503);
+   hGaus->SetBinContent(10,116);
+   hGaus->SetBinContent(11,71);
+   hGaus->SetBinContent(12,46);
+   hGaus->SetBinContent(13,45);
+   hGaus->SetBinContent(14,35);
+   hGaus->SetBinContent(15,43);
+   hGaus->SetBinContent(16,533458);
+   hGaus->SetBinError(0,432.0324);
+   hGaus->SetBinError(1,13.56466);
+   hGaus->SetBinError(2,13.2665);
+   hGaus->SetBinError(3,13.63818);
+   hGaus->SetBinError(4,14.66288);
+   hGaus->SetBinError(5,17.63519);
+   hGaus->SetBinError(6,35.22783);
+   hGaus->SetBinError(7,137.288);
+   hGaus->SetBinError(8,86.08136);
+   hGaus->SetBinError(9,22.42766);
+   hGaus->SetBinError(10,10.77033);
+   hGaus->SetBinError(11,8.42615);
+   hGaus->SetBinError(12,6.78233);
+   hGaus->SetBinError(13,6.708204);
+   hGaus->SetBinError(14,5.91608);
+   hGaus->SetBinError(15,6.557439);
+   hGaus->SetBinError(16,730.3821);
+   hGaus->SetEntries(749540);
    hGaus->SetStats(0);
    hGaus->SetFillStyle(0);
    hGaus->SetMarkerStyle(20);
@@ -75,7 +75,7 @@
    pt->SetTextFont(42);
    TText *text = pt->AddText("Time between Trigger and First S1 in Waveform - nerix_160223_0947");
    pt->Draw();
-   TLine *line = new TLine(0,59,0,31467);
+   TLine *line = new TLine(-1,35,-1,18848);
 
    Int_t ci;      // for color index setting
    TColor *color; // for color definition with alpha
@@ -83,13 +83,13 @@
    line->SetLineColor(ci);
    line->SetLineStyle(7);
    line->Draw();
-   line = new TLine(6,59,6,31467);
+   line = new TLine(4,35,4,18848);
 
    ci = TColor::GetColor("#ff0000");
    line->SetLineColor(ci);
    line->SetLineStyle(7);
    line->Draw();
-   cacbc44bee1244d5b40259efa7cf5288->Modified();
-   cacbc44bee1244d5b40259efa7cf5288->cd();
-   cacbc44bee1244d5b40259efa7cf5288->SetSelected(cacbc44bee1244d5b40259efa7cf5288);
+   e82364a96bb547a4a4f7fe4910654075->Modified();
+   e82364a96bb547a4a4f7fe4910654075->cd();
+   e82364a96bb547a4a4f7fe4910654075->SetSelected(e82364a96bb547a4a4f7fe4910654075);
 }

@@ -17,11 +17,15 @@ filename = sys.argv[1]
 
 current_analysis = neriX_analysis.neriX_analysis(filename)
 
-lowTimeDiff = -25
-highTimeDiff = -10
+lowTimeDiff = -2
+highTimeDiff = 9
 
 lowForGaussian = -500
 highForGaussian = 100
+
+rightEdgeLowerBound = 6
+
+closestS1S2Distance = 50
 
 
 current_analysis.add_xs1asym_cut()
@@ -121,10 +125,15 @@ hGaus.SetTitle('Time between Trigger and First S1 in Waveform - %s' % current_an
 
 
 sBothCut = '%s > 0.' % s1Branch
-sBothCut += ' && Alt$(S1sPeak[S1Order[1]] - S1sPeak[S1Order[0]], 100000) > %f' % highTimeDiff
+#sBothCut += ' && Alt$(S1sPeak[S1Order[1]] - S1sPeak[S1Order[0]], 100000) > %d' % closestS1S2Distance
+sBothCut += ' && (S2sLeftEdge[S2Order[0]] - S1sPeak[S1Order[0]]) > %f' % closestS1S2Distance
 
-sTriggerCut = sBothCut + ' && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f' % (lowTimeDiff, highTimeDiff)
-sTriggerCut += ' && ((TrigLeftEdge[] + TrigLength[]) > S1sPeak[S1Order[0]])'
+
+#sTriggerCut = sBothCut + ' && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f' % (lowTimeDiff, highTimeDiff)
+#sTriggerCut += ' && ((TrigLeftEdge[] + TrigLength[]) > S1sPeak[S1Order[0]])'
+
+sTriggerCut = sBothCut + ' && (TrigLeftEdge[] + TrigLength[] - S1sPeak[S1Order[0]]) > %f' % 5
+#sTriggerCut = sBothCut + ' && (((TrigLeftEdge[] - S1sPeak[S1Order[0]]) > %f && (TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f) || ((TrigLeftEdge[] - S1sPeak[S1Order[0]]) < %f && (TrigLeftEdge[] + TrigLength[] - S1sPeak[S1Order[0]]) > %f))' % (lowTimeDiff, highTimeDiff, lowTimeDiff, rightEdgeLowerBound)
 
 current_analysis.Draw(s1Branch, hist=hNoCut, selection=sBothCut)
 current_analysis.Draw(s1Branch, hist=hWithCut, selection=sTriggerCut)
@@ -141,7 +150,7 @@ gEff.GetXaxis().SetRangeUser(lowerBoundS1, upperBoundS1)
 gEff.Draw('AP')
 c1.Update()
 
-current_analysis.get_T1().Scan('TrigLeftEdge[]:S1sPeak', sTriggerCut)
+#current_analysis.get_T1().Scan('TrigLeftEdge[]:S1sPeak', sTriggerCut)
 
 
 c2 = Canvas()

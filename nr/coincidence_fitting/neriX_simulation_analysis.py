@@ -654,17 +654,22 @@ class neriX_simulation_analysis(object):
 		# load tac efficiency file and store in easy function
 		fTACEfficiency = File(dFilesForAnalysis['tac_efficiency'])
 		tf1TacEfficiency = fTACEfficiency.tof_efficiency
-		self.efTacEfficiency = easy_function(tf1TacEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
+		self.lParsTacEff = [tf1TacEfficiency.GetParameter(i) for i in xrange(neriX_simulation_datasets.num_par_tac_eff)]
+		self.lParsTacEffUncertainty = [tf1TacEfficiency.GetParError(i) for i in xrange(neriX_simulation_datasets.num_par_tac_eff)]
+		#self.efTacEfficiency = easy_function(tf1TacEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
 
 		# ------------------------------------------------
-		# Load fSigmoid from tac efficiency file
+		# Load fSigmoid from trig efficiency file
 		# and load into easy_function
 		# ------------------------------------------------
 		
-		# load tac efficiency file and store in easy function
+		# load trig efficiency file and store in easy function
 		fTrigEfficiency = File(dFilesForAnalysis['trig_efficiency'])
 		tf1TrigEfficiency = fTrigEfficiency.eff_func
-		self.efTrigEfficiency = easy_function(tf1TrigEfficiency, self.s2NumBins, self.s2LowerBound, self.s2UpperBound)
+		# --------  NOTE: need +1 due to function def in TRIG EFF ONLY
+		self.lParsTrigEff = [tf1TrigEfficiency.GetParameter(i+1) for i in xrange(neriX_simulation_datasets.num_par_trig_eff)]
+		self.lParsTrigEffUncertainty = [tf1TrigEfficiency.GetParError(i+1) for i in xrange(neriX_simulation_datasets.num_par_trig_eff)]
+		#self.efTrigEfficiency = easy_function(tf1TrigEfficiency, self.s2NumBins, self.s2LowerBound, self.s2UpperBound)
 			
 		# ------------------------------------------------
 		# Load peak finder efficiency from file
@@ -673,7 +678,9 @@ class neriX_simulation_analysis(object):
 
 		fPFEfficiency = File(dFilesForAnalysis['peak_finder_efficiency'])
 		tf1PFEfficiency = fPFEfficiency.fPeakFindEff
-		self.efPFEfficiency = easy_function(tf1PFEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
+		self.lParsPFEff = [tf1PFEfficiency.GetParameter(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
+		self.lParsPFEffUncertainty = [tf1PFEfficiency.GetParError(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
+		#self.efPFEfficiency = easy_function(tf1PFEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
 		
 		# test cases
 		#print self.efTrigEfficiency.get_eg_best_fit()[1].get_x_values()
@@ -873,6 +880,16 @@ class neriX_simulation_analysis(object):
 	
 	def get_spe_res_default(self, speResRV):
 		return norm.pdf(speResRV), self.speResValue + (speResRV*self.speResUncertainty)
+	
+	
+	
+	def get_eff_default(self, lEffRV, lMeans, lWidths):
+		likelihood = 1.
+		lPars = [0. for i in xrange(len(lEffRV))]
+		for i, parRV in enumerate(lEffRV):
+			likelihood *= norm.pdf(parRV)
+			lPars[i] = lMeans[i] + (parRV*lWidths[i])
+		return likelihood, lPars
 
 
 
@@ -1071,9 +1088,9 @@ class neriX_simulation_analysis(object):
 		
 		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
 
-		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV)
+		tacEffLikelihood, lTacEff = self.get_eff_default([par0TacEffRV], self.lParsTacEff, self.lParsTacEffUncertainty)
 		
-		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
+		pfEffLikelihood, lPFEff = self.get_eff_default([par0PFEffRV, par1PFEffRV], self.lParsPFEff, self.lParsPFEffUncertainty)
 
 
 		# S2 values (5 nuissance parameters)
@@ -1083,7 +1100,7 @@ class neriX_simulation_analysis(object):
 		
 		gasGainWidthLikelihood, gasGainWidth = self.get_gas_gain_default(gasGainWidthRV)
 		
-		trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
+		trigEffLikelihood, lTrigEff = self.get_eff_default([par0TrigEffRV, par1TrigEffRV], self.lParsTrigEff, self.lParsTrigEffUncertainty)
 	
 	
 	
@@ -1125,7 +1142,20 @@ class neriX_simulation_analysis(object):
 		intrinsicResS1 = np.asarray(intrinsicResolutionS1, dtype=np.float32)
 		intrinsicResS2 = np.asarray(intrinsicResolutionS2, dtype=np.float32)
 		
-		c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
+		#print lTacEff, lTrigEff, lPFEff
+		
+		# if using no TAC don't apply efficiency by using
+		# parameters that make efficiency 1.
+		if self.degreeSetting > 100.:
+			tacEff = np.asarray([1e6], dtype=np.float32)
+		else:
+			tacEff = np.asarray(lTacEff, dtype=np.float32)
+		
+		# handle other efficiencies uniformly
+		trigEff = np.asarray(lTrigEff, dtype=np.float32)
+		pfEff = np.asarray(lPFEff, dtype=np.float32)
+		
+		c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2, tacEff, trigEff, pfEff)
 		
 		
 		# ------------------------------------------------
@@ -1144,6 +1174,7 @@ class neriX_simulation_analysis(object):
 		# element wise multiplication to combine S1 or S2
 		# need to use outer with multiply to make large matrix
 		
+		"""
 		if self.degreeSetting == 23:
 			aS1Efficiency = egPFEff.get_y_values().flatten()
 		else:
@@ -1157,7 +1188,7 @@ class neriX_simulation_analysis(object):
 		
 		aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
 		#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
-		
+		"""
 
 		self.fFakeData.cd()
 		
@@ -1250,10 +1281,12 @@ class neriX_simulation_analysis(object):
 		speResLikelihood, speRes = self.get_spe_res_default(speResRV)
 		speResLogLikelihood = self.get_prior_log_likelihood_nuissance(speResLikelihood)
 
-		tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV)
+		#tacEffLikelihood, egTacEff = self.efTacEfficiency.make_graph_from_input(par0TacEffRV)
+		tacEffLikelihood, lTacEff = self.get_eff_default([par0TacEffRV], self.lParsTacEff, self.lParsTacEffUncertainty)
 		tacEffLogLikelihood = self.get_prior_log_likelihood_nuissance(tacEffLikelihood)
 		
-		pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
+		#pfEffLikelihood, egPFEff = self.efPFEfficiency.make_graph_from_input(par0PFEffRV, par1PFEffRV)
+		pfEffLikelihood, lPFEff = self.get_eff_default([par0PFEffRV, par1PFEffRV], self.lParsPFEff, self.lParsPFEffUncertainty)
 		pfEffLogLikelihood = self.get_prior_log_likelihood_nuissance(pfEffLikelihood)
 
 
@@ -1267,7 +1300,8 @@ class neriX_simulation_analysis(object):
 		gasGainWidthLikelihood, gasGainWidth = self.get_gas_gain_default(gasGainWidthRV)
 		gasGainWidthLogLikelihood = self.get_prior_log_likelihood_nuissance(gasGainWidthLikelihood)
 		
-		trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
+		#trigEffLikelihood, egTrigEff = self.efTrigEfficiency.make_graph_from_input(par0TrigEffRV, par1TrigEffRV)
+		trigEffLikelihood, lTrigEff = self.get_eff_default([par0TrigEffRV, par1TrigEffRV], self.lParsTrigEff, self.lParsTrigEffUncertainty)
 		trigEffLogLikelihood = self.get_prior_log_likelihood_nuissance(trigEffLikelihood)
 		
 
@@ -1317,6 +1351,19 @@ class neriX_simulation_analysis(object):
 		intrinsicResS1 = np.asarray(intrinsicResolutionS1, dtype=np.float32)
 		intrinsicResS2 = np.asarray(intrinsicResolutionS2, dtype=np.float32)
 		
+		#print lTacEff, lTrigEff, lPFEff
+		
+		# if using no TAC don't apply efficiency by using
+		# parameters that make efficiency 1.
+		if self.degreeSetting > 100.:
+			tacEff = np.asarray([1e6], dtype=np.float32)
+		else:
+			tacEff = np.asarray(lTacEff, dtype=np.float32)
+		
+		# handle other efficiencies uniformly
+		trigEff = np.asarray(lTrigEff, dtype=np.float32)
+		pfEff = np.asarray(lPFEff, dtype=np.float32)
+		
 		
 
 
@@ -1344,7 +1391,7 @@ class neriX_simulation_analysis(object):
 			observables_func(*tArgs, **d_gpu_scale)
 		
 		else:
-			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2)
+			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2, tacEff, trigEff, pfEff)
 		
 		#print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
 
@@ -1366,11 +1413,13 @@ class neriX_simulation_analysis(object):
 		# element wise multiplication to combine S1 or S2
 		# need to use outer with multiply to make large matrix
 		
+		"""
 		if self.degreeSetting == 23:
 			aS1Efficiency = egPFEff.get_y_values().flatten()
 		else:
 			aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
 		aS2Efficiency = egTrigEff.get_y_values()
+		print aS2Efficiency
 		
 		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
 		
@@ -1383,6 +1432,7 @@ class neriX_simulation_analysis(object):
 			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
 		except:
 			return -np.inf, aS1S2MC
+		"""
 
 		if drawFit:
 
@@ -1762,12 +1812,13 @@ if __name__ == '__main__':
 	copy_reg.pickle(types.MethodType, reduce_method)
 
 	# create fake data
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 23, create_fake_data=True, num_fake_events=6000, assumeRelativeAccidentalRate=2.)
-	test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, create_fake_data=True, num_fake_events=6000, assumeRelativeAccidentalRate=2.)
+	#test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.2, num_fake_events=3000, numMCEvents=50000)
-	#test.perform_mc_match_full(9.08, 4.82, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, accidentalBkgAdjustmentTerm=0.0, numMCEvents=50000)
+	test.perform_mc_match_full(10, 6, 0.5, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 

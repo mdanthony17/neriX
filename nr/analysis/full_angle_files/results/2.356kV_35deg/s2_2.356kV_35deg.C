@@ -1,9 +1,9 @@
 {
 //=========Macro generated from canvas: c6/
-//=========  (Wed Feb 24 13:01:05 2016) by ROOT version5.34/26
-   TCanvas *c6 = new TCanvas("c6", "",615,101,640,480);
+//=========  (Tue Mar  1 09:49:34 2016) by ROOT version5.34/26
+   TCanvas *c6 = new TCanvas("c6", "",2519,47,640,480);
    c6->SetHighLightColor(2);
-   c6->Range(-500,-15.95156,4500,143.564);
+   c6->Range(-500,-54.4523,4500,490.0706);
    c6->SetFillColor(0);
    c6->SetBorderMode(0);
    c6->SetBorderSize(2);
@@ -11,29 +11,29 @@
    c6->SetFrameBorderMode(0);
    
    TH1F *hS2 = new TH1F("hS2","S2 Spectrum - 35 deg, 2.356 kV",10,0,4000);
-   hS2->SetBinContent(1,4);
-   hS2->SetBinContent(2,60);
-   hS2->SetBinContent(3,111);
-   hS2->SetBinContent(4,32);
-   hS2->SetBinContent(5,10);
-   hS2->SetBinContent(6,5);
-   hS2->SetBinContent(7,3);
-   hS2->SetBinContent(8,1);
-   hS2->SetBinContent(9,2);
-   hS2->SetBinContent(10,1);
-   hS2->SetBinContent(11,16);
-   hS2->SetBinError(1,2);
-   hS2->SetBinError(2,7.745967);
-   hS2->SetBinError(3,10.53565);
-   hS2->SetBinError(4,5.656854);
-   hS2->SetBinError(5,3.162278);
-   hS2->SetBinError(6,2.236068);
-   hS2->SetBinError(7,1.732051);
-   hS2->SetBinError(8,1);
-   hS2->SetBinError(9,1.414214);
-   hS2->SetBinError(10,1);
-   hS2->SetBinError(11,4);
-   hS2->SetEntries(245);
+   hS2->SetBinContent(1,7);
+   hS2->SetBinContent(2,183);
+   hS2->SetBinContent(3,395);
+   hS2->SetBinContent(4,166);
+   hS2->SetBinContent(5,66);
+   hS2->SetBinContent(6,36);
+   hS2->SetBinContent(7,13);
+   hS2->SetBinContent(8,6);
+   hS2->SetBinContent(9,8);
+   hS2->SetBinContent(10,6);
+   hS2->SetBinContent(11,48);
+   hS2->SetBinError(1,2.645751);
+   hS2->SetBinError(2,13.52775);
+   hS2->SetBinError(3,19.87461);
+   hS2->SetBinError(4,12.8841);
+   hS2->SetBinError(5,8.124038);
+   hS2->SetBinError(6,6);
+   hS2->SetBinError(7,3.605551);
+   hS2->SetBinError(8,2.44949);
+   hS2->SetBinError(9,2.828427);
+   hS2->SetBinError(10,2.44949);
+   hS2->SetBinError(11,6.928203);
+   hS2->SetEntries(934);
    hS2->SetStats(0);
    hS2->SetFillStyle(0);
    hS2->SetMarkerStyle(20);

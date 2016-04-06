@@ -152,19 +152,34 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		#numPeaks = 2
 
 
-	elif degree == -1 or degree == -5:
-		S1NB = 25
+	elif (degree == -1 or degree == -5) and currentAnalysis.get_run() == 15:
+		S1NB = 80
 		S1LB = 0
 		S1UB = 3500
 
-		S2NB = 25
+		S2NB = 80
 		S2LB = 0
 		S2UB = 1100e3
 		
-		#print 'NOTE: lowered for 3kV anode'
+		upperBoundCES = 800.
 	
 		firstParameter = 'cpS1sTotBottom[0]'
 		secondParameter = 'cpS2sTotBottom[0]'
+		#secondParameter = 'S2sTotBottom[0]'
+	
+	elif (degree == -1 or degree == -5) and (currentAnalysis.get_run() == 10 or currentAnalysis.get_run() == 11):
+		S1NB = 80
+		S1LB = 0
+		S1UB = 3500
+
+		S2NB = 80
+		S2LB = 0
+		S2UB = 600e3
+		
+		upperBoundCES = 800.
+	
+		firstParameter = 'ctS1sTotBottom[0]'
+		secondParameter = 'S2sTotTop[0]'
 
 	else:
 		print 'Only setup to handle coincidence and minitron and Co57 calibrations (degree = -4)'
@@ -236,6 +251,8 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 
 	# ---------- END SET EVENT LIST ----------
 
+
+	#currentAnalysis.get_T1().Scan('EventId:S1sPeak[0]:S2sPeak[0]:S2sRightEdge[0]', 'S1sTotBottom[0] > 2800 && S2sTotBottom[0] > 500e3')
 
 
 	# ---------- MAIN LOOP ----------

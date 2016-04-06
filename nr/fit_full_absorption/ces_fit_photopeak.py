@@ -160,20 +160,36 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		#numPeaks = 2
 
 
-	elif degree == -1 or degree == -5:
+	elif (degree == -1 or degree == -5) and currentAnalysis.get_run() == 15:
 		S1NB = 80
 		S1LB = 0
 		S1UB = 3500
 
 		S2NB = 80
 		S2LB = 0
-		S2UB = 1100e3
+		S2UB = 700e3
 		
 		upperBoundCES = 800.
 	
 		firstParameter = 'cpS1sTotBottom[0]'
 		secondParameter = 'cpS2sTotBottom[0]'
+	
+	if (currentAnalysis.get_run() == 10 or currentAnalysis.get_run() == 11):
+		S1NB = 60
+		S1LB = 0
+		S1UB = 3500
 
+		S2NB = 60
+		S2LB = 0
+		S2UB = 800e3
+		
+		upperBoundCES = 800.
+	
+		firstParameter = 'ctS1sTotBottom[0]'
+		secondParameter = 'S2sTotTop[0]'
+
+	elif currentAnalysis.get_run() == 15:
+		pass
 	else:
 		print 'Only setup to handle coincidence and minitron and Co57 calibrations (degree = -4)'
 		sys.exit()
@@ -215,6 +231,8 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 	FILENAME = currentAnalysis.get_filename()
 	cuts = currentAnalysis.get_cuts()
 
+	print '\n\n%s\n\n' % currentAnalysis.get_cuts()
+
 	# load old parameters if possible
 	useOldParameters = False
 	try:
@@ -248,8 +266,8 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 
 	# ---------- MAKE CES CUT ----------
 
-	g1 = 0.105 #0.1
-	g2 = 24. #24.
+	g1 = 0.095 #0.105 #0.1
+	g2 = 17. #23. #24.
 	sigmaCES = 1.
 
 	cCES = Canvas(width=900, height=700, name='cCES')
@@ -276,12 +294,23 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 	fGausCES.Draw('same')
 	cCES.Update()
 
-	lbCES = fGausCES.GetParameter(1) - 1.0*fGausCES.GetParameter(2)
-	ubCES = fGausCES.GetParameter(1) + 0.25*fGausCES.GetParameter(2)
+	if currentAnalysis.get_run() == 10 or currentAnalysis.get_run() == 11:
+		print 'Using run 10/11 slices in CES'
+		lbCES = fGausCES.GetParameter(1) - 1.5*fGausCES.GetParameter(2)
+		ubCES = fGausCES.GetParameter(1) + 1.5*fGausCES.GetParameter(2)
+	else:
+		lbCES = fGausCES.GetParameter(1) - 1.0*fGausCES.GetParameter(2)
+		ubCES = fGausCES.GetParameter(1) + 0.25*fGausCES.GetParameter(2)
 	raw_input('Fit okay?')
 	
 
-	sCES = '(0.0137*(%s/%f + %s/%f) > %f && 0.0137*(%s/%f + %s/%f) < %f)' % (firstParameter, g1, secondParameter, g2, lbCES, firstParameter, g1, secondParameter, g2, ubCES)
+	#print '\nBypassing CES cut!\n'
+	bypassCES = False
+
+	if bypassCES:
+		sCES = '1 > 0'
+	else:
+		sCES = '(0.0137*(%s/%f + %s/%f) > %f && 0.0137*(%s/%f + %s/%f) < %f)' % (firstParameter, g1, secondParameter, g2, lbCES, firstParameter, g1, secondParameter, g2, ubCES)
 	currentAnalysis.add_cut(sCES)
 
 	del cCES
@@ -292,6 +321,8 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 
 
 	# ---------- MAIN LOOP ----------
+
+	#currentAnalysis.get_T1().Scan('S2sTotBottom[0]:S2sTotTop[0]', currentAnalysis.get_cuts())
 
 	
 	c1 = Canvas(width=900, height=700, name='c1')
