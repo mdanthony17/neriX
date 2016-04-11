@@ -1680,7 +1680,7 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 		
 		
-		if not self.use_fake_data:
+		if not self.useFakeData:
 			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
 		else:
 			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)

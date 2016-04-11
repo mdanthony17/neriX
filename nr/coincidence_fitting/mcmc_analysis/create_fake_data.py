@@ -10,7 +10,7 @@ import numpy as np
 import cPickle as pickle
 
 if len(sys.argv) != 6 and len(sys.argv) != 7:
-	print 'Use is python perform_full_matching.py <degree> <cathode> <anode> <relative accidental rate> <num fake events> [name_notes]'
+	print 'Use is python create_fake_data.py <degree> <cathode> <anode> <relative accidental rate> <num fake events> [name_notes]'
 	sys.exit()
 
 
