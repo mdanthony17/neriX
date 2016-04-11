@@ -9,11 +9,21 @@ import neriX_simulation_config
 import numpy as np
 import cPickle as pickle
 
-if len(sys.argv) != 6 and len(sys.argv) != 9:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f] [relative accidental rate] [num fake events]'
+if len(sys.argv) != 6 and len(sys.argv) != 9 and len(sys.argv) != 7 and len(sys.argv) != 10:
+	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [<use fake data>: t/f] [relative accidental rate] [num fake events] [name_notes]'
 	sys.exit()
 
+print '\n\nNEED TO ADJUST CODE FOR FAKE DATA ACCIDENTAL RATE AND NUM EVENTS!!!'
 
+checkFakeData = False
+useNameNote = False
+if len(sys.argv) == 10:
+	checkFakeData = True
+	useNameNote = True
+elif len(sys.argv) == 9:
+	checkFakeData = True
+elif len(sys.argv) == 7:
+	useNameNote = True
 
 degreeSetting = int(sys.argv[1])
 cathodeSetting = float(sys.argv[2])
@@ -22,32 +32,40 @@ sMeasurement = sys.argv[4]
 numWalkers = int(sys.argv[5])
 
 # change to switch between real and fake data
-
-if len(sys.argv) == 9:
+if checkFakeData:
 	if sys.argv[6] == 't':
 		useFakeData = True
 		relativeAccidentalRate = float(sys.argv[7])
-		num_fake_events = int(sys.argv[8])
+		numFakeEvents = int(sys.argv[8])
 	else:
 		useFakeData = False
 		relativeAccidentalRate = False
-		num_fake_events = -1
-else:
-	useFakeData = False
-	relativeAccidentalRate = False
-	num_fake_events = -1
+		numFakeEvents = -1
+
+if useNameNote:
+	if checkFakeData:
+		name_notes = sys.argv[9]
+	else:
+		name_notes = sys.argv[6]
+
+
+dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)
+if useFakeData:
+	dir_specifier_name += '_%.2f_%d_events' % (relativeAccidentalRate, numFakeEvents)
+if useNameNote:
+	dir_specifier_name += '_' + name_notes
 
 
 if not useFakeData:
 	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
 	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
 	useFakeValueInPlots = False
-	sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
+	sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 else:
 	nameOfResultsDirectory = neriX_simulation_config.pathToThisModule + '/mcmc_analysis/fake_data/results'
-	lPlots = ['plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)]
+	lPlots = ['plots', 'free_parameters', 'fake_data', '%s' % dir_specifier_name]
 	useFakeValueInPlots = True
-	sPathToFile = '%s/%ddeg_%.3fkV_%.1fkV_%.2f_%d_events/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events, sMeasurement)
+	sPathToFile = '%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 
 
 pathToSamplerDictionary = nameOfResultsDirectory
@@ -141,7 +159,7 @@ for parameter in dPlots:
 	nameForFile = parameter
 	if useFakeData:
 		nameForFile += '_fake'
-	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%ddeg_%.3fkV_%.1fkV' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting))
+	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%s' % (nameForFile, dir_specifier_name))
 
 
 raw_input('Enter to continue...')

@@ -9,10 +9,22 @@ import numpy as np
 import corner
 import cPickle as pickle
 
-if len(sys.argv) != 6 and len(sys.argv) != 7:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f]'
+if len(sys.argv) != 6 and len(sys.argv) != 9 and len(sys.argv) != 7 and len(sys.argv) != 10:
+	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [<use fake data>: t/f] [relative accidental rate] [num fake events] [name_notes]'
 	sys.exit()
 
+print '\n\nNEED TO ADJUST CODE FOR FAKE DATA ACCIDENTAL RATE AND NUM EVENTS!!!'
+
+
+checkFakeData = False
+useNameNote = False
+if len(sys.argv) == 10:
+	checkFakeData = True
+	useNameNote = True
+elif len(sys.argv) == 9:
+	checkFakeData = True
+elif len(sys.argv) == 7:
+	useNameNote = True
 
 
 degreeSetting = int(sys.argv[1])
@@ -23,11 +35,21 @@ numWalkers = int(sys.argv[5])
 
 
 # change to switch between real and fake data
-if len(sys.argv) == 7:
+if checkFakeData:
 	if sys.argv[6] == 't':
 		useFakeData = True
+		relativeAccidentalRate = float(sys.argv[7])
+		numFakeEvents = int(sys.argv[8])
 	else:
 		useFakeData = False
+		relativeAccidentalRate = False
+		numFakeEvents = -1
+
+if useNameNote:
+	if checkFakeData:
+		name_notes = sys.argv[9]
+	else:
+		name_notes = sys.argv[6]
 
 sForNameInFake = ''
 
@@ -42,9 +64,13 @@ else:
 	sForNameInFake = '_fake'
 
 
+dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)
+if useFakeData:
+	dir_specifier_name += '_%.2f_%d_events' % (relativeAccidentalRate, numFakeEvents)
+if useNameNote:
+	dir_specifier_name += '_' + name_notes
 
-
-sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
+sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 
 if os.path.exists(sPathToFile):
 	dSampler = pickle.load(open(sPathToFile, 'r'))
@@ -70,7 +96,7 @@ sPathForSave = './'
 for directory in lPlots:
 	sPathForSave += directory + '/'
 
-fig.savefig('%scorner_plot%s_%ddeg_%.3fkV_%.1fkV.png' % (sPathForSave, sForNameInFake, degreeSetting, cathodeSetting, anodeSetting))
+fig.savefig('%scorner_plot%s_%s.png' % (sPathForSave, sForNameInFake, dir_specifier_name))
 
 
 

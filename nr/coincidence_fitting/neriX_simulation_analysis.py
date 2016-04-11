@@ -430,7 +430,7 @@ class easy_function:
 
 
 class neriX_simulation_analysis(object):
-	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, numMCEvents=50000, use_fake_data=False, create_fake_data=False, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=False, num_fake_events=-1):
+	def __init__(self, run, anodeVoltage, cathodeVoltage, angle, numMCEvents=50000, use_fake_data=False, create_fake_data=False, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=False, num_fake_events=-1, name_notes=None):
 	
 		# if not in create data mode kill program trying
 		# to run with adjusted accidental
@@ -460,8 +460,19 @@ class neriX_simulation_analysis(object):
 		self.useFakeData = use_fake_data
 		if self.useFakeData:
 			assert assumeRelativeAccidentalRate != False, 'Must assume a relative accidental rate for fake data!'
+		
 		self.assumeRelativeAccidentalRate = assumeRelativeAccidentalRate
 			
+	
+		# add extra info to name so similar files
+		# will not overwrite each other
+		# ex: only g1 value changed between otherwise
+		#     identical fits
+		if name_notes == None:
+			fake_data_save_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, assumeRelativeAccidentalRate, self.num_fake_events)
+		else:
+			fake_data_save_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events_%s.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, assumeRelativeAccidentalRate, self.num_fake_events, name_notes)
+		self.name_notes = name_notes
 
 		# ------------------------------------------------
 		# Set paths to files and grab constants
@@ -575,7 +586,7 @@ class neriX_simulation_analysis(object):
 				fileToLoad = dFilesForAnalysis['data']
 			else:
 				print '\n\nNOTE: You are using fake data produced by this framework.\n\n'
-				fileToLoad = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, assumeRelativeAccidentalRate, self.num_fake_events)
+				fileToLoad = neriX_simulation_datasets.pathToFakeData + fake_data_save_name
 			
 			self.fData = File(fileToLoad)
 			self.hS1 = self.fData.hS1
@@ -622,7 +633,7 @@ class neriX_simulation_analysis(object):
 			
 		else:
 			print '\n\nCurrently in creating fake data mode so cannot run analysis!\n\n'
-			sFakeData = neriX_simulation_datasets.pathToFakeData + '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events.root' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
+			sFakeData = neriX_simulation_datasets.pathToFakeData + fake_data_save_name
 			self.fFakeData = File(sFakeData, 'recreate')
 		
 			self.s1NumBins = 20
@@ -1668,13 +1679,24 @@ class neriX_simulation_analysis(object):
 		# Setup save locations
 		# ------------------------------------------------
 		
+		
+		if not self.use_fake_data:
+			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
+		else:
+			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
+		
+		
+		if not self.name_notes == None:
+				dir_specifier_name += '_' + self.name_notes
+		
 		if not self.useFakeData:
 			self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
-			self.sPathForSave = '%s/%ddeg_%.3fkV_%.1fkV/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, sMeasurement)
+			self.sPathForSave = '%s/%s/%s/' % (self.resultsDirectoryName, dir_specifier_name, sMeasurement)
 		
 		else:
 			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
-			self.sPathForSave = '%s/%ddeg_%.3fkV_%.1fkV_%.2f_%d_events/%s/' % (self.resultsDirectoryName, self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events, sMeasurement)
+			
+ 			self.sPathForSave = '%s/%s/%s/' % (self.resultsDirectoryName, dir_specifier_name, sMeasurement)
 			# for fake data add events and relative rate to path after
 			# deg, cathode, and anode
 			# _%.2f_%d_events

@@ -9,8 +9,8 @@ import neriX_simulation_config, string
 import numpy as np
 import cPickle as pickle
 
-if len(sys.argv) != 7 and len(sys.argv) != 10:
-	print 'Use is python perform_full_matching.py <degree> <cathode> <anode> <num walkers> <num steps> <num threads> [<use fake data>: t/f] [relative accidental rate] [num fake events]'
+if len(sys.argv) != 7 and len(sys.argv) != 8 and len(sys.argv) != 10 and len(sys.argv) != 11:
+	print 'Use is python perform_full_matching.py <degree> <cathode> <anode> <num walkers> <num steps> <num threads> [<use fake data>: t/f] [relative accidental rate] [num fake events] [name_notes]'
 	sys.exit()
 
 
@@ -39,8 +39,12 @@ except:
 	relativeAccidentalRate = False
 	num_fake_events = -1
 
+if len(sys.argv) == 8 or len(sys.argv) == 11:
+	name_notes = sys.argv[len(sys.argv) - 1]
+else:
+	name_notes = None
 
-full_matching_analysis = neriX_simulation_analysis.neriX_simulation_analysis(15, anodeSetting, cathodeSetting, degreeSetting, use_fake_data=usingFakeData, assumeRelativeAccidentalRate=relativeAccidentalRate, num_fake_events=numFakeEvents)
+full_matching_analysis = neriX_simulation_analysis.neriX_simulation_analysis(15, anodeSetting, cathodeSetting, degreeSetting, use_fake_data=usingFakeData, assumeRelativeAccidentalRate=relativeAccidentalRate, num_fake_events=numFakeEvents, name_notes=name_notes)
 
 sParametersFullMatching = (('photon_yield', 6.), ('charge_yield', 6.), ('res_s1', 0.25), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
