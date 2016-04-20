@@ -8,11 +8,11 @@ from rootpy.io import root_open, File
 
 #--------------- Start Parameters to Change ----------------
 
-s1NumBins = 20
+s1NumBins = 40
 s1Min = -0.5
 s1Max = 39.5
 
-s2NumBins = 10
+s2NumBins = 40
 s2Min = 0.
 s2Max = 4000
 
@@ -69,28 +69,30 @@ sForHistograms = ' - %d deg, %.3f kV' % (degreeSetting, cathodeSetting)
 colzOption = 'COLZ'
 
 #choose cuts for run 1
-current_analysis.add_cut('S1sTotBottom[0] > 0')
-#current_analysis.add_cut('S2sTotBottom[0] > 0')
-current_analysis.add_z_cut()
+#current_analysis.add_z_cut()
 current_analysis.add_radius_cut(0, 0.85)
 current_analysis.add_single_scatter_cut()
-current_analysis.add_xs1asym_cut()
+#current_analysis.add_xs1asym_cut()
 current_analysis.add_xs2asym_cut()
 current_analysis.add_temp_neutron_cut(degreeSetting)
 
-#current_analysis.add_temp_gamma_cut(degreeSetting)
-#current_analysis.add_cut('TMath::Log10(S2sTotBottom[0]/S1sTotBottom[0]) < 3 && S1sTotBottom[0] < 35')
-#current_analysis.add_temp_tof_cut(degreeSetting)
-#current_analysis.add_cut('TimeOfFlight > -50 && TimeOfFlight < -10') # accidental spec
 
-#current_analysis.add_cut('S1sPeak[0] > 395 && S1sPeak[0] < 425')
-#current_analysis.add_cut('S1sPeak[0] > 3380 && S1sPeak[0] < 3430')
 
-current_analysis.set_event_list()
-
-s1Branch = 'cpS1sTotBottom[0] - S1sNoiseTrapezoid[0][16]'
+#s1Branch = 'cpS1sTotBottom[0] - S1sNoiseTrapezoid[0][16]'
 #s1Branch = 'cpS1sTotBottom[0]'
+#s1Branch = 'S1sTotBottom[0]'
+s1Branch = 'S1IntegralBeforeLiqSci[0]'
 s2Branch = 'cpS2sTotBottom[0]'
+
+current_analysis.add_cut('%s > 0' % s1Branch)
+current_analysis.add_cut('%s > 0' % s2Branch)
+current_analysis.add_cut('(S2sPeak[0] - LiqSciPeak[])/100. > 3 && (S2sPeak[0] - LiqSciPeak[])/100. < 20')
+current_analysis.add_cut('((%s > 24.0) || (%s < (7.406e+02 + 6.240e+01*%s + -4.430e-01*pow(%s, 2.))))' % (s1Branch, s2Branch, s1Branch, s1Branch))
+
+#current_analysis.set_event_list()
+current_analysis.multithread_set_event_list(7)
+
+
 
 #create histograms for current_analysis
 
@@ -106,8 +108,8 @@ hLiqSciS1TimeDiff.GetYaxis().SetTitle('Counts')
 hLiqSciS1TimeDiff.SetStats(1)
 
 
-
-current_analysis.add_s1_liqsci_peak_cut()
+if s1Branch != 'S1IntegralBeforeLiqSci[0]':
+	current_analysis.add_s1_liqsci_peak_cut()
 
 hTOF = Hist(tofNumBins, tofMin, tofMax, name='hTOF', title='TOF Spectrum'+sForHistograms, drawstyle='hist')
 current_analysis.Draw('TimeOfFlight', hist=hTOF, selection=current_analysis.get_cuts())
@@ -121,7 +123,7 @@ print 'No TOF cut!'
 
 
 
-#current_analysis.get_lT1()[0].Scan('EventId:S1sPeak[0]:%s:S2sPeak[0]:S2sTotBottom[0]:TimeOfFlight' % sS1Branch, '%s > 6' % sS1Branch)
+#current_analysis.get_lT1()[0].Scan('EventId:S1sTotBottom[0]:S1IntegralBeforeLiqSci[0]', current_analysis.get_cuts())
 
 hS1S2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='hS1S2', title='S1 vs S2'+sForHistograms)
 current_analysis.Draw('%s:%s' % (s1Branch, s2Branch), hist=hS1S2, selection=current_analysis.get_cuts())
@@ -172,9 +174,9 @@ hPSD.SetMarkerSize(0)
 hPSD.SetStats(0)
 
 
-print '\n\nTotal number of events: %s' % hS2.Integral()
+print '\n\nTotal number of events: %s' % hS1.Integral()
 print 'Total time: %.0f \n\n' % current_analysis.get_livetime()
-print 'Rate: %.2f events per hour \n\n' % (float(hS2.Integral()) / current_analysis.get_livetime() * 3600.)
+print 'Rate: %.2f events per hour \n\n' % (float(hS1.Integral()) / current_analysis.get_livetime() * 3600.)
 
 
 #draw histograms onto canvases

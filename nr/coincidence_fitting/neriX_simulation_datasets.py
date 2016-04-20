@@ -11,14 +11,14 @@ pathToEfficiencyFiles = pathToThisModule + '/efficiency_files/'
 
 pathToFakeData = pathToThisModule + '/mcmc_analysis/fake_data/'
 
-default_g1 = 0.095
+default_g1 = 0.090
 default_g1_uncertainty = 0.005
 
-default_g2 = 22.5
-default_g2_uncertainty = 1.2
+default_g2 = 14.0
+default_g2_uncertainty = 0.7
 
-default_gas_gain = 31.0
-default_gas_gain_uncertainty = 1.0
+default_gas_gain = 18.0
+default_gas_gain_uncertainty = 0.7
 
 default_gas_gain_width = 10.0
 default_gas_gain_width_uncertainty = 1.5

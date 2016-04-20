@@ -636,11 +636,11 @@ class neriX_simulation_analysis(object):
 			sFakeData = neriX_simulation_datasets.pathToFakeData + fake_data_save_name
 			self.fFakeData = File(sFakeData, 'recreate')
 		
-			self.s1NumBins = 20
+			self.s1NumBins = 40
 			self.s1LowerBound =	-1
 			self.s1UpperBound = 39
 		
-			self.s2NumBins = 20
+			self.s2NumBins = 40
 			self.s2LowerBound = 0
 			self.s2UpperBound = 4000
 		
@@ -1159,12 +1159,14 @@ class neriX_simulation_analysis(object):
 		# parameters that make efficiency 1.
 		if self.degreeSetting > 100.:
 			tacEff = np.asarray([1e6], dtype=np.float32)
+			pfEff = np.asarray([-1e6, 1], dtype=np.float32)
 		else:
 			tacEff = np.asarray(lTacEff, dtype=np.float32)
+			pfEff = np.asarray(lPFEff, dtype=np.float32)
 		
 		# handle other efficiencies uniformly
 		trigEff = np.asarray(lTrigEff, dtype=np.float32)
-		pfEff = np.asarray(lPFEff, dtype=np.float32)
+		#pfEff = np.asarray(lPFEff, dtype=np.float32)
 		
 		c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2, tacEff, trigEff, pfEff)
 		
@@ -1172,6 +1174,13 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 		# create 2D histogram of S1s and S2s
 		# ------------------------------------------------
+		
+		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
+		if self.degreeSetting > 100.:
+			for i in xrange(len(aS1)):
+				if not ( (aS1[i] > 24.0) or (aS2[i] < (7.406e+02 + 6.240e+01*aS1[i] + -4.430e-01*pow(aS1[i], 2.))) ):
+					aS1[i] = -1
+					aS2[i] = -1
 		
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
@@ -1368,12 +1377,14 @@ class neriX_simulation_analysis(object):
 		# parameters that make efficiency 1.
 		if self.degreeSetting > 100.:
 			tacEff = np.asarray([1e6], dtype=np.float32)
+			pfEff = np.asarray([-1e6, 1], dtype=np.float32)
 		else:
 			tacEff = np.asarray(lTacEff, dtype=np.float32)
+			pfEff = np.asarray(lPFEff, dtype=np.float32)
 		
 		# handle other efficiencies uniformly
 		trigEff = np.asarray(lTrigEff, dtype=np.float32)
-		pfEff = np.asarray(lPFEff, dtype=np.float32)
+		#pfEff = np.asarray(lPFEff, dtype=np.float32)
 		
 		
 
@@ -1412,6 +1423,15 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 
 		#analysisTime = time.time()
+		
+		
+		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
+		if self.degreeSetting > 100.:
+			for i in xrange(len(aS1)):
+				if not ( (aS1[i] > 24.0) or (aS2[i] < (7.406e+02 + 6.240e+01*aS1[i] + -4.430e-01*pow(aS1[i], 2.))) ):
+					aS1[i] = -1
+					aS2[i] = -1
+	
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
 		
@@ -1839,8 +1859,8 @@ if __name__ == '__main__':
 	
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.2, num_fake_events=3000, numMCEvents=50000)
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, accidentalBkgAdjustmentTerm=0.0, numMCEvents=50000)
-	test.perform_mc_match_full(10, 6, 0.5, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, accidentalBkgAdjustmentTerm=0.1, numMCEvents=50000)
+	test.perform_mc_match_full(5.82, 6.5, 0.9, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 

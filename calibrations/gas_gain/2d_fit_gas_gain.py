@@ -20,7 +20,7 @@ sPathToSaveOutput ='./results/run_' + str(current_analysis.get_run()) + '/' + st
 
 aColors = [4, 2, 8, 7, 5, 9]
 
-iNumElectrons = 4
+iNumElectrons = 3
 
 mean_bot_guess = 16.5
 width_bot_guess = 6.
@@ -37,7 +37,7 @@ TVirtualFitter.SetMaxIterations(30000)
 
 par_names = ['mean_bot', 'width_bot'] + ['p%d_ampl' % (i+1) for i in xrange(iNumElectrons)] + ['fd_center_bot', 'fd_shape_bot', 'mean_top', 'width_top', 'fd_center_top', 'fd_shape_top']
 
-fd_fixed = True
+fd_fixed = False
 
 if fd_fixed:
 	fd_center_bot = 10.13

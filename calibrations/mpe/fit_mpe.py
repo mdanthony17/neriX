@@ -40,7 +40,7 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
 
 
     # 50 bins used previously
-    mpe_spec_binning = [250, -1e6, 8e6]
+    mpe_spec_binning = [100, -1.5e6, 4e6]
 
     file_mpe = File(sDataPath, 'read')
 
@@ -219,7 +219,7 @@ for file in lFiles:
     lStrings = [0 for i in xrange(len(lNumPhotons))]
     for i, num_photons in enumerate(lNumPhotons):
         print '\n\n\nStarting %s with %d electrons.\n\n\n' % (file, lNumPhotons[i])
-        lStrings[i], lLnlikelihoods[i], forTextFile = mpe_fitting(file, 15, num_photons)
+        lStrings[i], lLnlikelihoods[i], forTextFile = mpe_fitting(file, 15, num_photons, use_ideal=False)
 
     # find first step with p-value > 0.05 and take previous
 
@@ -237,7 +237,7 @@ for file in lFiles:
 
     # run one more time to save image of "correct"
     # number of electrons
-    dummy1, dummy2, forTextFile = gas_gain_fitting(file, lNumPhotons[indexToUse])
+    dummy1, dummy2, forTextFile = mpe_fitting(file, 15, num_photons, use_ideal=False)
 
     sForTextFile += forTextFile
 

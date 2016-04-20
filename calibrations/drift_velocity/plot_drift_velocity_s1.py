@@ -33,10 +33,10 @@ cathodeVoltage = run.get_cathode_setting()
 fileNameWithoutExt = run.get_filename()[:-5]
 
 # old cuts
-run.add_cut('(S1sTot[0]>0 && S1sTot[0] < 5000)')
+#run.add_cut('(S1sTot[0]>0 && S1sTot[0] < 5000)')
 run.add_dt_cut(0, 20)
 run.add_cut('(S2sTot[1]/S2sTot[0])<0.02')
-run.add_cut('NbS2Peaks < 3')
+#run.add_cut('NbS2Peaks < 3')
 run.add_cut('S2sPeak[] != S2sPeak[0]')
 
 
@@ -65,10 +65,10 @@ hDriftVelocity.Draw('')
 
 # search for peaks using TSpectrum
 lPeakParameters = [[], []]
-fitDistanceFromPeakGate = .3
-fitDistanceFromPeakCathode = .4
+fitDistanceFromPeakGate = .8
+fitDistanceFromPeakCathode = 1.0
 
-"""
+
 
 spec2 = root.TSpectrum(2)
 spec2.Search(hDriftVelocity, 2, 'nobackground new goff', 0.05)
@@ -77,7 +77,7 @@ bPeaks = spec2.GetPositionX()
 bPeaks.SetSize(2) # two elements in buffer
 lPeaks = np.array(bPeaks, 'f')
 lPeaks = lPeaks[::-1]
-"""
+
 
 
 integral = hDriftVelocity.Integral(hDriftVelocity.FindBin(3), hDriftVelocity.FindBin(13))
@@ -87,6 +87,7 @@ print '\nIntegral between 3 and 13: %d\n' % integral
 
 c1.Update()
 
+"""
 print '\nNow select peaks in the spectrum:\n\n'
 
 responseLeft = -1
@@ -99,7 +100,7 @@ while responseRight < sampleMin or responseLeft > sampleMax:
 	responseRight = float(raw_input('Please approximate the peak from the cathode (right peak): '))
 
 lPeaks = [responseLeft, responseRight]
-
+"""
 #print lPeaks
 if len(lPeaks) == 2:
 	for (i, lPeakToFill) in enumerate(lPeakParameters):
@@ -126,6 +127,7 @@ colors = [2, 4]
 lParameters = [] # [mean, sigma]
 lParametersError = []
 
+print lPeakParameters
 
 
 for i in xrange(0, 2):

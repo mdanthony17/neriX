@@ -35,6 +35,7 @@ def profile_y_median(hist_to_profile):
 	aYErrLow = np.zeros(num_bins_x)
 	aYErrHigh = np.zeros(num_bins_x)
 
+	lIndicesToDelete = []
 	for slice_number, x_slice in enumerate(aHist):
 		points_in_slice = np.zeros(np.sum(x_slice))
 		index_counter = 0
@@ -42,10 +43,22 @@ def profile_y_median(hist_to_profile):
 			for j in xrange(bin_count):
 				points_in_slice[index_counter] = bin_centers_y[i]
 				index_counter += 1
+		if index_counter > 2:
+			aYValues[slice_number] = np.median(points_in_slice)
+			low_err, high_err = np.percentile(points_in_slice, [50-34.1, 50+34.1])
+			aYErrLow[slice_number], aYErrHigh[slice_number] = aYValues[slice_number]-low_err, high_err-aYValues[slice_number]
+		else:
+			lIndicesToDelete.append(slice_number)
 
-		aYValues[slice_number] = np.median(points_in_slice)
-		low_err, high_err = np.percentile(points_in_slice, [50-34.1, 50+34.1])
-		aYErrLow[slice_number], aYErrHigh[slice_number] = aYValues[slice_number]-low_err, high_err-aYValues[slice_number]
+	# delete points that are "empty"
+	num_bins_x -= len(lIndicesToDelete)
+	bin_centers_x = np.delete(bin_centers_x, lIndicesToDelete)
+	aYValues = np.delete(aYValues, lIndicesToDelete)
+	aXErrLow = np.delete(aXErrLow, lIndicesToDelete)
+	aXErrHigh = np.delete(aXErrHigh, lIndicesToDelete)
+	aYErrLow = np.delete(aYErrLow, lIndicesToDelete)
+	aYErrHigh = np.delete(aYErrHigh, lIndicesToDelete)
+
 
 	return root.TGraphAsymmErrors(num_bins_x, bin_centers_x, aYValues, aXErrLow, aXErrHigh, aYErrLow, aYErrHigh)
 
@@ -93,7 +106,7 @@ currentAnalysis.add_dt_cut(dtMin, dtMax)
 currentAnalysis.add_single_scatter_cut()
 #currentAnalysis.add_cut('S2sTotBottom[0] > 300e3')
 #currentAnalysis.add_cut('(s1asym > 0)')
-#currentAnalysis.add_radius_cut(0, 0.5)
+#currentAnalysis.add_radius_cut(0, 0.3)
 
 # cut on 40 keV peak
 #currentAnalysis.add_cut('S1sTotBottom[0] > 80 && S1sTotBottom[0] < 380')
@@ -213,7 +226,7 @@ f1 = root.TF1('f1', '[0]*exp(-[1]*x)', dtMin, dtMax)
 f1.SetParameters(400e3, 1./50.)
 
 #hProfile.Fit('f1', 'MELR')
-gProfileX.Fit('f1', 'MELR')
+fitResult = gProfileX.Fit('f1', 'MELRS')
 f1.SetLineStyle(1)
 f1.SetLineWidth(2)
 f1.SetLineColor(root.kRed)
@@ -227,12 +240,15 @@ f1.Draw('same')
 #sFitInfo1 = 'variation = (%.2e +/- %.2e) [(Change in S2 / Mean)/us]' % (math.fabs(f1.GetParameter(1)/ha2.GetMean(2)), f1.GetParError(1)/ha2.GetMean(2))
 
 # linear fit
+"""
 electronLifetime = (1/math.exp(1)-1)*f1.GetParameter(0)/f1.GetParameter(1)
 sFitInfo1 = 'e^{-} lifetime = (%.2f +/- %.2f) us' % ( electronLifetime, math.fabs(electronLifetime * ((f1.GetParError(0)/(f1.GetParameter(0)*(1/math.exp(1)-1)))**2 + (f1.GetParError(1)/f1.GetParameter(1))**2)**0.5 ) )
+"""
 
 # exponential fit
 electronLifetime = 1./f1.GetParameter(1)
-sFitInfo1 = 'e^{-} lifetime = (%.2f +/- %.2f) us' % ( electronLifetime, math.fabs(f1.GetParError(1)/f1.GetParameter(1))*math.fabs(electronLifetime) )
+electronLifetimeErr = electronLifetime * ( (f1.GetParError(1) / f1.GetParameter(1))**2. )**0.5
+sFitInfo1 = 'e^{-} lifetime = (%.2f +/- %.2f) us' % ( electronLifetime, electronLifetimeErr )
 
 
 pt1 = root.TPaveText(.1,.65,.9,.9,'blNDC')
@@ -245,6 +261,18 @@ pt1.Draw('same')
 c1.Update()
 
 raw_input('\nEnter to continue...\n')
+
+
+startTime = neriX_analysis.convert_name_to_unix_time(file1)
+
+dParametersToPrint = {'start_time':startTime, 'run':currentAnalysis.get_run(), 'anode':currentAnalysis.get_anode_setting(), 'cathode':currentAnalysis.get_cathode_setting(), 'degree':currentAnalysis.get_degree_setting(), 's2_max':f1.GetParameter(0), 's2_max_err':f1.GetParError(0), 'electron_lifetime':electronLifetime, 'electron_lifetime_err':electronLifetimeErr, 'lb_ces':lbCES, 'ub_ces':ubCES, 'Chi2':fitResult.Chi2(), 'NDF':fitResult.Ndf()}
+
+print '\n\nPlease copy below into fits_completed.py\n'
+print '# ' + str(currentAnalysis.get_filename_no_ext())
+print 'd_electron_lifetime[\'' + str(file1) + '\'] =', dParametersToPrint
+print '\n\n'
+
+
 
 #c1.SaveAs('~/Desktop/electron_lifetime.png')
 

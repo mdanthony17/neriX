@@ -121,8 +121,8 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors=1):
 
 	# ---------- MAKE CES CUT ----------
 
-	g1 = 0.095 # 0.09
-	g2 = 17. # 20.
+	g1 = 0.1
+	g2 = 24.
 	sigmaCES = 1.
 
 	cCES = Canvas(width=900, height=700, name='cCES')

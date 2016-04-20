@@ -11,11 +11,11 @@ eDepNumBins = 50
 eDepMin = -2.
 eDepMax = 25.
 
-s1NumBins = 30
+s1NumBins = 50
 s1Min = 0.
-s1Max = 1500
+s1Max = 1400
 
-s2NumBins = 30
+s2NumBins = 50
 s2Min = 0.
 s2Max = 400000
 
