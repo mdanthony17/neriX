@@ -4,7 +4,7 @@ from subprocess import call
 
 #lAssumedRelativeAccidentalRates = [0.01, 0.05, 0.1, 0.5, 1.0, 2.0]
 #lNumFakeEvents = [100, 700, 1300, 2000, 5000, 10000]
-lAssumedRelativeAccidentalRates = [0.01]
+lAssumedRelativeAccidentalRates = [0.1]
 lNumFakeEvents = [100]
 
 for rate in lAssumedRelativeAccidentalRates:

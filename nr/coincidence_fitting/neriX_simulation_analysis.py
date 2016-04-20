@@ -56,8 +56,32 @@ stl.vector(stl.vector('int'))
 C.register_file('../../../python_modules/mc_code/c_safe_dot.C', ['safe_dot'])
 C.register_file('../../../python_modules/mc_code/c_full_observables_production.C', ['full_matching_loop'])
 
-c_full_matching_loop = C.full_matching_loop
 
+
+s_band_cut = """
+#include <math.h>
+
+void band_cut_temp(int *numTrials, float *aS1, float *aS2)
+{
+	for (int i=0; i < *numTrials; i++)
+	{
+		if ( !( (aS1[i] > 24.0) || (aS2[i] < (7.406e+02 + 6.240e+01*aS1[i] + -4.430e-01*pow(aS1[i], 2.))) ) ) 
+		{
+			aS1[i] = -1;
+			aS2[i] = -1;
+		}
+	}
+}
+
+
+"""
+C.register_code(s_band_cut, ['band_cut_temp'])
+
+
+
+
+c_full_matching_loop = C.full_matching_loop
+c_band_cut_temp = C.band_cut_temp
 
 
 def reduce_method(m):
@@ -1426,12 +1450,16 @@ class neriX_simulation_analysis(object):
 		
 		
 		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
+		"""
 		if self.degreeSetting > 100.:
 			for i in xrange(len(aS1)):
 				if not ( (aS1[i] > 24.0) or (aS2[i] < (7.406e+02 + 6.240e+01*aS1[i] + -4.430e-01*pow(aS1[i], 2.))) ):
 					aS1[i] = -1
 					aS2[i] = -1
+		"""
 	
+	
+		c_band_cut_temp(num_trials, aS1, aS2)
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
 		
