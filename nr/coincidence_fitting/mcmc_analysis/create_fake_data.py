@@ -29,7 +29,7 @@ else:
 
 
 full_matching_analysis = neriX_simulation_analysis.neriX_simulation_analysis(15, anodeSetting, cathodeSetting, degreeSetting, create_fake_data=True, assumeRelativeAccidentalRate=relativeAccidentalRate, num_fake_events=numFakeEvents, name_notes=name_notes)
-full_matching_analysis.create_fake_data(4.32, 20.36/3., 0.7, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+full_matching_analysis.create_fake_data(4.32, 20.36/3., 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 
 

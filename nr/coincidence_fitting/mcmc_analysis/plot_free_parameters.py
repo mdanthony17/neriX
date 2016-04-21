@@ -13,7 +13,6 @@ if len(sys.argv) != 6 and len(sys.argv) != 9 and len(sys.argv) != 7 and len(sys.
 	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [<use fake data>: t/f] [relative accidental rate] [num fake events] [name_notes]'
 	sys.exit()
 
-print '\n\nNEED TO ADJUST CODE FOR FAKE DATA ACCIDENTAL RATE AND NUM EVENTS!!!'
 
 checkFakeData = False
 useNameNote = False
@@ -89,13 +88,13 @@ else:
 dParametersToDraw = {'photon_yield':{'index':0,
 									 'form':'P_{y}',
 									 'unit': '#frac{photons}{keV}',
-									 'binning':[100, 1, 7],
-									 'true_value_for_fake':4.32},
+									 'binning':[100, 2.5, 8.5],
+									 'true_value_for_fake':5.69},
 					 'charge_yield':{'index':1,
 									 'form':'Q_{y}',
 									 'unit': '#frac{electrons}{keV}',
 									 'binning':[100, 3, 10],
-									 'true_value_for_fake':6.78},
+									 'true_value_for_fake':31./5.},
 					 'res_s1':{'index':2,
 							   'unit': '',
 							   'form':'R_{S1}',
@@ -124,7 +123,7 @@ for parameter in dParametersToDraw:
 	dPlots[parameter]['hist'].SetStats(0)
 	
 	# fill histogram and draw it
-	dPlots[parameter]['hist'].fill_array(aSampler[:,-5:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].fill_array(aSampler[:,-50:,dParametersToDraw[parameter]['index']].flatten())
 	dPlots[parameter]['hist'].Draw()
 
 	# find quantiles

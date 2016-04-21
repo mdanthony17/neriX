@@ -135,6 +135,39 @@ def smart_log_likelihood(aData, aMC, numMCEvents, confidenceIntervalLimit=0.95):
 
 
 
+def smart_log_likelihood_quantiles(aData, aMC, numMCEvents, aS1BinCenters, aS2BinCenters, lowerQuantileS1, upperQuantileS1, lowerQuantileS2, upperQuantileS2, confidenceIntervalLimit=0.95):
+	totalLogLikelihood = 0.
+	
+	try:
+		aMC = aMC*np.sum(aData)/np.sum(aMC)
+	except:
+		return -np.inf
+	
+	for s1_index, s1_value in enumerate(aS1BinCenters):
+		if s1_value < lowerQuantileS1:
+			continue
+		if s1_value > upperQuantileS1:
+			break
+		for s2_index, s2_value in enumerate(aS2BinCenters):
+			if s2_value < lowerQuantileS2:
+				continue
+			if s2_value > upperQuantileS2:
+				break
+
+			# other wise calculate as you normally would
+			data, mc = aData[s1_index, s2_index], aMC[s1_index, s2_index]
+			if mc == 0 and data != 0:
+				# use 95% confidence interval
+				# confidenceIntervalLimit = 1 - probability of the zero occuring
+				probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./numMCEvents)
+				totalLogLikelihood += smart_log(smart_binomial(data, numMCEvents, probabiltyOfSuccess))
+			else:
+				totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+
+	return totalLogLikelihood
+
+
+
 
 # based off of rootpy's implementation BUT includes
 # the value = 0 case
@@ -1211,28 +1244,7 @@ class neriX_simulation_analysis(object):
 		
 		
 
-		# ------------------------------------------------
-		# apply efficiencies
-		# ------------------------------------------------
 
-		# element wise multiplication to combine S1 or S2
-		# need to use outer with multiply to make large matrix
-		
-		"""
-		if self.degreeSetting == 23:
-			aS1Efficiency = egPFEff.get_y_values().flatten()
-		else:
-			aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
-		aS2Efficiency = egTrigEff.get_y_values()
-		
-		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
-		
-		#print aS1S2.shape, aFullEfficiencyMatrix.shape
-		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
-		
-		aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
-		#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
-		"""
 
 		self.fFakeData.cd()
 		
@@ -1351,7 +1363,7 @@ class neriX_simulation_analysis(object):
 
 		# sum all likelihood terms (should be 13 terms)
 		priorLogLikelihoods = photonYieldLogLikelihood + chargeYieldLogLikelihood + excitonToIonLogLikelihood + resS1LogLikelihood + resS2LogLikelihood + g1LogLikelihood + speResLogLikelihood + tacEffLogLikelihood + pfEffLogLikelihood + g2LogLikelihood + gasGainLogLikelihood + gasGainWidthLogLikelihood + trigEffLogLikelihood
-	
+		
 		#print 'Priors: %f' % priorLogLikelihoods
 	
 	
@@ -1362,7 +1374,14 @@ class neriX_simulation_analysis(object):
 
 		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1)
 		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1)
-		#print aS1BinEdges
+		
+		binWidthS1 = (self.s1UpperBound - self.s1LowerBound) / float(self.s1NumBins)
+		binWidthS2 = (self.s2UpperBound - self.s2LowerBound) / float(self.s2NumBins)
+		aS1BinCenters = np.linspace(self.s1LowerBound + binWidthS1/2., self.s1UpperBound-binWidthS1/2., num=self.s1NumBins)
+		aS2BinCenters = np.linspace(self.s2LowerBound+binWidthS2/2., self.s2UpperBound-binWidthS2/2., num=self.s2NumBins)
+		
+		#print aS1BinCenters
+		#print aS2BinCenters
 
 		extractionEfficiency = g2Value / gasGainValue
 	
@@ -1449,49 +1468,13 @@ class neriX_simulation_analysis(object):
 		#analysisTime = time.time()
 		
 		
-		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
-		"""
-		if self.degreeSetting > 100.:
-			for i in xrange(len(aS1)):
-				if not ( (aS1[i] > 24.0) or (aS2[i] < (7.406e+02 + 6.240e+01*aS1[i] + -4.430e-01*pow(aS1[i], 2.))) ):
-					aS1[i] = -1
-					aS2[i] = -1
-		"""
-	
-	
+		#neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
 		c_band_cut_temp(num_trials, aS1, aS2)
+		
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
 		
 		#print aS1S2MC
-
-		# ------------------------------------------------
-		# apply efficiencies
-		# ------------------------------------------------
-
-		# element wise multiplication to combine S1 or S2
-		# need to use outer with multiply to make large matrix
-		
-		"""
-		if self.degreeSetting == 23:
-			aS1Efficiency = egPFEff.get_y_values().flatten()
-		else:
-			aS1Efficiency = egTacEff.get_y_values().flatten()*egPFEff.get_y_values().flatten()
-		aS2Efficiency = egTrigEff.get_y_values()
-		print aS2Efficiency
-		
-		aFullEfficiencyMatrix = np.outer(aS1Efficiency, aS2Efficiency)
-		
-		#print aS1S2.shape, aFullEfficiencyMatrix.shape
-		assert aS1S2MC.shape == aFullEfficiencyMatrix.shape
-		
-		try:
-			#aS1S2MC = np.multiply(aS1S2MC, aFullEfficiencyMatrix)
-			aS1S2MC = binomial(aS1S2MC.astype('int64', copy=False), aFullEfficiencyMatrix)
-			aS1S2MC = np.multiply(aS1S2MC, np.sum(self.aS1S2) / np.sum(aS1S2MC))
-		except:
-			return -np.inf, aS1S2MC
-		"""
 
 		if drawFit:
 
@@ -1542,11 +1525,34 @@ class neriX_simulation_analysis(object):
 		
 			del hS1MC, hS2MC, c1
 		
-		flatS1S2Data = self.aS1S2.flatten()
-		flatS1S2MC = aS1S2MC.flatten()
+		
+		# ------------------------------------------------
+		# trim 2d arrays for given quantiles
+		# ------------------------------------------------
 
+		if lowerQuantile != 0. or upperQuantile != 1.:
+			a_quantiles_results = np.zeros(2, dtype=np.float64)
+			a_quantiles = np.asarray([lowerQuantile, upperQuantile], dtype=np.float64)
+			
+			self.hS1.GetQuantiles(2, a_quantiles_results, a_quantiles)
+			lowerQuantileS1 = a_quantiles_results[0]
+			upperQuantileS1 = a_quantiles_results[1]
+			
+			self.hS2.GetQuantiles(2, a_quantiles_results, a_quantiles)
+			lowerQuantileS2 = a_quantiles_results[0]
+			upperQuantileS2 = a_quantiles_results[1]
+			
+			#print lowerQuantileS1, upperQuantileS1
+			#print lowerQuantileS2, upperQuantileS2
+		
 
-		logLikelihoodMatching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, num_mc_elements)
+		if lowerQuantile != 0. or upperQuantile != 1.:
+			logLikelihoodMatching = smart_log_likelihood_quantiles(self.aS1S2, aS1S2MC, num_mc_elements, aS1BinCenters, aS2BinCenters, lowerQuantileS1, upperQuantileS1, lowerQuantileS2, upperQuantileS2)
+		else:
+			flatS1S2Data = self.aS1S2.flatten()
+			flatS1S2MC = aS1S2MC.flatten()
+			logLikelihoodMatching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, num_mc_elements)
+		
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
 		
 		#print 'Full time in function: %f' % (time.time() - fullStartTime)
@@ -1559,14 +1565,13 @@ class neriX_simulation_analysis(object):
 		
 		
 		
-	def mcmc_func_full_matching(self, aParametersToFit, drawFit=False, gpu_compute=False, is_worker=False, d_gpu_scale={}):
-		#print aParametersToFit
+	def mcmc_func_full_matching(self, aParametersToFit, drawFit=False, gpu_compute=False, is_worker=False, d_gpu_scale={}, lowerQuantile=0., upperQuantile=1.):
 		assert len(aParametersToFit) == 17
 		#startTime = time.time()
 		if d_gpu_scale == {}:
-			logLikelihood = self.perform_mc_match_full(*aParametersToFit, gpu_compute=gpu_compute, drawFit=drawFit)[0]
+			logLikelihood = self.perform_mc_match_full(*aParametersToFit, gpu_compute=gpu_compute, drawFit=drawFit, lowerQuantile=lowerQuantile, upperQuantile=upperQuantile)[0]
 		else:
-			logLikelihood = self.perform_mc_match_full(*aParametersToFit, gpu_compute=gpu_compute, drawFit=drawFit, d_gpu_scale=d_gpu_scale)[0]
+			logLikelihood = self.perform_mc_match_full(*aParametersToFit, gpu_compute=gpu_compute, drawFit=drawFit, d_gpu_scale=d_gpu_scale, lowerQuantile=lowerQuantile, upperQuantile=upperQuantile)[0]
 		
 		return logLikelihood
 	
@@ -1706,7 +1711,7 @@ class neriX_simulation_analysis(object):
 
 
 
-	def run_mcmc(self, sMeasurement, sParameters, numWalkers, numSteps, numThreads, fractionalDeviationStartPos = 1e-3, gpu_compute=False, d_gpu_scale={}):
+	def run_mcmc(self, sMeasurement, sParameters, numWalkers, numSteps, numThreads, fractionalDeviationStartPos = 1e-3, gpu_compute=False, d_gpu_scale={}, lowerQuantile=0., upperQuantile=1.):
 		if sMeasurement == 'photon_yield':
 			numDim = 8
 			assert len(sParameters) == numDim
@@ -1814,7 +1819,7 @@ class neriX_simulation_analysis(object):
 
 		print '\n\nBeginning MCMC sampler\n\n'
 		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, numSteps, numWalkers*numSteps)
-		sampler = emcee.EnsembleSampler(numWalkers, numDim, func, threads=numThreads, kwargs={'d_gpu_scale':d_gpu_scale, 'gpu_compute':gpu_compute})
+		sampler = emcee.EnsembleSampler(numWalkers, numDim, func, threads=numThreads, kwargs={'d_gpu_scale':d_gpu_scale, 'gpu_compute':gpu_compute, 'lowerQuantile':lowerQuantile, 'upperQuantile':upperQuantile})
 		
 		# run mcmc sampler
 		
@@ -1886,9 +1891,9 @@ if __name__ == '__main__':
 	#test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 23, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.2, num_fake_events=3000, numMCEvents=50000)
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, accidentalBkgAdjustmentTerm=0.1, numMCEvents=50000)
-	test.perform_mc_match_full(5.82, 6.5, 0.9, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, gpu_compute=False)
+	test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=1300, numMCEvents=50000, name_notes='no_pf_eff')
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, accidentalBkgAdjustmentTerm=0.1, numMCEvents=50000)
+	test.perform_mc_match_full(5.69, 30.96/5., 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=False)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
