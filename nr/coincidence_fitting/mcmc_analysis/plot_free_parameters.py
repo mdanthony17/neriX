@@ -98,12 +98,12 @@ dParametersToDraw = {'photon_yield':{'index':0,
 					 'res_s1':{'index':2,
 							   'unit': '',
 							   'form':'R_{S1}',
-							   'binning':[100, 0., 2],
+							   'binning':[100, 0., 1.0],
 							   'true_value_for_fake':0.3},
 					 'res_s2':{'index':3,
 							   'form':'R_{S2}',
 							   'unit': '',
-							   'binning':[100, 0., 2],
+							   'binning':[100, 0., 0.6],
 							   'true_value_for_fake':0.05}
 					}
 

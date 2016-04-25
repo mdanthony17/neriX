@@ -9,11 +9,20 @@ import neriX_simulation_config
 import numpy as np
 import cPickle as pickle
 
-if len(sys.argv) != 6 and len(sys.argv) != 9:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [use fake data: t/f] [relative accidental rate] [num fake events]'
+if len(sys.argv) != 6 and len(sys.argv) != 9 and len(sys.argv) != 7 and len(sys.argv) != 10:
+	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [<use fake data>: t/f] [relative accidental rate] [num fake events] [name_notes]'
 	sys.exit()
 
 
+checkFakeData = False
+useNameNote = False
+if len(sys.argv) == 10:
+	checkFakeData = True
+	useNameNote = True
+elif len(sys.argv) == 9:
+	checkFakeData = True
+elif len(sys.argv) == 7:
+	useNameNote = True
 
 degreeSetting = int(sys.argv[1])
 cathodeSetting = float(sys.argv[2])
@@ -22,32 +31,40 @@ sMeasurement = sys.argv[4]
 numWalkers = int(sys.argv[5])
 
 # change to switch between real and fake data
-
-if len(sys.argv) == 9:
+if checkFakeData:
 	if sys.argv[6] == 't':
 		useFakeData = True
 		relativeAccidentalRate = float(sys.argv[7])
-		num_fake_events = int(sys.argv[8])
+		numFakeEvents = int(sys.argv[8])
 	else:
 		useFakeData = False
 		relativeAccidentalRate = False
-		num_fake_events = -1
-else:
-	useFakeData = False
-	relativeAccidentalRate = False
-	num_fake_events = -1
+		numFakeEvents = -1
+
+if useNameNote:
+	if checkFakeData:
+		name_notes = sys.argv[9]
+	else:
+		name_notes = sys.argv[6]
+
+
+dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)
+if useFakeData:
+	dir_specifier_name += '_%.2f_%d_events' % (relativeAccidentalRate, numFakeEvents)
+if useNameNote:
+	dir_specifier_name += '_' + name_notes
 
 
 if not useFakeData:
 	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
 	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
 	useFakeValueInPlots = False
-	sPathToFile = './%s/%ddeg_%.3fkV_%.1fkV/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, sMeasurement)
+	sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 else:
 	nameOfResultsDirectory = neriX_simulation_config.pathToThisModule + '/mcmc_analysis/fake_data/results'
-	lPlots = ['..', 'plots', 'free_parameters', 'fake_data', '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)]
+	lPlots = ['plots', 'free_parameters', 'fake_data', '%s' % dir_specifier_name]
 	useFakeValueInPlots = True
-	sPathToFile = '%s/%ddeg_%.3fkV_%.1fkV_%.2f_%d_events/%s/sampler_dictionary.p' % (nameOfResultsDirectory, degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events, sMeasurement)
+	sPathToFile = '%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 
 
 pathToSamplerDictionary = nameOfResultsDirectory
@@ -71,22 +88,22 @@ else:
 dParametersToDraw = {'photon_yield':{'index':0,
 									 'form':'P_{y}',
 									 'unit': '#frac{photons}{keV}',
-									 'binning':[100, 1, 7],
-									 'true_value_for_fake':4.32},
+									 'binning':[100, 2.5, 8.5],
+									 'true_value_for_fake':5.69},
 					 'charge_yield':{'index':1,
 									 'form':'Q_{y}',
 									 'unit': '#frac{electrons}{keV}',
 									 'binning':[100, 3, 10],
-									 'true_value_for_fake':6.78},
+									 'true_value_for_fake':31./5.},
 					 'res_s1':{'index':2,
 							   'unit': '',
 							   'form':'R_{S1}',
-							   'binning':[100, 0., 2],
+							   'binning':[100, 0., 1.0],
 							   'true_value_for_fake':0.3},
 					 'res_s2':{'index':3,
 							   'form':'R_{S2}',
 							   'unit': '',
-							   'binning':[100, 0., 2],
+							   'binning':[100, 0., 0.6],
 							   'true_value_for_fake':0.05}
 					}
 
@@ -106,7 +123,7 @@ for parameter in dParametersToDraw:
 	dPlots[parameter]['hist'].SetStats(0)
 	
 	# fill histogram and draw it
-	dPlots[parameter]['hist'].fill_array(aSampler[:,-5:,dParametersToDraw[parameter]['index']].flatten())
+	dPlots[parameter]['hist'].fill_array(aSampler[:,-50:,dParametersToDraw[parameter]['index']].flatten())
 	dPlots[parameter]['hist'].Draw()
 
 	# find quantiles
@@ -141,8 +158,5 @@ for parameter in dPlots:
 	nameForFile = parameter
 	if useFakeData:
 		nameForFile += '_fake'
-		fullFilename = '%s_%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting, relativeAccidentalRate, num_fake_events)
-	else:
-		'%s_%ddeg_%.3fkV_%.1fkV' % (nameForFile, degreeSetting, cathodeSetting, anodeSetting)
-	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], fullFilename, batch_mode=True)
+	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%s' % (nameForFile, dir_specifier_name))
 
