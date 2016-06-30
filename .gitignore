@@ -9,6 +9,7 @@ nr/coincidence_fitting/neriX_simulation_config.pyc
 nr/coincidence_fitting/mcmc_analysis/fake_data/results/
 nr/coincidence_fitting/mcmc_analysis/mcmc_results/
 nr/coincidence_fitting/mcmc_analysis/mcmc_results_local/
+nr/nr_band_matching/mcmc_results_local/
 ./.git/objects/15/d13f6b073a4fdf75bfde211b0e989d8b9bb230
 ./.git/objects/5c/2c982d0a1b3ac4ef500d49f2e2c086c63dc67b
 ./.git/objects/pack/pack-28c612e055325197282e043ba162d400504fad1f.pack

@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('QT4Agg')
 
 import ROOT as root
-import sys
+import sys, os
 import neriX_analysis, root_numpy
 from rootpy.plotting import Hist2D, Hist, Legend, Canvas
 from rootpy import stl
@@ -15,7 +15,7 @@ from scipy.stats import norm
 import copy_reg, types, pickle, click, time, emcee, corner
 from pprint import pprint
 from produce_nest_yields import nest_nr_mean_yields
-import gc
+import gc, nr_band_config
 
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -167,7 +167,9 @@ class nr_band_fitter(object):
 
 		current_analysis.set_event_list()
 
-
+		self.filename = current_analysis.get_filename_no_ext()
+		self.cathode_setting = current_analysis.get_cathode_setting()
+		self.anode_setting = current_analysis.get_anode_setting()
 
 		# -----------------------------------------------
 		# -----------------------------------------------
@@ -406,7 +408,7 @@ class nr_band_fitter(object):
 		self.l_upper_bound_curve = [f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2)]
 		s_upper_bound_nr_cut = '((%s > %f) || (%s < (%f + %f*%s + %f*%s^2)))' % (s1_branch, self.s1_settings[2], s2_branch, f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), s1_branch, f_upper_bound.GetParameter(2), s1_branch)
 		
-		raw_input('\nFits okay?\n')
+		#raw_input('\nFits okay?\n')
 		
 		#print current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)
 		h_s1_s2_band_cut = Hist2D(*(self.s1_settings+self.s2_settings))
@@ -645,7 +647,7 @@ class nr_band_fitter(object):
 
 
 		a_s1_s2_mc, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[self.a_s1_bin_edges, self.a_s2_bin_edges])
-		a_s1_s2_mc *= np.sum(self.a_s1_s2) / np.sum(a_s1_s2_mc)
+		#a_s1_s2_mc *= np.sum(self.a_s1_s2) / np.sum(a_s1_s2_mc)
 
 		if draw_fit:
 
@@ -744,31 +746,118 @@ class nr_band_fitter(object):
 
 
 
-	def fit_nr_band_nest(self, num_steps=200, burn_in=50, num_walkers=1000):
+	def fit_nr_band_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.05):
+	
 		# number of dimensions fixed
 		num_dim = 14
 	
 		# don't give zeros as starting values otherwise will be stuck
-		starting_values = [0.3, 0.1, 0.5, -0.5, 0.5, -0.5, 0.5, 2, 6, 0.05, 100, 0.5, -0.5, 0.5]
+		starting_values = [0.3, 0.1, np.random.randn(), np.random.randn(), np.random.randn(), np.random.randn(), np.random.randn(), 2, 6, 5, 100, np.random.randn(), np.random.randn(), np.random.randn()]
+	
+		# before emcee, setup save locations
+		dir_specifier_name = '%.3fkV_%.1fkV' % (self.cathode_setting, self.anode_setting)
+		self.results_directory_name = nr_band_config.results_directory_name
+		self.path_for_save = '%s/%s/%s/' % (self.results_directory_name, dir_specifier_name, self.filename)
+		
+		if not os.path.isdir(self.path_for_save):
+			os.makedirs(self.path_for_save)
+		
+		
+		# chain dictionary will have the following format
+		# d_sampler[walkers] = [sampler_000, sampler_001, ...]
 
-		starting_pos = [(np.random.randn(num_dim)*starting_values)*(0.01) + starting_values for i in xrange(num_walkers)]
+		loaded_prev_sampler = False
+		try:
+			# two things will fail potentially
+			# 1. open if file doesn't exist
+			# 2. posWalkers load since initialized to None
+			with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
+				d_sampler = pickle.load(f_prev_sampler)
+				prevSampler = d_sampler[num_walkers][-1]
+				# need to load in weird way bc can't pickle
+				# ensembler object
+				starting_pos = prevSampler['_chain'][:,-1,:]
+				random_state = prevSampler['_random']
+			loaded_prev_sampler = True
+			print '\nSuccessfully loaded previous chain!\n'
+		except:
+			print '\nCould not load previous sampler or none existed - starting new sampler.\n'
+		
+		if not loaded_prev_sampler:
+			starting_pos = [(np.random.randn(num_dim)+starting_values)*fractional_deviation_start_pos + starting_values for i in xrange(num_walkers)]
+			random_state = None
+			
+			# create file if it doesn't exist
+			if not os.path.exists(self.path_for_save + 'sampler_dictionary.p'):
+				with open(self.path_for_save + 'sampler_dictionary.p', 'w') as f_prev_sampler:
+					d_sampler = {}
+					d_sampler[num_walkers] = []
+					pickle.dump(d_sampler, f_prev_sampler)
+			else:
+				with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
+					d_sampler = pickle.load(f_prev_sampler)
+				with open(self.path_for_save + 'sampler_dictionary.p', 'w') as f_prev_sampler:
+					d_sampler[num_walkers] = []
+					pickle.dump(d_sampler, f_prev_sampler)
+	
+	
+	
 
-		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_nest, threads=6, kwargs={})
+		#starting_pos = [(np.random.randn(num_dim)*starting_values)*(0.05) + starting_values for i in xrange(num_walkers)]
+
+		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_nest, threads=num_threads, kwargs={})
+		
+		print '\n\nBeginning MCMC sampler\n\n'
+		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (num_walkers, num_steps, num_walkers*num_steps)
+		
+		start_time_mcmc = time.time()
 
 		with click.progressbar(sampler.sample(starting_pos, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
 			for pos, lnprob, state in mcmc_sampler:
 				pass
+				
+		total_time_mcmc = (time.time() - start_time_mcmc) / 3600.
+		print '\n\n%d function calls took %.2f hours.\n\n' % (num_walkers*num_steps, total_time_mcmc)
 
-		samples = sampler.chain[:, burn_in:, :].reshape((-1, num_dim))
-		print samples
+		#samples = sampler.chain[:, 10:, :].reshape((-1, num_dim))
+		#print samples
 
-		fig = corner.corner(samples)
-		fig.savefig('./corner_plot.png')
+		#fig = corner.corner(samples)
+		#fig.savefig(self.path_for_save + 'corner_plot.png')
 
+
+		# ------------------------------------------------
+		# Prepare and save data and plots
+		# ------------------------------------------------
+
+		#print sampler.__dict__
+		dictionary_for_sampler = sampler.__dict__
+		if 'lnprobfn' in dictionary_for_sampler:
+			del dictionary_for_sampler['lnprobfn']
+		if 'pool' in dictionary_for_sampler:
+			del dictionary_for_sampler['pool']
+
+		with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
+			d_sampler = pickle.load(f_prev_sampler)
+		f_prev_sampler.close()
+
+		f_prev_sampler = open(self.path_for_save + 'sampler_dictionary.p', 'w')
+		d_sampler[num_walkers].append(sampler.__dict__)
+		pickle.dump(d_sampler, f_prev_sampler)
+		f_prev_sampler.close()
+
+		
+
+		#sampler.run_mcmc(posWalkers, numSteps) # shortcut of above method
+		pickle.dump(sampler.acceptance_fraction, open(self.path_for_save + 'sampler_acceptance_fraction.p', 'w'))
+		try:
+			pickle.dump(sampler.acor, open(self.path_for_save + 'sampler_acor.p', 'w'))
+		except:
+			print '\n\nWARNING: Not enough sample points to estimate the autocorrelation time - this likely means that the fit is bad since the burn-in time was not reached.\n\n'
 
 
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 1.054)
 	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	test.fit_nr_band_nest(num_steps=300, burn_in=100, num_walkers=2500)
+	test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
