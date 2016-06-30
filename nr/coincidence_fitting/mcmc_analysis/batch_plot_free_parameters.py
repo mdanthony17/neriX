@@ -158,5 +158,5 @@ for parameter in dPlots:
 	nameForFile = parameter
 	if useFakeData:
 		nameForFile += '_fake'
-	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%s' % (nameForFile, dir_specifier_name))
+	neriX_analysis.save_plot(lPlots, dPlots[parameter]['canvas'], '%s_%s' % (nameForFile, dir_specifier_name), batch_mode=True)
 

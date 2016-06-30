@@ -1,0 +1,17 @@
+#***************************************************************
+# multiDAX  --  DAQ for neriX
+#
+# This is the baseline configuration file. The information
+# here sets all ADC channels to the same baseline level.
+#
+# generated: 150930_0943
+#***************************************************************
+
+WRITE_MODULE 340 1098 0F79
+WRITE_MODULE 340 1198 0E16
+WRITE_MODULE 340 1298 0F60
+WRITE_MODULE 340 1398 15DA
+WRITE_MODULE 340 1498 17D3
+WRITE_MODULE 340 1598 1308
+WRITE_MODULE 340 1698 1438
+WRITE_MODULE 340 1798 13BA

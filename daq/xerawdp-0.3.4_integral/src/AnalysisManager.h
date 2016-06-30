@@ -135,6 +135,7 @@ private:
 	int m_iPmtToIntegrate;
 	int m_iSamplesBeforeLiqSciPeak;
 	int m_iWindowForS1Integral;
+	int m_fThresholdForS1Integral;
 	
 #endif
 

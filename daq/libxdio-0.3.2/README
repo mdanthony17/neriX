@@ -1,0 +1,19 @@
+1. Requirements
+    - 
+
+2. Description of libxdio
+    The xdio library is the interface for writing XENON100 events to file and
+	reading them.
+    - xdio_file:
+	- xdio_event:
+	- xdio_format:
+	- xdio_format_raw:
+	- xdio_format_zle:
+
+3. Description of xdio_file_t
+    The xdio_file_t is the interface to the XENON data files.
+	first_event_nb: Holds the event number of the first event in the file. If
+	the file doesn't contain consecutive events then its value is -1.
+
+4. Description of xdio_event_t
+

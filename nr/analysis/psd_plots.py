@@ -8,11 +8,11 @@ from rootpy.plotting import Hist2D, Hist, Legend, Canvas
 #--------------- Start Parameters to Change ----------------
 
 
-psdNumBins = 50
+psdNumBins = 100
 psdMin = 0
 psdMax = 0.5
 
-lhNumBins = 50
+lhNumBins = 100
 lhMin = 0
 lhMax = 2
 

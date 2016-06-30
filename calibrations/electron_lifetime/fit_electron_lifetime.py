@@ -225,6 +225,8 @@ c1.Update()
 f1 = root.TF1('f1', '[0]*exp(-[1]*x)', dtMin, dtMax)
 f1.SetParameters(400e3, 1./50.)
 
+#f1.FixParameter(1, 1./140.)
+
 #hProfile.Fit('f1', 'MELR')
 fitResult = gProfileX.Fit('f1', 'MELRS')
 f1.SetLineStyle(1)

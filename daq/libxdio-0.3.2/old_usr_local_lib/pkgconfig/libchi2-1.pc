@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+LIBCHI2_API_VERSION=1
+
+Name: libchi2
+Description: XENON100 Chi^2 position reconstruction
+Version: 1.0.0
+Libs: -L${libdir} -lchi2-${LIBCHI2_API_VERSION}
+Cflags: -I${includedir}/libchi2-${LIBCHI2_API_VERSION}

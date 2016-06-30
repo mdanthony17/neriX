@@ -44,7 +44,7 @@ def gas_gain_fitting(filename, num_electrons):
     #s2_parameter = 'S2sTotBottom'
     s2_parameter = 'ctS2sTotBottom'
 
-    TVirtualFitter.SetMaxIterations(30000)
+    #TVirtualFitter.SetMaxIterations(10000)
 
     par_names = ['mean_bot', 'width_bot', 'mean_top', 'width_top', 'angle'] + ['p%d_ampl' % (i + 1) for i in xrange(iNumElectrons)] + ['fd_center_tot', 'fd_shape_tot', 'fd_center_top', 'fd_shape_top']
 
@@ -61,9 +61,9 @@ def gas_gain_fitting(filename, num_electrons):
             fd_center_bot = 9.44
             fd_shape_tot = 2.68
 
-    fS2Max = 150
+    fS2Max = 80
     fS2BottomMin = 0
-    fS2TopMin = 0
+    fS2TopMin = 8
     # iSampleWindow = [115,140] # run 15
     #iSampleWindow = [100, 200]  # after KNF
     iSampleWindow = [150,250] # run 10
@@ -72,8 +72,8 @@ def gas_gain_fitting(filename, num_electrons):
     iCoinPMTs = 3
 
     # 50 bins used previously
-    s2TopBinning = [40, -10, 120]
-    s2BotBinning = [40, -10, 120]
+    s2TopBinning = [25, 0, 60]
+    s2BotBinning = [25, 0, 60]
 
     s2_order = '0'
 
@@ -87,6 +87,12 @@ def gas_gain_fitting(filename, num_electrons):
 	
 	
     # implement cuts
+	
+	# radial cut
+    #current_analysis.add_radius_cut(18, 30)
+    current_analysis.add_radius_cut(0, 18)
+	
+	
     # total S2 cut
     current_analysis.add_cut('%s[S2Order[%s]] + S2sTotTop[S2Order[%s]] < %f' % (s2_parameter, s2_order, s2_order, fS2Max))
 
@@ -94,13 +100,16 @@ def gas_gain_fitting(filename, num_electrons):
     # S2 bottom low cut
     current_analysis.add_cut('%s[S2Order[%s]] > %f' % (s2_parameter, s2_order, fS2BottomMin))
 
-
     # S2 top low cut
     current_analysis.add_cut('S2sTotTop[S2Order[%s]] > %f' % (s2_order, fS2TopMin))
 
+    # S2 bottom high cut
+    current_analysis.add_cut('%s[S2Order[%s]] < %f' % (s2_parameter, s2_order, s2BotBinning[2]))
+
+    # S2 top high cut
+    current_analysis.add_cut('S2sTotTop[S2Order[%s]] < %f' % (s2_order, s2TopBinning[2]))
 
     # sample range after S1
-    #print '\n\nNOT USING GATE PHOTOIONIZATION\n\n'
     current_analysis.add_cut('S2sPeak[S2Order[%s]] > (S1sPeak[0] + %i) && S2sPeak[S2Order[%s]] < (S1sPeak[0] + %i)' % (s2_order, iSampleWindow[0], s2_order, iSampleWindow[1]))
 
 
@@ -119,7 +128,7 @@ def gas_gain_fitting(filename, num_electrons):
 
     current_analysis.set_event_list()
 
-
+    #current_analysis.get_T1().Scan('EventId:S2sTotTop[]:ctS2sTotBottom[]:R', current_analysis.get_cuts())
 
 
 	# --------------------------------------------
@@ -158,11 +167,11 @@ def gas_gain_fitting(filename, num_electrons):
     c1.cd(1)
     gPad.SetLogz()
     gPad.SetRightMargin(0.12)
-    current_analysis.Draw('%s[S2Order[%s]]:S2sTotTop[]' % (s2_parameter, s2_order), hist=S2TopBottom, selection=current_analysis.get_cuts())
+    current_analysis.Draw('%s[S2Order[%s]]:S2sTotTop[S2Order[%s]]' % (s2_parameter, s2_order, s2_order), hist=S2TopBottom, selection=current_analysis.get_cuts())
     S2TopBottom.Draw('colz')
 
     #aS2sComb = ['(%s)*(%s)' % (aS2sBottom[i], aS2sTop[i]) for i in range(iNumElectrons)]
-    FitS2TopBottom = TF2('FitS2TopBottom', '(x + y < %f ? 1. : 0.)*(x > %f ? 1. : 0.)*(y > %f ? 1. : 0.)*(%s)*(%s)*(%s)' % (fS2Max, fS2BottomMin, fS2TopMin, sThreshTopBottom, sThreshTop, ' + '.join(aS2Total)), 0, 100,
+    FitS2TopBottom = TF2('FitS2TopBottom', '(x + y < %f ? 1. : 0.)*(x > %f && x < %f ? 1. : 0.)*(y > %f && y < %f ? 1. : 0.)*(%s)*(%s)' % (fS2Max, fS2BottomMin, s2BotBinning[2], fS2TopMin, s2TopBinning[2], sThreshTopBottom, ' + '.join(aS2Total)), 0, 100,
                          0, 100)
 
     #print '(x + y < %f ? 1. : 0.)*(x > %f ? 1. : 0.)*(y > %f ? 1. : 0.)*(%s)*(%s)*(%s)' % (fS2Max, fS2BottomMin, fS2TopMin, sThreshTopBottom, sThreshTop, ' + '.join(aS2Total))
@@ -179,7 +188,7 @@ def gas_gain_fitting(filename, num_electrons):
     FitS2TopBottom.SetParLimits(4, angle_low, angle_high)
     FitS2TopBottom.SetParLimits(iNumElectrons + 5, -10, 40)
     FitS2TopBottom.SetParLimits(iNumElectrons + 6, 0, 10)
-    FitS2TopBottom.SetParLimits(iNumElectrons + 7, -10, 10)
+    FitS2TopBottom.SetParLimits(iNumElectrons + 7, 0, 10)
     FitS2TopBottom.SetParLimits(iNumElectrons + 8, 0, 5)
 
 	
@@ -218,6 +227,8 @@ def gas_gain_fitting(filename, num_electrons):
 
 
     c1.Update()
+	
+    #raw_input('enter to continue...')
 
     fitStatus = fitResult.CovMatrixStatus()
     if fitStatus != 3:
@@ -236,13 +247,25 @@ def gas_gain_fitting(filename, num_electrons):
     dum2 = np.asarray([0], dtype=np.float64)
     dum3 = np.asarray([0], dtype=np.int32)
     dum4 = np.asarray([0], dtype=np.int32)
+	
+
+    # find correct error for ct
+    if s2_parameter == 'ctS2sTotBottom':
+        corrected_mean = FitS2TopBottom.GetParameter(0)
+        uncorrected_mean = corrected_mean*neriX_analysis.get_gain_correction(current_analysis.get_run(), current_analysis.get_timestamp())
+        uncorrected_err = FitS2TopBottom.GetParError(0)*neriX_analysis.get_gain_correction(current_analysis.get_run(), current_analysis.get_timestamp())
+        ctErrMeanBottom = corrected_mean*( (uncorrected_err / uncorrected_mean)**2 + (neriX_analysis.get_gain_correction_err(current_analysis.get_run(), current_analysis.get_timestamp()) / neriX_analysis.get_gain_correction(current_analysis.get_run(), current_analysis.get_timestamp()))**2)**0.5
+    else:
+        ctErrMeanBottom = FitS2TopBottom.GetParError(0)
+		
+		
 
     fitter.GetStats(amin, dum1, dum2, dum3, dum4)
 
     sFileName = current_analysis.get_filename_no_ext()
 
-    c1.SaveAs(sPathToSaveOutput + '/gas_gain_' + sFileName + '.png')
-    c1.SaveAs(sPathToSaveOutput + '/gas_gain_' + sFileName + '.C')
+    c1.SaveAs(sPathToSaveOutput + '/gas_gain_' + sFileName + '_post_s1.png')
+    c1.SaveAs(sPathToSaveOutput + '/gas_gain_' + sFileName + '_post_s1.C')
 
     OutputFile = open(sPathToSaveOutput + '/gas_gain_' + sFileName[:-5] + '.txt', 'w')
     OutputFile.write(
@@ -261,7 +284,7 @@ def gas_gain_fitting(filename, num_electrons):
         '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 2), FitS2TopBottom.GetParError(iNumElectrons + 2)))
     OutputFile.write(
         '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 3), FitS2TopBottom.GetParError(iNumElectrons + 3)))
-    OutputFile.write('%f\t%f\t' % (FitS2TopBottom.GetParameter(0), FitS2TopBottom.GetParError(0)))
+    OutputFile.write('%f\t%f\t' % (FitS2TopBottom.GetParameter(0), ctErrMeanBottom))
     OutputFile.write('%f\t%f' % (FitS2TopBottom.GetParameter(1), FitS2TopBottom.GetParError(1)))
     OutputFile.close()
 
@@ -282,21 +305,21 @@ def gas_gain_fitting(filename, num_electrons):
     if fit_successful:
         forTextFile = '%s\t%d\t%.3f\t%.3f\t%.2f\t%.2f\t%.2f\t%.2f\n' % (
         current_analysis.get_filename_no_ext(), current_analysis.get_timestamp(), current_analysis.get_anode_setting(),
-        current_analysis.get_cathode_setting(), FitS2TopBottom.GetParameter(0), FitS2TopBottom.GetParError(0),
+        current_analysis.get_cathode_setting(), FitS2TopBottom.GetParameter(0), ctErrMeanBottom,
         FitS2TopBottom.GetParameter(1), FitS2TopBottom.GetParError(1))
 
     del current_analysis
     return string_to_return, -amin / 2., forTextFile
 
 
-lFiles = ['nerix_141203_1506']
+#lFiles = ['nerix_150106_1100']
 #lFiles = ['nerix_140915_1158', 'nerix_140917_1010', 'nerix_140929_1115', 'nerix_140929_1212', 'nerix_140930_0925', 'nerix_140930_1029', 'nerix_140930_1127', 'nerix_140930_1626', 'nerix_140930_1626', 'nerix_141003_1232', 'nerix_141006_0951', 'nerix_141014_1024', 'nerix_141014_1414', 'nerix_141015_1155', 'nerix_141022_1127', 'nerix_141029_1110', 'nerix_141103_1101', 'nerix_141103_1553', 'nerix_141103_1627', 'nerix_141103_1655']
 
 
-#lFiles = ['nerix_141203_1506', 'nerix_141208_1123', 'nerix_141210_1028','nerix_141217_1041', 'nerix_150106_1100', 'nerix_150106_1137', 'nerix_150106_1234', 'nerix_150106_1404', 'nerix_150114_1407', 'nerix_150128_1158', 'nerix_150128_1327', 'nerix_150128_1454', 'nerix_150128_1622', 'nerix_150204_1210', 'nerix_150210_1210']
+lFiles = ['nerix_141203_1506', 'nerix_141208_1123', 'nerix_141210_1028','nerix_141217_1041', 'nerix_150106_1100', 'nerix_150106_1137', 'nerix_150106_1234', 'nerix_150106_1404', 'nerix_150114_1407', 'nerix_150128_1158', 'nerix_150128_1327', 'nerix_150128_1454', 'nerix_150128_1622', 'nerix_150204_1210', 'nerix_150210_1210']
 
-
-lNumElectrons = [2, 3, 4, 5]
+#lNumElectrons = [3, 4, 5, 6, 7]
+lNumElectrons = [2, 3, 4]
 
 sForFile = ''
 sForTextFile = ''

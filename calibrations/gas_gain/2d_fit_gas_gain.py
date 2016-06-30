@@ -26,7 +26,7 @@ mean_bot_guess = 16.5
 width_bot_guess = 6.
 
 bot_mean_low = 12.
-bot_mean_high = 18.
+bot_mean_high = 28.
 
 bot_width_low = 4.
 bot_width_high = 10.

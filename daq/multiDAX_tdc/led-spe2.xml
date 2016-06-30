@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--*********************************************************
+    *		 miniDAX - - DAQ for XEBELLA 
+    * 
+    * This xml file contains the settings of a measurement
+    * that can be changed by the user. The file is read by
+    * the DAX program and overwrites all possible command
+    * line arguments.
+    * Please note: Only the entries marked with ** are read
+    *    by the miniDAX program. All other information is just
+    *    for documentation purposes or can be used by 
+    *    other programs.
+    *********************************************************-->
+
+<settings author="GP" date="06/11/2012">
+  <!-- global Settings for the measurement--> 
+  <global>
+    <source>LED</source>			<!-- What is measured? -->
+    <notes>LED trigger, PMT HV 1:740V; 2:740V, 3:710V, 4:800V, 5:860V, 6:0V., External gain: 1-16:10, 17:5., 18:0.5, PB-5 pulse generator, 2.775V (pulser), 500Hz, width=100 ns</notes>	<!-- Comments -->
+    <path>/data2/rsync_to_archive/</path>		<!-- **Path to files-->
+    <daq_version>1.0</daq_version>		<!-- ... -->
+    <nb_evts>200000</nb_evts>			<!-- **Evts to be measured; -1 is infinity -->	
+    <nb_evts_per_file>100000</nb_evts_per_file> 	<!-- **No of Events stored in one file -->	
+    <store_data>3</store_data>			<!-- **0: no, 1: old format, 2: ASCII, 3: Xe100 -->
+    <compress>0</compress>              <!-- 0: no compression, 1: gzip, 2: bzip2 -->
+    <displaytime>1</displaytime>		<!-- **Display measured triggers, MBs, etc. every x sec -->
+    <user>Zach</user>				<!-- Who started the measurement? -->
+  </global>
+  <!--*************************************************************************************************** -->
+  <!-- ADC CAEN v1724 specific settings -->
+  <adc>	
+    <!-- global ADC settings -->
+    <global>
+      <nb_chs>20</nb_chs>			<!-- **Total number of channels --> 
+      <nb_samples_per_evt>0.5</nb_samples_per_evt><!-- **max nb. samples/event in k-->
+      <custom_size>208</custom_size>
+      <posttrigger>180</posttrigger> 		<!-- **samples after trigger -->
+      <trigger>0</trigger>			<!-- **0:ext trig, 1:S1 trig, 2:S2 trig -->
+      <s1_thresh>50</s1_thresh>			<!-- **ADC threshold to generate S1 trigger -->
+      <s2_magnify>8</s2_magnify>                <!-- magnification factor for sum signal: 1,2,4,8 -->
+      <s2_baseline>-23</s2_baseline>            <!-- add this value to shift baseline to zero -->
+      <sampling_freq>100000000</sampling_freq>	<!-- **sampling frequency -->
+      <sample_size>14</sample_size>		<!-- **sampling width in bits -->
+      <voltage_range>2.25</voltage_range>	<!-- **voltage range of ADC -->
+      <baseline>16000</baseline>  		<!-- **position of baseline (channels) -->	
+      <busy>0</busy>				<!-- **ADC busy on (1) or off (0) --> 
+    </global>
+    <!-- Settings for Zero Length Encoding (ZLE)-->
+    <zle_settings>
+      <zle>0</zle>				<!-- **Zero Length Encoding? (1..yes, 0..no) -->
+      <threshold>40</threshold>		<!-- **channels below baseline (neg. signals!) -->
+      <n_pre>50</n_pre>				<!-- **baseline samples before peak -->
+      <n_post>50</n_post>			<!-- **baseline samples behind peak -->
+      <special_thresholds>			<!-- **set individual ZLE threshold for some PMTs -->
+      </special_thresholds>
+    </zle_settings>
+    <!-- Settings for graphical display "Oscilloscope mode" -->
+    <graphics>
+      <xdisplay>0</xdisplay>			<!-- ** 0:standard, 1:manual, 2:auto -->
+      <ydisplay>1</ydisplay>			<!-- ** 0:standard, 1:manual, 2:auto -->
+      <xaxis_low>900</xaxis_low>		<!-- ** lower border x-axis -->
+      <xaxis_high>1100</xaxis_high>		<!-- ** upper border x-axis -->
+      <yaxis_low>15900</yaxis_low>		<!-- ** lower border of y-axis display -->
+      <yaxis_high>16100</yaxis_high>		<!-- ** upper border -->
+      <xautorange>30</xautorange>		<!-- ** x-display of y-minimum +- this value -->
+    </graphics>
+  </adc>
+</settings>

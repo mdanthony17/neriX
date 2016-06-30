@@ -415,6 +415,20 @@ Waveform::width(int iPeak, int iLeftMax, int iRightMax, float fThreshold) const
 	return(iRight-iLeft);
 }
 
+int
+Waveform::leftEdge(int iPeak, int iLeftMax, float fThreshold) const
+{
+	float fThresholdHeight = fThreshold*(*this)[iPeak];
+	int iLeft;
+
+	iLeft = iPeak;
+
+	while((iLeft > iLeftMax) && ((*this)[iLeft] > fThresholdHeight)) iLeft--;
+
+	return iLeft;
+}
+
+
 float
 Waveform::interpolatedWidth(int iPeak, int iLeftMax, int iRightMax, float fThreshold) const
 {

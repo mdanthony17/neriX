@@ -125,6 +125,7 @@ public:
 	int getPmtToIntegrate() const { return m_iPmtToIntegrate; }
 	int getSamplesBeforeLiqSciPeak() const { return m_iSamplesBeforeLiqSciPeak; }
 	int getWindowForS1Integral() const { return m_iWindowForS1Integral; }
+	float getThresholdForS1Integral() const { return m_fThresholdForS1Integral; }
 	
 #endif
 
@@ -442,6 +443,7 @@ private:
 	int m_iPmtToIntegrate;
 	int m_iSamplesBeforeLiqSciPeak;
 	int m_iWindowForS1Integral;
+	float m_fThresholdForS1Integral;
 	
 	
 #endif

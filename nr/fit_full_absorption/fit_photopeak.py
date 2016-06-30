@@ -125,11 +125,11 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		secondParameter = 'cpS2sTotBottom[0]'
 
 	elif degree == -2 or degree == -4:
-		S1NB = 25
+		S1NB = 60
 		S1LB = 0
 		S1UB = 1400
 
-		S2NB = 25
+		S2NB = 60
 		S2LB = 0
 		S2UB = 400e3
 		
@@ -152,14 +152,14 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		#numPeaks = 2
 
 
-	elif (degree == -1 or degree == -5) and currentAnalysis.get_run() == 15:
+	elif (degree == -1 or degree == -5) and (currentAnalysis.get_run() == 15 or currentAnalysis.get_run() == 16):
 		S1NB = 80
 		S1LB = 0
-		S1UB = 3500
+		S1UB = 3000
 
 		S2NB = 80
 		S2LB = 0
-		S2UB = 1100e3
+		S2UB = 500e3
 		
 		upperBoundCES = 800.
 	

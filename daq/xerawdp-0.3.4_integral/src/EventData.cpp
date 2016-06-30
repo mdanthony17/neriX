@@ -122,6 +122,10 @@ EventData::allocate()
 	m_pLiqSciTailRaw = new vector<float>();
 	
 	m_pS1IntegralBeforeLiqSci = new vector<float>();
+	m_pS1IntegralBeforeLiqSciPeak = new vector<int>();
+	m_pS1IntegralBeforeLiqSciWidth = new vector<int>();
+	m_pS1IntegralBeforeLiqSciLeftEdge = new vector<int>();
+	m_pS1IntegralBeforeLiqSciHeight = new vector<float>();
 #endif
 
 #ifdef ENABLE_NAI
@@ -304,6 +308,10 @@ EventData::deallocate()
 	delete m_pLiqSciTailRaw;
 	
 	delete m_pS1IntegralBeforeLiqSci;
+	delete m_pS1IntegralBeforeLiqSciPeak;
+	delete m_pS1IntegralBeforeLiqSciWidth;
+	delete m_pS1IntegralBeforeLiqSciLeftEdge;
+	delete m_pS1IntegralBeforeLiqSciHeight;
 #endif
 
 #ifdef ENABLE_NAI
@@ -495,6 +503,10 @@ EventData::clear()
 	m_pLiqSciRaw->clear();
 	m_pLiqSciTailRaw->clear();
 	m_pS1IntegralBeforeLiqSci->clear();
+	m_pS1IntegralBeforeLiqSciPeak->clear();
+	m_pS1IntegralBeforeLiqSciWidth->clear();
+	m_pS1IntegralBeforeLiqSciLeftEdge->clear();
+	m_pS1IntegralBeforeLiqSciHeight->clear();
 #endif
 
 #ifdef ENABLE_NAI

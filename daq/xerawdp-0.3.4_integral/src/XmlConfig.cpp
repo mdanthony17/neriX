@@ -51,6 +51,7 @@ XmlConfig::XmlConfig()
 	m_iPmtToIntegrate = -1;
 	m_iSamplesBeforeLiqSciPeak = -1;
 	m_iWindowForS1Integral = -1;
+	m_fThresholdForS1Integral = -1.;
 	
 #endif
 
@@ -768,6 +769,8 @@ XmlConfig::readS1LiqSciIntegralSettings(const xmlpp::Node* pRootNode)
 			hStream >> m_iSamplesBeforeLiqSciPeak;
 		else if(hName == "window_for_s1_integral")
 			hStream >> m_iWindowForS1Integral;
+		else if(hName == "threshold_for_s1_integral")
+			hStream >> m_fThresholdForS1Integral;
 		
 		hStream.clear();
 	}

@@ -1,2 +1,2 @@
 #anode	cathode		top_eff_thresh	top_eff_thresh_err	top_eff_rolloff	top_eff_rolloff_err	top_mu	top_mu_err	top_width	top_width_err	bottom_eff_thresh	bottom_eff_thresh_err	bottom_eff_rolloff	bottom_eff_rolloff_err	bottom_mu	bottom_mu_err	bottom_width	bottom_width_err
-4.500000	5.500000	0.191221	0.524342	0.362259	0.313062	4.453982	0.332987	9.070653	0.512824	80.304479	2.199649	9.940328	0.563420	16.519133	0.123452	5.312634	0.111085
+4.500000	5.500000	1.237485	0.334683	0.928665	0.036093	2.979498	0.157669	10.280129	0.615294	5.251390	0.382285	1.667654	0.238033	17.345548	0.157122	6.428108	0.091619

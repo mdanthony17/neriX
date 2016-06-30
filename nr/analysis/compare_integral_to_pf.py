@@ -7,9 +7,9 @@ from rootpy.plotting import Hist2D, Hist, Legend, Canvas
 
 #--------------- Start Parameters to Change ----------------
 
-s1NumBins = 40
-s1Min = -0.5
-s1Max = 39.5
+s1NumBins = 12
+s1Min = 0
+s1Max = 12
 
 #--------------- End Parameters to Change ----------------
 
@@ -42,7 +42,7 @@ current_analysis.add_single_scatter_cut()
 #current_analysis.add_xs1asym_cut() # no xs1asym because it uses S1sTotBottom
 current_analysis.add_xs2asym_cut()
 current_analysis.add_temp_neutron_cut(degreeSetting)
-current_analysis.add_cut('(S2sPeak[0] - LiqSciPeak[])/100. > 3 && (S2sPeak[0] - LiqSciPeak[])/100. < 20') # makeshift dt cut that applies to both S1 branches
+current_analysis.add_cut('S2sPeak[0] > 600 && S2sPeak[0] < 2400') # makeshift dt cut that applies to both S1 branches
 current_analysis.add_s1_liqsci_peak_cut()
 current_analysis.add_cut('%s > 0' % s1_branch_integral)
 
@@ -86,6 +86,7 @@ c1.Update()
 
 f1 = root.TF1('f1', 'pol1', s1Min, s1Max)
 f1.SetParameters(0, 1)
+f1.FixParameter(0, 0)
 
 #hProfile.Fit('f1', 'MELR')
 fitResult = gProfileS1Comparison.Fit('f1', 'MELRS')
@@ -97,10 +98,11 @@ f1.Draw('same')
 
 
 
-sFitInfo1 = 'Intercept: %.3f +/- %.3f, Slope: %.3f +/- %.3f' % (f1.GetParameter(0), f1.GetParError(0), f1.GetParameter(1), f1.GetParError(1))
+sFitInfo1 = 'Slope: %.3f +/- %.3f' % (f1.GetParameter(1), f1.GetParError(1))
+#sFitInfo1 = 'Intercept: %.3f +/- %.3f, Slope: %.3f +/- %.3f' % (f1.GetParameter(0), f1.GetParError(0), f1.GetParameter(1), f1.GetParError(1))
 
 
-pt1 = root.TPaveText(.1,.65,.9,.9,'blNDC')
+pt1 = root.TPaveText(.1,.65,.5,.9,'blNDC')
 text1 = pt1.AddText(sFitInfo1)
 pt1.SetTextColor(root.kBlue)
 pt1.SetFillStyle(0)

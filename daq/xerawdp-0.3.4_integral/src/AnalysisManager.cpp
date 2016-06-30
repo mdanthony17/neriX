@@ -203,6 +203,7 @@ AnalysisManager::AnalysisManager(const XmlConfig &hXmlConfig, EventData *pEventD
 	m_iPmtToIntegrate = hXmlConfig.getPmtToIntegrate();
 	m_iSamplesBeforeLiqSciPeak = hXmlConfig.getSamplesBeforeLiqSciPeak();
 	m_iWindowForS1Integral = hXmlConfig.getWindowForS1Integral();
+	m_fThresholdForS1Integral = hXmlConfig.getThresholdForS1Integral();
 	
 #endif
 
@@ -781,6 +782,10 @@ AnalysisManager::describeLevel2Tree()
 	m_pLevel2Branches->push_back(Branch("LiqSciTail", "vector<float>", &m_pEventData->m_pLiqSciTail));
 	
 	m_pLevel2Branches->push_back(Branch("S1IntegralBeforeLiqSci", "vector<float>", &m_pEventData->m_pS1IntegralBeforeLiqSci));
+	m_pLevel2Branches->push_back(Branch("S1IntegralBeforeLiqSciPeak", "vector<int>", &m_pEventData->m_pS1IntegralBeforeLiqSciPeak));
+	m_pLevel2Branches->push_back(Branch("S1IntegralBeforeLiqSciLeftEdge", "vector<int>", &m_pEventData->m_pS1IntegralBeforeLiqSciLeftEdge));
+	m_pLevel2Branches->push_back(Branch("S1IntegralBeforeLiqSciWidth", "vector<int>", &m_pEventData->m_pS1IntegralBeforeLiqSciWidth));
+	m_pLevel2Branches->push_back(Branch("S1IntegralBeforeLiqSciHeight", "vector<float>", &m_pEventData->m_pS1IntegralBeforeLiqSciHeight));
 #endif
 
 #ifdef ENABLE_NAI
@@ -2132,7 +2137,13 @@ AnalysisManager::getSignals()
 	if(pWaveforms->count(m_iPmtToIntegrate-1) && pLiqSci != m_pEventData->m_pLiqSciPeak->end())
 	{
 	
-		float fS1Raw = (*pWaveforms)[m_iPmtToIntegrate-1]->integrate(iLeftEdge, iRightEdge)*fToElectronConversionFactor;
+		int iMaximumPosition = (*pWaveforms)[m_iPmtToIntegrate-1]->maximumPosition(iLeftEdge, iRightEdge);
+		int iLeftEdgeS1 = (*pWaveforms)[m_iPmtToIntegrate-1]->leftEdge(iMaximumPosition, iLeftEdge, m_fThresholdForS1Integral);
+		int iWidth = (*pWaveforms)[m_iPmtToIntegrate-1]->width(iMaximumPosition, iLeftEdgeS1, iRightEdge, m_fThresholdForS1Integral);
+		int iRightEdgeS1 = iWidth + iLeftEdgeS1;
+		float fS1Max = (*pWaveforms)[m_iPmtToIntegrate-1]->maximum(iLeftEdgeS1, iRightEdgeS1);
+	
+		float fS1Raw = (*pWaveforms)[m_iPmtToIntegrate-1]->integrate(iLeftEdgeS1, iRightEdgeS1)*fToElectronConversionFactor;
 		float fGain = (m_pPmtCalibrationTable->find(m_iPmtToIntegrate)->second).find("gain")->second;
 		float fS1 = (fGain != 0.)?(((fS1Raw > 0.)?(fS1Raw):(0.))/fGain):(0.);
 		
@@ -2140,6 +2151,10 @@ AnalysisManager::getSignals()
 		//	cout << "\n\nintegral before liq sci: " << fS1 << "\n\n";
 		
 		m_pEventData->m_pS1IntegralBeforeLiqSci->push_back(fS1);
+		m_pEventData->m_pS1IntegralBeforeLiqSciPeak->push_back(iMaximumPosition);
+		m_pEventData->m_pS1IntegralBeforeLiqSciWidth->push_back(iWidth);
+		m_pEventData->m_pS1IntegralBeforeLiqSciLeftEdge->push_back(iLeftEdgeS1);
+		m_pEventData->m_pS1IntegralBeforeLiqSciHeight->push_back(fS1Max);
 		
 	}
 

@@ -1,0 +1,48 @@
+#ifndef __LIBXDIO_H__
+#define __LIBXDIO_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdio.h>	
+
+#ifndef HAVE_INTTYPES_H
+#	undef HAVE_INTTYPES_H
+#endif
+#ifndef HAVE_STDINT_H
+#	undef HAVE_STDINT_H
+#endif
+#ifndef HAVE_SYS_TYPES_H
+#	undef HAVE_SYS_TYPES_H
+#endif
+#ifndef HAVE_SYS_TYPES_H
+#	undef HAVE_SYS_TYPES_H
+#endif
+
+#if HAVE_INTTYPES_H
+#	include <inttypes.h>
+#else
+#	if HAVE_STDINT_H
+#		include <stdint.h>
+#	else
+#		if HAVE_SYS_TYPES_H
+#			include <sys/types.h>
+#		endif
+#	endif
+#endif
+#if HAVE_SYS_TYPES_H
+#	include <sys/types.h>
+#endif
+
+#ifndef int32_t
+#undef int32_t
+#endif
+
+#include <xdio.h>
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // __LIBXDIO_H__

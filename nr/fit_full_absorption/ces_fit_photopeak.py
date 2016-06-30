@@ -128,7 +128,7 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 	
 		upperBoundCES = 100.
 
-	elif degree == -2 or degree == -4:
+	elif degree == -2:
 		S1NB = 25
 		S1LB = 0
 		S1UB = 1400
@@ -160,7 +160,7 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		#numPeaks = 2
 
 
-	elif (degree == -1 or degree == -5) and currentAnalysis.get_run() == 15:
+	elif (degree == -1 or degree == -5) and (currentAnalysis.get_run() == 15 or currentAnalysis.get_run() == 16):
 		S1NB = 80
 		S1LB = 0
 		S1UB = 3500
@@ -170,6 +170,20 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		S2UB = 700e3
 		
 		upperBoundCES = 800.
+	
+		firstParameter = 'cpS1sTotBottom[0]'
+		secondParameter = 'cpS2sTotBottom[0]'
+
+	elif (degree == -4) and (currentAnalysis.get_run() == 15 or currentAnalysis.get_run() == 16):
+		S1NB = 80
+		S1LB = 0
+		S1UB = 800
+
+		S2NB = 80
+		S2LB = 0
+		S2UB = 200e3
+		
+		upperBoundCES = 300.
 	
 		firstParameter = 'cpS1sTotBottom[0]'
 		secondParameter = 'cpS2sTotBottom[0]'
@@ -188,7 +202,7 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 		firstParameter = 'ctS1sTotBottom[0]'
 		secondParameter = 'S2sTotTop[0]'
 
-	elif currentAnalysis.get_run() == 15:
+	elif currentAnalysis.get_run() == 15 or currentAnalysis.get_run() == 16:
 		pass
 	else:
 		print 'Only setup to handle coincidence and minitron and Co57 calibrations (degree = -4)'
@@ -266,8 +280,8 @@ def fit_photopeak(lFilesToLoad, radialCut, numProcessors, numPeaks=1):
 
 	# ---------- MAKE CES CUT ----------
 
-	g1 = 0.095 #0.105 #0.1
-	g2 = 17. #23. #24.
+	g1 = 0.08#0.095 #0.105 #0.1
+	g2 = 14. #17. #23. #24.
 	sigmaCES = 1.
 
 	cCES = Canvas(width=900, height=700, name='cCES')

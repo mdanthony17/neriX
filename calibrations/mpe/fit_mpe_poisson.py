@@ -22,18 +22,18 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
 
     sPathToSaveOutput = './results/run_' + str(run_number) + '/' + filename
     aColors = [4, 2, 8, 7, 5, 9]*5
-    max_num_events = 200000
+    max_num_events = 15
 
     bkg_mean_low = -5e5
     bkg_mean_high = 5e5
     bkg_width_low = 1e4
-    bkg_width_high = 1e6
-    spe_mean_low = 2e5
+    bkg_width_high = 4e5
+    spe_mean_low = 5e5
     spe_mean_high = 2e6
     spe_width_low = 1e5
     spe_width_high = 1.5e6
 
-    mpe_par_guesses = [1, 0, 3e5, 8e5, 5e5, 5e9]
+    mpe_par_guesses = [2, 1.5e5, 1e5, 8e5, 5e5, 5e9]
 
 
     par_names = ['poisson_mean', 'mean_bkg', 'width_bkg', 'mean_spe', 'width_spe', 'normalization']# + ['p%d_ampl' % (i + 1) for i in xrange(num_photons)]
@@ -54,12 +54,17 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
 
     c1 = Canvas()
 
+    channel = 16
+    parameter_to_draw = 'SingleIntegral[%d]' % (channel)
+    parameter_to_draw = 'SinglePeak[%d] + SingleBefore[%d][0] + SingleBefore[%d][1] + SingleAfter[%d][0] + SingleAfter[%d][1]' % (5*(channel,))
     tree_mpe = file_mpe.T0
-    tree_mpe.Draw('SingleIntegral[16]', hist=h_mpe_spec)
+    tree_mpe.Draw(parameter_to_draw, hist=h_mpe_spec)
     h_mpe_spec.Draw()
 
+    #s_bkg = '[5]/(2*3.14*[2]**2.)**0.5*TMath::Poisson(0, [0])*exp(-0.5*((x - [1])/[2])**2)'
     s_bkg = '[5]/(2*3.14*[2]**2.)**0.5*TMath::Poisson(0, [0])*exp(-0.5*((x - [1])/[2])**2)'
     s_fit_mpe = '(%s) + (%s)' % (s_bkg, ' + '.join(l_mpe_fit_func))
+    s_fit_mpe = '(%s)*([1] < [3] ? 1. : 0.)' % (s_fit_mpe)
     print 'Fit function: %s' % s_fit_mpe
     fit_mpe = root.TF1('fit_mpe', s_fit_mpe, *mpe_spec_binning[1:])
     fit_mpe.SetLineColor(46)
@@ -72,7 +77,7 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
     h_mpe_spec.GetYaxis().SetTitleOffset(1.4)
     h_mpe_spec.SetStats(0)
 
-    fit_mpe.SetParLimits(0, 0, max_num_events)
+    fit_mpe.SetParLimits(0, 0.8, max_num_events)
     fit_mpe.SetParLimits(1, bkg_mean_low, bkg_mean_high)
     fit_mpe.SetParLimits(2, bkg_width_low, bkg_width_high)
     fit_mpe.SetParLimits(3, spe_mean_low, spe_mean_high)
@@ -213,9 +218,10 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
     return string_to_return, -amin / 2., forTextFile
 
 
-lFiles = ['nerix_151201_1048']
+lFiles = ['nerix_160531_0936']
 
-lNumPhotons = [11, 12, 13, 14, 15, 16, 17, 18]
+#lNumPhotons = [2, 3, 4, 5, 6]
+lNumPhotons = [10, 11, 12, 13, 14]
 
 sForFile = ''
 sForTextFile = ''
@@ -225,7 +231,7 @@ for file in lFiles:
     lStrings = [0 for i in xrange(len(lNumPhotons))]
     for i, num_photons in enumerate(lNumPhotons):
         print '\n\n\nStarting %s with %d electrons.\n\n\n' % (file, lNumPhotons[i])
-        lStrings[i], lLnlikelihoods[i], forTextFile = mpe_fitting(file, 15, num_photons, use_ideal=False)
+        lStrings[i], lLnlikelihoods[i], forTextFile = mpe_fitting(file, 16, num_photons, use_ideal=False)
 
     # find first step with p-value > 0.05 and take previous
 
@@ -243,7 +249,7 @@ for file in lFiles:
 
     # run one more time to save image of "correct"
     # number of electrons
-    dummy1, dummy2, forTextFile = mpe_fitting(file, 15, num_photons, use_ideal=False)
+    dummy1, dummy2, forTextFile = mpe_fitting(file, 16, num_photons, use_ideal=False)
 
     sForTextFile += forTextFile
 

@@ -80,6 +80,7 @@ public:
 
 private:
 	void computeS1Extent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent);
+	void computeScintExtent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent);
 	void computeS2LargePeakExtent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent);
 	void computeS2TinyPeakExtent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent);
 	int closestS2LeftEdge(int iPeak, int iRightEdge);

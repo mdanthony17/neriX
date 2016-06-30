@@ -1193,9 +1193,10 @@ def get_parameters_status():
 		except KeyError:
 			error('could not get last reading from parameter "%s"' % status_parameter)
 			status += '%s ' % (time.asctime())
-			status += '%s error, could not read last value\n' % (status_parameter.channel_name)
+			status += '%s %s error, could not read last value\n' % (status_parameter.instrument_name,status_parameter.channel_name)
 		else:
 			status += '%s ' % (time.asctime(time.localtime(process_value.time)))
+			status += '%s ' % (status_parameter.instrument_name)
 			status += '%s ' % (status_parameter.channel_name)
 			if isinstance(process_value.value, str):
 				status += '%s' % process_value.value
@@ -1396,11 +1397,18 @@ def smacd_main():
 #    instruments.append(pfeiffer0)
 #    instruments_lock.release()
 
-	# create the APC SmartUPS
-	apc0 = APCSmartUPS('apc0', 30.)
-	apc0.set_serial_parameters('/dev/ttyS2', 2400, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+	# create the APC SmartUPS - UPS 1
+	apc1 = APCSmartUPS('apc1', 30.)
+	apc1.set_serial_parameters('/dev/ttyS2', 2400, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
 	instruments_lock.acquire()
-	instruments.append(apc0)
+	instruments.append(apc1)
+	instruments_lock.release()
+
+	# create the APC SmartUPS - UPS 2
+	apc2 = APCSmartUPS('apc2', 30.)
+	apc2.set_serial_parameters('/dev/ttyUSB1', 2400, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+	instruments_lock.acquire()
+	instruments.append(apc2)
 	instruments_lock.release()
 
 	# create the CAENHV
@@ -1443,6 +1451,14 @@ def smacd_main():
 	# create and start the database data recorder
 	recorder = Recorder(recorder_user, recorder_pass)
 	recorder.start()
+
+
+	# keep counter for reads that aren't adc0
+	# this will catch when we lose it and allow
+	# us to restart it
+	reads_without_adc0 = 0
+	max_reads_before_reset = 100
+
 
 	# check if some commands should be sent to instruments and get the readings
 	while 1:
@@ -1489,8 +1505,42 @@ def smacd_main():
 		resetSoftAlarm = True
 		for instrument in instruments:
 			reading = instrument.get_reading()
-			if reading:
+
+			# debug adc going out
+			try:
+				print instrument
 				print reading
+			except:
+				debug("Could not read the following instrument:")
+				print instrument
+				print '\n\n'
+			"""
+			if reading and reading[0:3] != 'adc0':
+				reads_without_adc0 += 1
+			else:
+				reads_without_adc0 = 0
+
+			if reads_without_adc0 > max_reads_before_reset:
+				# restart adc0
+				pass
+					# create the Superlogics8017 ADC
+					new_adc0 = Superlogics8017('adc0', 60., 0x02)
+					new_adc0.set_serial_parameters('/dev/ttyS0', 9600, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+					new_adc0.add_input(0, 'P_chamber', 'Bar', 2.069, -0.05, 'FLOAT(5,4)')
+					#adc0.add_input(1, '', '', 1., 0.)
+					new_adc0.add_input(2, 'I_beam', 'uA', 9.9407, 0.7172, 'FLOAT(5,2)')
+					new_adc0.add_input(3, 'T_top', 'C', 25., -150., 'FLOAT(5,2)')
+					new_adc0.add_input(4, 'Q_circulation', 'SLPM', 3.4, 0., 'FLOAT(5,3)')
+					new_adc0.add_input(5, 'T_ambient', 'C', 37.538, -61.111, 'FLOAT(5,2)')
+					instruments_lock.acquire()
+					instruments.remove(adc0)
+					instruments.append(adc0)
+					instrument.connect()
+					instrument.read_start()
+					instruments_lock.release()
+			"""
+			if reading:
+				#print reading
 
 				# store the last reading
 				last_reading_lock.acquire()
@@ -1646,7 +1696,9 @@ def smacd_stop():
 	if os.path.exists(pid_file):
 		pid = int(open(pid_file, 'r').read().strip())
 		try:
-			os.kill(pid, signal.SIGTERM)
+			#return_value = os.kill(pid, signal.SIGTERM)
+			return_value = os.kill(pid, signal.SIGKILL)
+			#print return_value
 		except OSError:
 			os.remove(pid_file)
 		sys.exit(0)

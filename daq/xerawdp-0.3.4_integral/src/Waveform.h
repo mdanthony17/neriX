@@ -76,6 +76,7 @@ public:
 	int minimumPosition(int iLeft, int iRight) const;
 	int maximumPosition(int iLeft, int iRight) const;
 	int width(int iPeak, int iLeftMax, int iRightMax, float fThreshold) const;
+	int leftEdge(int iPeak, int iLeftMax, float fThreshold) const;
 	float interpolatedWidth(int iPeak, int iLeftMax, int iRightMax, float fThreshold) const;
 	float interpolatedRiseTime(int iPeak, int iLeftMax, float fThreshold) const;
 	float meanTime(int iLeft, int iRight) const;

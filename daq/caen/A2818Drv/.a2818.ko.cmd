@@ -1,0 +1,1 @@
+cmd_/root/caen/A2818Drv/a2818.ko := ld -r -m elf_x86_64 -T /usr/src/linux-2.6.38-gentoo-r6/scripts/module-common.lds --build-id  -o /root/caen/A2818Drv/a2818.ko /root/caen/A2818Drv/a2818.o /root/caen/A2818Drv/a2818.mod.o

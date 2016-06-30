@@ -790,6 +790,60 @@ PeakFinder::computeS1Extent(int iPeak, int iLeftMax, int iRightMax, int &iLeftEx
 	iRightExtent = (iCount > m_iS1SamplesBelowThreshold)?(iRight-m_iS1SamplesBelowThreshold):(iRight);
 }
 
+
+void
+PeakFinder::computeScintExtent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent)
+{
+#ifdef ENABLE_PEAK_FINDER_OUTPUT
+	cout << "      PeakFinder::computeS1Extent(" << iPeak << ", " << iLeftMax << ", " << iRightMax << ")" << endl;
+#endif
+	float fMaxValue = (*m_pWaveform)[iPeak];
+	float fS1HeightThreshold = 0.0005;
+
+	int iLeft, iRight;
+	iLeft = iRight = iPeak;
+
+	// find the left boundary
+	int iCount = 0;
+	while(1)
+	{
+		if((iLeft < iLeftMax) || ((*m_pWaveform)[iLeft] < fS1HeightThreshold))
+		{
+			if(++iCount > m_iS1SamplesBelowThreshold)
+				break;
+		}
+		else if((*m_pWaveform)[iLeft] > fMaxValue)
+			break;
+		else if(iCount > 0)
+			iCount = 0;
+
+		iLeft--;
+	}
+
+	iLeftExtent = (iCount > m_iS1SamplesBelowThreshold)?(iLeft+m_iS1SamplesBelowThreshold):(iLeft);
+
+	// find the right boundary
+	iCount = 0;
+	while(1)
+	{
+		if((iRight > iRightMax) || ((*m_pWaveform)[iRight] < fS1HeightThreshold))
+		{
+			if(++iCount > m_iS1SamplesBelowThreshold)
+				break;
+		}
+		else if((*m_pWaveform)[iRight] > fMaxValue)
+			break;
+		else if(iCount > 0)
+			iCount = 0;
+
+		iRight++;
+	}
+
+	iRightExtent = (iCount > m_iS1SamplesBelowThreshold)?(iRight-m_iS1SamplesBelowThreshold):(iRight);
+}
+
+
+
 void
 PeakFinder::computeS2LargePeakExtent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent)
 {
@@ -946,7 +1000,7 @@ PeakFinder::findLiqSciPeak(Waveform const *pWaveform, int iRightMax)
 	int iMaxPos = m_pWaveform->maximumPosition(50, iRightMax);
 
 	int iLeftExtent, iRightExtent;
-	computeS1Extent(iMaxPos, 50, m_iNbSamples, iLeftExtent, iRightExtent);
+	computeScintExtent(iMaxPos, 50, m_iNbSamples, iLeftExtent, iRightExtent);
 
 	float fLiqSci = m_pWaveform->integrate(iLeftExtent, iRightExtent);
 	float fLiqSciWidth = m_pWaveform->interpolatedWidth(iMaxPos, iLeftExtent, iRightExtent, 0.50);
@@ -954,6 +1008,7 @@ PeakFinder::findLiqSciPeak(Waveform const *pWaveform, int iRightMax)
 
 	m_hLiqSciPeak = Peak(iMaxPos, iLeftExtent-2, iRightExtent+2, fLiqSciWidth, fLiqSciLowWidth, 0, fLiqSci);
 }
+
 
 void
 PeakFinder::computeLiqSciExtent(int iPeak, int iLeftMax, int iRightMax, int &iLeftExtent, int &iRightExtent)
@@ -1005,6 +1060,7 @@ PeakFinder::computeLiqSciExtent(int iPeak, int iLeftMax, int iRightMax, int &iLe
 
 	iRightExtent = (iCount > m_iLiqSciSamplesBelowThreshold)?(iRight-m_iLiqSciSamplesBelowThreshold):(iRight);
 }
+
 #endif
 
 #ifdef ENABLE_NAI
@@ -1022,7 +1078,7 @@ PeakFinder::findNaiPeak(Waveform const *pWaveform, int iRightMax)
 	int iMaxPos = m_pWaveform->maximumPosition(50, iRightMax);
 
 	int iLeftExtent, iRightExtent;
-	computeS1Extent(iMaxPos, 50, m_iNbSamples, iLeftExtent, iRightExtent);
+	computeScintExtent(iMaxPos, 50, m_iNbSamples, iLeftExtent, iRightExtent);
 
 	float fNai = m_pWaveform->integrate(iLeftExtent, iRightExtent);
 	float fNaiWidth = m_pWaveform->interpolatedWidth(iMaxPos, iLeftExtent, iRightExtent, 0.50);

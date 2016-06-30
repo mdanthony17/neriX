@@ -87,6 +87,10 @@ public:
 	float getLiqSciHeight(int iLiqSci) const { return (*m_pLiqSciHeight)[iLiqSci]; }
 	
 	float getS1IntegralBeforeLiqSci(int iPeak) const { return (*m_pS1IntegralBeforeLiqSci)[iPeak]; }
+	int getS1IntegralBeforeLiqSciPeak(int iPeak) const { return (*m_pS1IntegralBeforeLiqSciPeak)[iPeak]; }
+	int getS1IntegralBeforeLiqSciWidth(int iPeak) const { return (*m_pS1IntegralBeforeLiqSciWidth)[iPeak]; }
+	int getS1IntegralBeforeLiqSciLeftEdge(int iPeak) const { return (*m_pS1IntegralBeforeLiqSciLeftEdge)[iPeak]; }
+	float getS1IntegralBeforeLiqSciHeight(int iPeak) const { return (*m_pS1IntegralBeforeLiqSciHeight)[iPeak]; }
 #endif
 
 #ifdef ENABLE_NAI
@@ -271,6 +275,10 @@ private:
 	std::vector<float> *m_pLiqSciTailRaw;
 	
 	std::vector<float> *m_pS1IntegralBeforeLiqSci;
+	std::vector<int> *m_pS1IntegralBeforeLiqSciPeak;
+	std::vector<int> *m_pS1IntegralBeforeLiqSciWidth;
+	std::vector<int> *m_pS1IntegralBeforeLiqSciLeftEdge;
+	std::vector<float> *m_pS1IntegralBeforeLiqSciHeight;
 #endif
 
 #ifdef ENABLE_NAI

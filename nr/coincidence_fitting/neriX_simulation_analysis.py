@@ -1,5 +1,6 @@
 
-#matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('QT4Agg')
 import ROOT as root
 from ROOT import gROOT
 import sys, os, root_numpy, threading, random, emcee, corner, signal
@@ -24,6 +25,8 @@ import pycuda.gpuarray
 #import pycuda.autoinit
 #mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
 """
+
+
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
@@ -733,10 +736,19 @@ class neriX_simulation_analysis(object):
 		
 		# load trig efficiency file and store in easy function
 		fTrigEfficiency = File(dFilesForAnalysis['trig_efficiency'])
-		tf1TrigEfficiency = fTrigEfficiency.eff_func
+		#tf1TrigEfficiency = fTrigEfficiency.eff_func # Na22 only
+		tf1TrigEfficiency = fTrigEfficiency.ThresholdFunc
 		# --------  NOTE: need +1 due to function def in TRIG EFF ONLY
 		self.lParsTrigEff = [tf1TrigEfficiency.GetParameter(i+1) for i in xrange(neriX_simulation_datasets.num_par_trig_eff)]
 		self.lParsTrigEffUncertainty = [tf1TrigEfficiency.GetParError(i+1) for i in xrange(neriX_simulation_datasets.num_par_trig_eff)]
+		
+		# if using Cs137 trig efficiency need minus one
+		#self.lParsTrigEff[0] = -self.lParsTrigEff[0]
+		neriX_analysis.warning_message('Hard coding trigger efficiency function from 4/18')
+		self.lParsTrigEff[0] = 0.098
+		self.lParsTrigEff[1] = 250
+		
+		
 		#self.efTrigEfficiency = easy_function(tf1TrigEfficiency, self.s2NumBins, self.s2LowerBound, self.s2UpperBound)
 			
 		# ------------------------------------------------
@@ -1420,7 +1432,7 @@ class neriX_simulation_analysis(object):
 		# parameters that make efficiency 1.
 		if self.degreeSetting > 100.:
 			tacEff = np.asarray([1e6], dtype=np.float32)
-			pfEff = np.asarray([-1e6, 1], dtype=np.float32)
+			pfEff = np.asarray([2, 1], dtype=np.float32)
 		else:
 			tacEff = np.asarray(lTacEff, dtype=np.float32)
 			pfEff = np.asarray(lPFEff, dtype=np.float32)
@@ -1468,7 +1480,7 @@ class neriX_simulation_analysis(object):
 		#analysisTime = time.time()
 		
 		
-		#neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
+		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
 		c_band_cut_temp(num_trials, aS1, aS2)
 		
 		
@@ -1818,7 +1830,7 @@ class neriX_simulation_analysis(object):
 
 
 		print '\n\nBeginning MCMC sampler\n\n'
-		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, numSteps, numWalkers*numSteps)
+		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, num_, numWalkers*numSteps)
 		sampler = emcee.EnsembleSampler(numWalkers, numDim, func, threads=numThreads, kwargs={'d_gpu_scale':d_gpu_scale, 'gpu_compute':gpu_compute, 'lowerQuantile':lowerQuantile, 'upperQuantile':upperQuantile})
 		
 		# run mcmc sampler
@@ -1891,9 +1903,9 @@ if __name__ == '__main__':
 	#test.create_fake_data(4.32, 6.78, 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	
 	# create test data
-	test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=1300, numMCEvents=50000, name_notes='no_pf_eff')
-	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, accidentalBkgAdjustmentTerm=0.1, numMCEvents=50000)
-	test.perform_mc_match_full(5.69, 30.96/5., 0.3, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=False)
+	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
+	test = neriX_simulation_analysis(16, 4.5, 0.345, 6200, accidentalBkgAdjustmentTerm=0.1, numMCEvents=50000)
+	test.perform_mc_match_full(9.22, 83.1/17.8, 0.1, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=False)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 

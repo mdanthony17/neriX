@@ -17,7 +17,7 @@ s1Max = 2500
 
 s2NumBins = 100
 s2Min = 0.
-s2Max = 900e3#2.2e5*5
+s2Max = 600e3#2.2e5*5
 
 xyNumBins = 100
 xyMin = -1.4
@@ -44,6 +44,11 @@ s1BotNumBins = 100
 s1BotMin = 0
 s1BotMax = 180
 
+s1Branch = 'S1sTotBottom[0]'
+#s1Branch = 'S1IntegralBeforeLiqSci[0]'
+s2Branch = 'S2sTotBottom[0]'
+degreeSetting = 3000
+
 
 #--------------- End Parameters to Change ----------------
 
@@ -68,12 +73,24 @@ optionSame = 'SAME'
 #choose cuts for run 1
 #run1.add_dt_cut(4., 13.)
 run1.add_z_cut()
-#run1.add_radius_cut(0.7, 10)
+run1.add_radius_cut(0, 0.85)
 run1.add_single_scatter_cut()
 run1.add_xs1asym_cut()
 run1.add_xs2asym_cut()
 #run1.add_cut('NbS2Peaks < 2')
 #run1.add_temp_neutron_cut(45)
+
+"""
+run1.add_cut('%s > 0' % s1Branch)
+run1.add_cut('%s > 0' % s2Branch)
+run1.add_cut('%s < %f' % (s1Branch, s1Max))
+run1.add_cut('%s < %f' % (s2Branch, s2Max))
+run1.add_temp_neutron_cut(degreeSetting)
+run1.add_cut('S1IntegralBeforeLiqSciHeight[0] > 0.001') # from looking at height vs area (0.001 cleans up 2.356kV)
+run1.add_cut('S2sPeak[0] > 600 && S2sPeak[0] < 2000') # hacky cut since we know LiqSciPeak is around 400 samples
+run1.add_cut('((%s > 24.0) || (%s < (7.406e+02 + 6.240e+01*%s + -4.430e-01*pow(%s, 2.))))' % (s1Branch, s2Branch, s1Branch, s1Branch))
+"""
+
 
 run1.set_event_list()
 
@@ -94,7 +111,7 @@ ha1.GetYaxis().SetTitle('661.657 - GeEnergy [keV]')
 ha1.SetStats(0)
 """
 ha2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='ha2', title='S1 vs S2' + sRun1)
-run1.Draw('S1sTotBottom[0]:S2sTotBottom[0]', hist=ha2)
+run1.Draw('%s:%s' % (s1Branch, s2Branch), hist=ha2)
 ha2.GetXaxis().SetTitle('S1sTotBottom[0] [PE]')
 ha2.GetYaxis().SetTitle('S2sTotBottom[0] [PE]')
 ha2.SetStats(0)
@@ -126,7 +143,7 @@ ha6.SetLineColor(root.kBlue)
 ha6.SetStats(0)
 """
 ha7 = Hist(s1NumBins, s1Min, s1Max, name='ha7', title='s1 comparison', drawstyle='hist')
-run1.get_T1().Draw('S1sTotBottom[0]', hist=ha7)
+run1.get_T1().Draw('%s' % (s1Branch), hist=ha7)
 ha7.GetXaxis().SetTitle('S1sTotBottom[0] [PE]')
 ha7.GetYaxis().SetTitle('Normalized Counts')
 ha7.Scale(1./ha7.Integral())
@@ -134,7 +151,7 @@ ha7.SetColor(root.kBlue)
 ha7.SetStats(0)
 
 ha8 = Hist(s2NumBins, s2Min, s2Max, name='ha8', title='s2 comparison', drawstyle='hist')
-run1.get_T1().Draw('S2sTotBottom[0]', hist=ha8)
+run1.get_T1().Draw('%s' % s2Branch, hist=ha8)
 ha8.GetXaxis().SetTitle('S2sTotBottom[0] [PE]')
 ha8.GetYaxis().SetTitle('Normalized Counts')
 ha8.Scale(1./ha8.Integral())
@@ -166,15 +183,26 @@ run2 = neriX_analysis.neriX_analysis(file2)
 #choose cuts for run 2
 #run2.add_dt_cut(4., 13.)
 run2.add_z_cut()
-#run2.add_radius_cut(0.7, 10)
+run2.add_radius_cut(0, 0.85)
 run2.add_single_scatter_cut()
 run2.add_xs1asym_cut()
 run2.add_xs2asym_cut()
 #run2.add_cut('NbS2Peaks < 2')
 #run2.add_temp_neutron_cut(45)
 
+"""
+run2.add_cut('%s > 0' % s1Branch)
+run2.add_cut('%s > 0' % s2Branch)
+run2.add_cut('%s < %f' % (s1Branch, s1Max))
+run2.add_cut('%s < %f' % (s2Branch, s2Max))
+run2.add_temp_neutron_cut(degreeSetting)
+run2.add_cut('S1IntegralBeforeLiqSciHeight[0] > 0.001') # from looking at height vs area (0.001 cleans up 2.356kV)
+run2.add_cut('S2sPeak[0] > 600 && S2sPeak[0] < 2000') # hacky cut since we know LiqSciPeak is around 400 samples
+run2.add_cut('((%s > 24.0) || (%s < (7.406e+02 + 6.240e+01*%s + -4.430e-01*pow(%s, 2.))))' % (s1Branch, s2Branch, s1Branch, s1Branch))
+
 #run2.add_cut('S1sTotBottom[0] > 1500 && S1sTotBottom[0] < 1700 && S2sTotBottom[0] > 300e3 && S2sTotBottom[0] < 330e3')
 #run2.add_cut('S1sTotBottom[0] > 1500 && S1sTotBottom[0] < 1700 && S2sTotBottom[0] > 400e3 && S2sTotBottom[0] < 430e3')
+"""
 
 run2.set_event_list()
 
@@ -189,7 +217,7 @@ hb1.GetYaxis().SetTitle('661.657 - GeEnergy [keV]')
 hb1.SetStats(0)
 """
 hb2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='hb2', title='S1 vs S2' + sRun2)
-run2.Draw('S1sTotBottom[0]:S2sTotBottom[0]', hist=hb2)
+run2.Draw('%s:%s' % (s1Branch, s2Branch), hist=hb2)
 hb2.GetXaxis().SetTitle('S1sTotBottom[0] [PE]')
 hb2.GetYaxis().SetTitle('S2sTotBottom[0] [PE]')
 hb2.SetStats(0)
@@ -221,7 +249,7 @@ hb6.SetLineColor(root.kRed)
 hb6.SetStats(0)
 """
 hb7 = Hist(s1NumBins, s1Min, s1Max, name='hb7', title='s1', drawstyle='hist')
-run2.get_T1().Draw('S1sTotBottom[0]', hist=hb7)
+run2.get_T1().Draw('%s' % (s1Branch), hist=hb7)
 hb7.GetXaxis().SetTitle('S1sTotBottom[0] [PE]')
 hb7.GetYaxis().SetTitle('Normalized Counts')
 hb7.Scale(1./hb7.Integral())
@@ -229,7 +257,7 @@ hb7.SetColor(root.kRed)
 hb7.SetStats(0)
 
 hb8 = Hist(s2NumBins, s2Min, s2Max, name='hb8', title='s2', drawstyle='hist')
-run2.get_T1().Draw('S2sTotBottom[0]', hist=hb8)
+run2.get_T1().Draw('%s' % (s2Branch), hist=hb8)
 hb8.GetXaxis().SetTitle('S2sTotBottom[0] [PE]')
 hb8.GetYaxis().SetTitle('Normalized Counts')
 hb8.Scale(1./hb8.Integral())
