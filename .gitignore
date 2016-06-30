@@ -73,3 +73,4 @@ nr/coincidence_fitting/mcmc_analysis/mcmc_results_local/
 ./nr/coincidence_fitting/simulated_data/nerixsim-pure_nr_spec.root
 ./nr.zip
 ./Slow Control/old/smac-0.3.0/smacd.log
+./daq/levelmeter/*.dat
