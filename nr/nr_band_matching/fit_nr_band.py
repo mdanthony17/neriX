@@ -49,11 +49,13 @@ def smart_log_likelihood(aData, aMC, numMCEvents, confidenceIntervalLimit=0.95):
 			probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./numMCEvents)
 			totalLogLikelihood += smart_log(smart_binomial(data, numMCEvents, probabiltyOfSuccess))
 			#print 'mc = 0 and data != 0'
+			#print smart_log(smart_binomial(data, numMCEvents, probabiltyOfSuccess))
 		else:
 			#print data, mc, data*smart_log(mc) - mc - smart_stirling(data)
 			#print data*smart_log(mc), mc, smart_stirling(data)
 			#print data*smart_log(mc) - mc - smart_stirling(data)
 			totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+			#print data, mc, data*smart_log(mc), mc, smart_stirling(data), data*smart_log(mc) - mc - smart_stirling(data)
 
 	return totalLogLikelihood
 
@@ -137,7 +139,7 @@ def smart_binomial(numberOfSucceses, numberOfTrials, probabiltyOfSuccess):
 
 
 class nr_band_fitter(object):
-	def __init__(self, l_files, anodeVoltage, cathodeVoltage, degree_setting=-4, num_mc_events=500000, name_notes=None, yields_free=False):
+	def __init__(self, l_files, anodeVoltage, cathodeVoltage, degree_setting=-4, num_mc_events=1000000, name_notes=None, yields_free=False):
 
 		# make class methods pickleable for multithreading process
 		copy_reg.pickle(types.MethodType, reduce_method)
@@ -651,7 +653,10 @@ class nr_band_fitter(object):
 
 
 		a_s1_s2_mc, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[self.a_s1_bin_edges, self.a_s2_bin_edges])
-		#a_s1_s2_mc *= np.sum(self.a_s1_s2) / np.sum(a_s1_s2_mc)
+		try:
+			a_s1_s2_mc *= np.sum(self.a_s1_s2) / np.sum(a_s1_s2_mc)
+		except:
+			return -np.inf
 
 		if draw_fit:
 
@@ -863,6 +868,6 @@ class nr_band_fitter(object):
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345)
 	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.22, intrinsic_res_s2=0.10, g1_rv=-3, spe_res_rv=1.5, g2_rv=-5, gas_gain_rv=1, gas_gain_width_rv=2.5, s1_eff_par0=0.5, s1_eff_par1=16., s2_eff_par0=1.5, s2_eff_par1=108., exciton_to_ion_par0_rv=-1.2, exciton_to_ion_par1_rv=4.5, exciton_to_ion_par2_rv=-2.2, draw_fit=True)
+	test.likelihood_nr_band_nest(intrinsic_res_s1=0.9, intrinsic_res_s2=2.0, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
 	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
