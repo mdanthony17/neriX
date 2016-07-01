@@ -137,7 +137,7 @@ def smart_binomial(numberOfSucceses, numberOfTrials, probabiltyOfSuccess):
 
 
 class nr_band_fitter(object):
-	def __init__(self, l_files, anodeVoltage, cathodeVoltage, degree_setting=-4, num_mc_events=50000, name_notes=None, yields_free=False):
+	def __init__(self, l_files, anodeVoltage, cathodeVoltage, degree_setting=-4, num_mc_events=500000, name_notes=None, yields_free=False):
 
 		# make class methods pickleable for multithreading process
 		copy_reg.pickle(types.MethodType, reduce_method)
