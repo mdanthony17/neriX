@@ -17,6 +17,7 @@ from pprint import pprint
 from produce_nest_yields import nest_nr_mean_yields
 import gc, nr_band_config
 
+
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
@@ -139,7 +140,7 @@ def smart_binomial(numberOfSucceses, numberOfTrials, probabiltyOfSuccess):
 
 
 class nr_band_fitter(object):
-	def __init__(self, l_files, anodeVoltage, cathodeVoltage, degree_setting=-4, num_mc_events=1000000, name_notes=None, yields_free=False):
+	def __init__(self, l_files, anodeVoltage, cathodeVoltage, degree_setting=-4, num_mc_events=5000000, name_notes=None, yields_free=False):
 
 		# make class methods pickleable for multithreading process
 		copy_reg.pickle(types.MethodType, reduce_method)
@@ -510,7 +511,7 @@ class nr_band_fitter(object):
 
 	def get_log_likelihood_s1_eff(self, l_s1_eff_pars):
 		# first par is center, second is shape
-		if -5 < l_s1_eff_pars[0] < 15 and 1e-3 < l_s1_eff_pars[1] < 30:
+		if 0 < l_s1_eff_pars[0] < 4 and 0.5 < l_s1_eff_pars[1] < 6:
 			return 0.
 		else:
 			return -np.inf
@@ -527,7 +528,7 @@ class nr_band_fitter(object):
 
 
 	def get_prior_log_likelihood_resolution(self, intrinsicResolution):
-		if intrinsicResolution < 0 or intrinsicResolution > 4:
+		if intrinsicResolution < 0 or intrinsicResolution > 0.5:
 			return -np.inf
 		else:
 			return 0
@@ -603,7 +604,7 @@ class nr_band_fitter(object):
 		# -----------------------------------------------
 
 		# hard-code nuissance parameters
-		g1_rv, spe_res_rv, g2_rv, gas_gain_rv, gas_gain_width_rv, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0, 0, 0, 0, 0, 0
+		#g1_rv, spe_res_rv, g2_rv, gas_gain_rv, gas_gain_width_rv, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0, 0, 0, 0, 0, 0
 
 
 		aS1 = np.full(self.num_mc_events, -1, dtype=np.float32)
@@ -761,7 +762,7 @@ class nr_band_fitter(object):
 		num_dim = 14
 	
 		# don't give zeros as starting values otherwise will be stuck
-		starting_values = [0.1, 0.18, (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., 1.1, 3.2, 0, 75, (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2.]
+		starting_values = [0.08, 0.24, (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., 1.0, 3.2, 0, 78, (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2.]
 	
 		# before emcee, setup save locations
 		dir_specifier_name = '%.3fkV_%.1fkV' % (self.cathode_setting, self.anode_setting)
@@ -865,9 +866,25 @@ class nr_band_fitter(object):
 			print '\n\nWARNING: Not enough sample points to estimate the autocorrelation time - this likely means that the fit is bad since the burn-in time was not reached.\n\n'
 
 
+
+	def minimize_nll_free_pars(self, a_guesses):
+		def neg_log_likelihood(a_guesses):
+			return -self.wrapper_nr_band_nest([a_guesses[0], a_guesses[1], 0, 0, 0, 0, 0, a_guesses[2], a_guesses[3], a_guesses[4], a_guesses[5], 0, 0, 0])
+		result = optimize.minimize(neg_log_likelihood, a_guesses, method='Nelder-Mead')
+		print result
+
+
+
+
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345)
-	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	test.likelihood_nr_band_nest(intrinsic_res_s1=0.9, intrinsic_res_s2=2.0, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+
+	#a_free_par_guesses = [0.05, 0.25, 1.1, 3.2, 0, 75]
+	#test.minimize_nll_free_pars(a_free_par_guesses)
+
+	test.likelihood_nr_band_nest(intrinsic_res_s1=0.05, intrinsic_res_s2=0.25, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+	test.likelihood_nr_band_nest(intrinsic_res_s1=0.05, intrinsic_res_s2=0.25, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+	test.likelihood_nr_band_nest(intrinsic_res_s1=0.05, intrinsic_res_s2=0.25, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.9, intrinsic_res_s2=2.0, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
 	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
