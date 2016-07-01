@@ -857,7 +857,7 @@ class nr_band_fitter(object):
 
 
 if __name__ == '__main__':
-	test = nr_band_fitter('nerix_160419_1331', 4.5, 1.054)
-	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
+	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345)
+	test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
