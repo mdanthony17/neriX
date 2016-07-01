@@ -44,7 +44,7 @@ numDim = 14
 
 lLabelsForCorner = ('intrinsic_res_s1', 'intrinsic_res_s2', 'g1_rv', 'spe_res_rv', 'g2_rv', 'gas_gain_rv', 'gas_gain_width_rv', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv')
 
-samples = aSampler[:, -10:, :].reshape((-1, numDim))
+samples = aSampler[:, -50:, :].reshape((-1, numDim))
 fig = corner.corner(samples, labels=lLabelsForCorner)
 
 

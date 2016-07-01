@@ -752,7 +752,7 @@ class nr_band_fitter(object):
 		num_dim = 14
 	
 		# don't give zeros as starting values otherwise will be stuck
-		starting_values = [0.3, 0.1, np.random.randn(), np.random.randn(), np.random.randn(), np.random.randn(), np.random.randn(), 2, 6, 5, 100, np.random.randn(), np.random.randn(), np.random.randn()]
+		starting_values = [0.1, 0.18, (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., 1.1, 3.2, 0, 75, (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2., (np.random.rand() - 0.5)/2.]
 	
 		# before emcee, setup save locations
 		dir_specifier_name = '%.3fkV_%.1fkV' % (self.cathode_setting, self.anode_setting)
@@ -858,6 +858,7 @@ class nr_band_fitter(object):
 
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345)
-	test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.1, intrinsic_res_s2=0.18, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
+	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.22, intrinsic_res_s2=0.10, g1_rv=-3, spe_res_rv=1.5, g2_rv=-5, gas_gain_rv=1, gas_gain_width_rv=2.5, s1_eff_par0=0.5, s1_eff_par1=16., s2_eff_par0=1.5, s2_eff_par1=108., exciton_to_ion_par0_rv=-1.2, exciton_to_ion_par1_rv=4.5, exciton_to_ion_par2_rv=-2.2, draw_fit=True)
 	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
