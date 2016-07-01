@@ -493,8 +493,8 @@ class nr_band_fitter(object):
 		
 	"""
 	
-	def get_log_likelihood_exciton_to_ion(self, par0, par1, par2):
-		return np.log(norm.pdf(par0)*norm.pdf(par1)*norm.pdf(par2))
+	def get_likelihood_exciton_to_ion(self, par0, par1, par2):
+		return norm.pdf(par0)*norm.pdf(par1)*norm.pdf(par2)
 
 
 
@@ -561,7 +561,8 @@ class nr_band_fitter(object):
 		
 		
 		# get exciton to ion prior
-		prior_ln_likelihood += self.get_log_likelihood_exciton_to_ion(exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv)
+		current_likelihood = self.get_likelihood_exciton_to_ion(exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 
 
 		# priors of detector variables
@@ -598,6 +599,9 @@ class nr_band_fitter(object):
 		# run MC
 		# -----------------------------------------------
 		# -----------------------------------------------
+
+		# hard-code nuissance parameters
+		g1_rv, spe_res_rv, g2_rv, gas_gain_rv, gas_gain_width_rv, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0, 0, 0, 0, 0, 0
 
 
 		aS1 = np.full(self.num_mc_events, -1, dtype=np.float32)
