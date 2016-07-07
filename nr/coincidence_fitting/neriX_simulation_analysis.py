@@ -23,9 +23,10 @@ import pycuda.driver as drv
 import pycuda.tools
 import pycuda.gpuarray
 
-drv.init()
-dev = drv.Device(0)
-ctx = dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
+#drv.init()
+#dev = drv.Device(0)
+#ctx = dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
+import pycuda.autoinit
 
 #gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production')
 gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production_with_hist')
@@ -1312,7 +1313,7 @@ class neriX_simulation_analysis(object):
 	# best fit to get spectrum
 	def perform_mc_match_full(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}):
 	
-		fullStartTime = time.time()
+		#fullStartTime = time.time()
 	
 		#neriX_analysis.warning_message('Forcing grid')
 		#d_gpu_scale={'block':(256,256,1), 'grid':(1,1)}
@@ -1587,7 +1588,7 @@ class neriX_simulation_analysis(object):
 		
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
 		
-		print 'Full time in function: %f' % (time.time() - fullStartTime)
+		#print 'Full time in function: %f' % (time.time() - fullStartTime)
 		#print 'Likelihood: %f' % (totalLogLikelihood)
 		
 		if np.isnan(totalLogLikelihood):
@@ -1767,7 +1768,7 @@ class neriX_simulation_analysis(object):
 		
 		
 		if not self.useFakeData:
-			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
+			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting)
 		else:
 			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (self.degreeSetting, self.cathodeSetting, self.anodeSetting, self.assumeRelativeAccidentalRate, self.num_fake_events)
 		
@@ -1851,7 +1852,7 @@ class neriX_simulation_analysis(object):
 
 
 		print '\n\nBeginning MCMC sampler\n\n'
-		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, num_, numWalkers*numSteps)
+		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, numSteps, numWalkers*numSteps)
 		sampler = emcee.EnsembleSampler(numWalkers, numDim, func, threads=numThreads, kwargs={'d_gpu_scale':d_gpu_scale, 'gpu_compute':gpu_compute, 'lowerQuantile':lowerQuantile, 'upperQuantile':upperQuantile})
 		
 		# run mcmc sampler
@@ -1927,8 +1928,6 @@ if __name__ == '__main__':
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
 	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=10000000)
 	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
-	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
-	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
@@ -1939,7 +1938,7 @@ if __name__ == '__main__':
 	#print 'mcmc time: %f s' % (time.time() - mcRuntime)
 
 
-ctx.pop()
+#ctx.pop()
 
 
 
