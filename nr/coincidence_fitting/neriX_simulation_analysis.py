@@ -1927,7 +1927,8 @@ if __name__ == '__main__':
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
 	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=10000000)
-	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(4.3, 4.8, 0.25, 0.1, -0.5, -0.9, 0, -0.8, -1, -1.4, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 

@@ -17,7 +17,7 @@ import numpy as np
 s1NumBins = 24
 s1Min = 0
 s1Max = 24
-s1FitMin = 2
+s1FitMin = 4
 
 s2NumBins = 40
 s2Min = 0

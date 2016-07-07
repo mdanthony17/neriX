@@ -36,10 +36,25 @@ if checkFakeData:
 		useFakeData = True
 		relativeAccidentalRate = float(sys.argv[7])
 		numFakeEvents = int(sys.argv[8])
+		nameOfResultsDirectory = neriX_simulation_config.pathToThisModule + '/mcmc_analysis/fake_data/results'
+		lPlots = ['plots', 'free_parameters', 'fake_data', '%s' % dir_specifier_name]
+		useFakeValueInPlots = True
+		sPathToFile = '%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 	else:
 		useFakeData = False
 		relativeAccidentalRate = False
 		numFakeEvents = -1
+		nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+		lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
+		useFakeValueInPlots = False
+		sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
+else:
+	useFakeData = False
+	relativeAccidentalRate = False
+	numFakeEvents = -1
+	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
+	useFakeValueInPlots = False
 
 if useNameNote:
 	if checkFakeData:
@@ -54,18 +69,7 @@ if useFakeData:
 if useNameNote:
 	dir_specifier_name += '_' + name_notes
 
-
-if not useFakeData:
-	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-	lPlots = ['plots', 'free_parameters', 'data', '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)]
-	useFakeValueInPlots = False
-	sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
-else:
-	nameOfResultsDirectory = neriX_simulation_config.pathToThisModule + '/mcmc_analysis/fake_data/results'
-	lPlots = ['plots', 'free_parameters', 'fake_data', '%s' % dir_specifier_name]
-	useFakeValueInPlots = True
-	sPathToFile = '%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
-
+sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
 
 pathToSamplerDictionary = nameOfResultsDirectory
 

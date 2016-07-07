@@ -73,31 +73,37 @@ colzOption = 'COLZ'
 current_analysis.add_radius_cut(0, 0.85)
 current_analysis.add_single_scatter_cut()
 #current_analysis.add_xs1asym_cut()
-current_analysis.add_xs2asym_cut()
+#current_analysis.add_xs2asym_cut()
 current_analysis.add_temp_neutron_cut(degreeSetting)
 
 
 
 #s1Branch = 'cpS1sTotBottom[0] - S1sNoiseTrapezoid[0][16]'
-#s1Branch = 'cpS1sTotBottom[]'
+s1Branch = 'cpS1sTotBottom[]'
 #s1Branch = 'S1sTotBottom[]'
-s1Branch = 'S1IntegralBeforeLiqSci[0]'
+#s1Branch = 'S1IntegralBeforeLiqSci[0]'
 s2Branch = 'cpS2sTotBottom[0]'
 
 current_analysis.add_cut('%s > 0' % s1Branch)
 current_analysis.add_cut('%s > 0' % s2Branch)
 current_analysis.add_cut('%s < %f' % (s1Branch, s1Max))
 current_analysis.add_cut('%s < %f' % (s2Branch, s2Max))
-current_analysis.add_cut('log10((S1Tot + S2Tot)/(AreaTot - S1Tot - S2Tot)) > 0.')
+#current_analysis.add_cut('log10((S1Tot + S2Tot)/(AreaTot - S1Tot - S2Tot)) > 0.')
+current_analysis.add_cut('S2sPeak[0] > 600 && S2sPeak[0] < 2400') # hacky cut since we know LiqSciPeak is around 400 samples
+
+# uncorrected gain
+#current_analysis.add_cut('((%s > 24.0) || (%s < (7.406e+02 + 6.240e+01*%s + -4.430e-01*pow(%s, 2.))))' % (s1Branch, s2Branch, s1Branch, s1Branch))
+# corrected gain
+current_analysis.add_cut('((%s > 24.0) || (%s < (9.135e+02 + 1.031e+02*%s + -1.924e+00*pow(%s, 2.))))' % (s1Branch, s2Branch, s1Branch, s1Branch))
+
 
 #current_analysis.add_cut('(S2sPeak[0] - LiqSciPeak[])/100. > 3 && (S2sPeak[0] - LiqSciPeak[])/100. < 20')
 #current_analysis.add_cut('(S2sPeak[0] - LiqSciPeak[])/100. > 3 && (S2sPeak[0] - LiqSciPeak[])/100. < 20 && LiqSciPeak[] > 0')
-current_analysis.add_cut('S2sPeak[0] > 600 && S2sPeak[0] < 2000') # hacky cut since we know LiqSciPeak is around 400 samples
-current_analysis.add_cut('((%s > 24.0) || (%s < (7.406e+02 + 6.240e+01*%s + -4.430e-01*pow(%s, 2.))))' % (s1Branch, s2Branch, s1Branch, s1Branch))
 #current_analysis.add_cut('LiqSciPeak[] != -1')
 
 #current_analysis.set_event_list()
-current_analysis.multithread_set_event_list(7)
+num_threads = 7
+current_analysis.multithread_set_event_list(num_threads)
 
 
 
@@ -109,7 +115,7 @@ print '\nUsing S2 Branch: %s \n\n' % s2Branch
 
 print '\nCreating LiqSci S1 Time Difference Histogram.\n'
 hLiqSciS1TimeDiff = Hist(liqsciS1TimeDiffBins, liqsciS1TimeDiffMin, liqsciS1TimeDiffMax, name='hLiqSciS1TimeDiff', title='Time Between Liqsci and S1 Spectrum'+sForHistograms, drawstyle='hist')
-current_analysis.Draw('LiqSciPeak[] - S1sPeak[0]', hist=hLiqSciS1TimeDiff, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'LiqSciPeak[] - S1sPeak[0]', hist=hLiqSciS1TimeDiff, selection=current_analysis.get_cuts())
 hLiqSciS1TimeDiff.GetXaxis().SetTitle('Time Between Liqsci and S1 Spectrum [samples]')
 hLiqSciS1TimeDiff.GetYaxis().SetTitle('Counts')
 hLiqSciS1TimeDiff.SetStats(1)
@@ -118,13 +124,14 @@ hLiqSciS1TimeDiff.SetStats(1)
 if s1Branch != 'S1IntegralBeforeLiqSci[0]':
 	#print '\n\nNo liqscipeak cut!\n\n'
 	current_analysis.add_s1_liqsci_peak_cut()
+	current_analysis.add_xs1asym_cut()
 	print '\n\nAdded liqscipeak cut.\n\n'
 else:
 	current_analysis.add_cut('S1IntegralBeforeLiqSciHeight[0] > 0.001') # from looking at height vs area (0.001 cleans up 2.356kV)
 
 print '\nCreating TOF Histogram.\n'
 hTOF = Hist(tofNumBins, tofMin, tofMax, name='hTOF', title='TOF Spectrum'+sForHistograms, drawstyle='hist')
-current_analysis.Draw('TimeOfFlight', hist=hTOF, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'TimeOfFlight', hist=hTOF, selection=current_analysis.get_cuts())
 hTOF.GetXaxis().SetTitle('TOF [ns]')
 hTOF.GetYaxis().SetTitle('Counts')
 hTOF.SetStats(1)
@@ -141,28 +148,28 @@ print '\nNo TOF cut!\n'
 
 print '\nCreating S1 vs S2 Histogram.\n'
 hS1S2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='hS1S2', title='S1 vs S2'+sForHistograms)
-current_analysis.Draw('%s:%s' % (s1Branch, s2Branch), hist=hS1S2, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, '%s:%s' % (s1Branch, s2Branch), hist=hS1S2, selection=current_analysis.get_cuts())
 hS1S2.GetXaxis().SetTitle('%s [PE]' % s1Branch)
 hS1S2.GetYaxis().SetTitle('%s [PE]' % s2Branch)
 hS1S2.SetStats(0)
 
 print '\nCreating Reconstructed Position Histogram.\n'
 hXY = Hist2D(xyNumBins, xyMin, xyMax, xyNumBins, xyMin, xyMax, name='hXY', title='XY Dist'+sForHistograms)
-current_analysis.Draw('X:Y', hist=hXY, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'X:Y', hist=hXY, selection=current_analysis.get_cuts())
 hXY.GetXaxis().SetTitle('X [mm]')
 hXY.GetYaxis().SetTitle('Y [mm]')
 hXY.SetStats(0)
 
 print '\nCreating Uniformity Histogram.\n'
 hUniformity = Hist2D(rNumBins, rMin**2, rMax**2, dtNumBins, dtMin, dtMax, name='hUniformity', title='Uniformity'+sForHistograms)
-current_analysis.Draw('R*R:-dt', hist=hUniformity, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'R*R:-dt', hist=hUniformity, selection=current_analysis.get_cuts())
 hUniformity.GetXaxis().SetTitle('R^2 [mm^2]')
 hUniformity.GetYaxis().SetTitle('dt [#mus]')
 hUniformity.SetStats(0)
 
 print '\nCreating Width vs Time Histogram.\n'
 hWidth = Hist2D(s2WidthNumBins, s2WidthMin, s2WidthMax, dtNumBins, dtMin, dtMax, name='hWidth', title='S2sLowWidth vs dt'+sForHistograms)
-current_analysis.Draw('S2sLowWidth[0]:-dt', hist=hWidth, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'S2sLowWidth[0]:-dt', hist=hWidth, selection=current_analysis.get_cuts())
 hWidth.SetTitle('S2sLowWidth[0] [10 ns]')
 hWidth.GetYaxis().SetTitle('dt [#mus]')
 hWidth.SetStats(0)
@@ -170,7 +177,7 @@ hWidth.SetStats(0)
 print '\nCreating S1 Histogram.\n'
 hS1 = Hist(s1NumBins, s1Min, s1Max, name='hS1', title='S1 Spectrum'+sForHistograms)
 hS1.SetMarkerSize(0)
-current_analysis.Draw(s1Branch, hist=hS1, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, s1Branch, hist=hS1, selection=current_analysis.get_cuts())
 hS1.GetXaxis().SetTitle('%s [PE]' % s1Branch)
 hS1.GetYaxis().SetTitle('Counts')
 #hS1.Scale(1./float(current_analysis.get_livetime()))
@@ -179,7 +186,7 @@ hS1.SetStats(0)
 print '\nCreating S2 Histogram.\n'
 hS2 = Hist(s2NumBins, s2Min, s2Max, name='hS2', title='S2 Spectrum'+sForHistograms)
 hS2.SetMarkerSize(0)
-current_analysis.Draw(s2Branch, hist=hS2, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, s2Branch, hist=hS2, selection=current_analysis.get_cuts())
 hS2.GetXaxis().SetTitle('%s [PE]' % s2Branch)
 hS2.GetYaxis().SetTitle('Counts')
 #hS2.Scale(1./float(current_analysis.get_livetime()))
@@ -187,7 +194,7 @@ hS2.SetStats(0)
 
 print '\nCreating PSD Histogram.\n'
 hPSD = Hist2D(lhNumBins, lhMin, lhMax, psdNumBins, psdMin, psdMax, name='hPSD', title='PSD vs Pulse Height'+sForHistograms)
-current_analysis.Draw('LiqSciHeight[]:LiqSciTailRaw[]/LiqSciRaw[]', hist=hPSD, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'LiqSciHeight[]:LiqSciTailRaw[]/LiqSciRaw[]', hist=hPSD, selection=current_analysis.get_cuts())
 hPSD.GetXaxis().SetTitle('LiqSciHeight [V]')
 hPSD.GetYaxis().SetTitle('PSD Parameter')
 hPSD.SetMarkerSize(0)
@@ -195,7 +202,7 @@ hPSD.SetStats(0)
 
 print '\nCreating Pulse Height vs Area Histogram.\n'
 hHeightArea = Hist2D(50, 0, 0.01, 50, s1Min, 15, name='hHeightArea', title='Area vs Pulse Height'+sForHistograms)
-current_analysis.Draw('S1IntegralBeforeLiqSciHeight[0]:S1IntegralBeforeLiqSci[0]', hist=hHeightArea, selection=current_analysis.get_cuts())
+current_analysis.multithread_draw(num_threads, 'S1IntegralBeforeLiqSciHeight[0]:S1IntegralBeforeLiqSci[0]', hist=hHeightArea, selection=current_analysis.get_cuts())
 hHeightArea.GetXaxis().SetTitle('S1IntegralBeforeLiqSciHeight [V]')
 hHeightArea.GetYaxis().SetTitle('S1IntegralBeforeLiqSci [PE]')
 hHeightArea.SetMarkerSize(0)
