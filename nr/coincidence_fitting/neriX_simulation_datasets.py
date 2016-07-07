@@ -11,17 +11,17 @@ pathToEfficiencyFiles = pathToThisModule + '/efficiency_files/'
 
 pathToFakeData = pathToThisModule + '/mcmc_analysis/fake_data/'
 
-default_g1 = 0.08
+default_g1 = 0.13
 default_g1_uncertainty = 0.005
 
-default_g2 = 14.3
+default_g2 = 20.9
 default_g2_uncertainty = 0.7
 
-default_gas_gain = 15.0
-default_gas_gain_uncertainty = 0.7
+default_gas_gain = 22.0
+default_gas_gain_uncertainty = 0.5
 
-default_gas_gain_width = 6.0
-default_gas_gain_width_uncertainty = 1.5
+default_gas_gain_width = 9.0
+default_gas_gain_width_uncertainty = 0.5
 
 default_spe_res = 0.7
 default_spe_res_uncertainty = 0.2
@@ -71,14 +71,14 @@ dVoltageField = {0.345:200.,
 # data_root_file, mc_root_file, tac_efficiency_root_file, peak_finder_efficiency_root_file, g1_root_file, spe_root_file
 
 # 2300 deg
-run_files[(15, 4.5, 0.345, 2300.)] = ('results_0.345kV_2300deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
-run_files[(15, 4.5, 1.054, 2300.)] = ('results_1.054kV_2300deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
-run_files[(15, 4.5, 2.356, 2300.)] = ('results_2.356kV_2300deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
+run_files[(16, 4.5, 0.345, 2300.)] = ('results_0.345kV_2300deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
+run_files[(16, 4.5, 1.054, 2300.)] = ('results_1.054kV_2300deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
+run_files[(16, 4.5, 2.356, 2300.)] = ('results_2.356kV_2300deg', 'nerixsim-3keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
 
 # 3000 deg
-run_files[(15, 4.5, 0.345, 3000.)] = ('results_0.345kV_3000deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
-run_files[(15, 4.5, 1.054, 3000.)] = ('results_1.054kV_3000deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
-run_files[(15, 4.5, 2.356, 3000.)] = ('results_2.356kV_3000deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
+run_files[(16, 4.5, 0.345, 3000.)] = ('results_0.345kV_3000deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
+run_files[(16, 4.5, 1.054, 3000.)] = ('results_1.054kV_3000deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
+run_files[(16, 4.5, 2.356, 3000.)] = ('results_2.356kV_3000deg', 'nerixsim-5keV', 'nerixsim-pure_nr_spec', 'tof_efficiency', 'PeakFindEfficiency', 'TrigEfficiency', None, None, None, None, False)
 
 
 # 30 deg

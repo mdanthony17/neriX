@@ -16,15 +16,18 @@ from scipy import optimize, misc, stats
 from scipy.stats import norm
 import copy_reg, types, pickle, click, time
 from subprocess import call
-"""
+
 import cuda_full_observables_production
 from pycuda.compiler import SourceModule
 import pycuda.driver as drv
 import pycuda.tools
 import pycuda.gpuarray
-#import pycuda.autoinit
-#mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
-"""
+
+drv.init()
+dev = drv.Device(0)
+ctx = dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
+
+gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production')
 
 
 import matplotlib.pyplot as plt
@@ -745,8 +748,8 @@ class neriX_simulation_analysis(object):
 		# if using Cs137 trig efficiency need minus one
 		#self.lParsTrigEff[0] = -self.lParsTrigEff[0]
 		neriX_analysis.warning_message('Hard coding trigger efficiency function from 4/18')
-		self.lParsTrigEff[0] = 0.098
-		self.lParsTrigEff[1] = 250
+		self.lParsTrigEff[0] = 0. # 0.098
+		self.lParsTrigEff[1] = 82. #250
 		
 		
 		#self.efTrigEfficiency = easy_function(tf1TrigEfficiency, self.s2NumBins, self.s2LowerBound, self.s2UpperBound)
@@ -756,11 +759,14 @@ class neriX_simulation_analysis(object):
 		# and load into easy_function
 		# ------------------------------------------------
 
-		fPFEfficiency = File(dFilesForAnalysis['peak_finder_efficiency'])
-		tf1PFEfficiency = fPFEfficiency.fPeakFindEff
-		self.lParsPFEff = [tf1PFEfficiency.GetParameter(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
-		self.lParsPFEffUncertainty = [tf1PFEfficiency.GetParError(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
+		#fPFEfficiency = File(dFilesForAnalysis['peak_finder_efficiency'])
+		#tf1PFEfficiency = fPFEfficiency.fPeakFindEff
+		#self.lParsPFEff = [tf1PFEfficiency.GetParameter(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
+		#self.lParsPFEffUncertainty = [tf1PFEfficiency.GetParError(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
 		#self.efPFEfficiency = easy_function(tf1PFEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
+		neriX_analysis.warning_message('Hard coding trigger efficiency function from 4/19')
+		self.lParsPFEff = [1.74, 2.11]
+		self.lParsPFEffUncertainty = [0.1, 0.17]
 		
 		# test cases
 		#print self.efTrigEfficiency.get_eg_best_fit()[1].get_x_values()
@@ -1405,7 +1411,7 @@ class neriX_simulation_analysis(object):
 
 
 
-		#startTime = time.time()
+		startTime = time.time()
 		
 		
 		# initialize pointers for both methods
@@ -1432,7 +1438,8 @@ class neriX_simulation_analysis(object):
 		# parameters that make efficiency 1.
 		if self.degreeSetting > 100.:
 			tacEff = np.asarray([1e6], dtype=np.float32)
-			pfEff = np.asarray([2, 1], dtype=np.float32)
+			#pfEff = np.asarray([2, 1], dtype=np.float32)
+			pfEff = np.asarray(lPFEff, dtype=np.float32)
 		else:
 			tacEff = np.asarray(lTacEff, dtype=np.float32)
 			pfEff = np.asarray(lPFEff, dtype=np.float32)
@@ -1447,30 +1454,19 @@ class neriX_simulation_analysis(object):
 		if gpu_compute:
 		
 			try:
-				self.mem_pool
-			except:
-				import pycuda.autoinit
-				self.mod = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True)
-			
-				self.mem_pool = pycuda.tools.DeviceMemoryPool()
-				self.mem_pool = self.mem_pool.allocate(aS1.nbytes*4)
-		
-			try:
 				self.gpu_aEnergy
 			except:
 				self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.aEnergy)
 		
 		
-			observables_func = self.mod.get_function('gpu_full_observables_production')
+			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff))
 			
-			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2))
-			
-			observables_func(*tArgs, **d_gpu_scale)
+			gpu_observables_func(*tArgs, **d_gpu_scale)
 		
 		else:
 			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2, tacEff, trigEff, pfEff)
 		
-		#print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
+		print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
 
 
 		# ------------------------------------------------
@@ -1478,6 +1474,8 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 
 		#analysisTime = time.time()
+		#print list(aS1)
+		#print list(aS2)
 		
 		
 		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
@@ -1485,6 +1483,12 @@ class neriX_simulation_analysis(object):
 		
 		
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
+		
+		# scale data such that integral is the same
+		try:
+			aS1S2MC *= np.sum(self.aS1S2) / float(np.sum(aS1S2MC))
+		except:
+			return -np.inf, aS1S2MC
 		
 		#print aS1S2MC
 
@@ -1568,6 +1572,7 @@ class neriX_simulation_analysis(object):
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
 		
 		#print 'Full time in function: %f' % (time.time() - fullStartTime)
+		print 'Likelihood: %f' % (totalLogLikelihood)
 		
 		if np.isnan(totalLogLikelihood):
 			return -np.inf, aS1S2MC
@@ -1904,8 +1909,8 @@ if __name__ == '__main__':
 	
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
-	test = neriX_simulation_analysis(16, 4.5, 0.345, 6200, accidentalBkgAdjustmentTerm=0.1, numMCEvents=50000)
-	test.perform_mc_match_full(9.22, 83.1/17.8, 0.1, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=False)
+	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=2000000)
+	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
@@ -1916,6 +1921,7 @@ if __name__ == '__main__':
 	#print 'mcmc time: %f s' % (time.time() - mcRuntime)
 
 
+ctx.pop()
 
 
 
