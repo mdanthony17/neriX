@@ -40,28 +40,34 @@ if checkFakeData:
 		useFakeData = True
 		relativeAccidentalRate = float(sys.argv[7])
 		numFakeEvents = int(sys.argv[8])
+		nameOfResultsDirectory = 'fake_data/results'
+		lPlots = ['plots', 'corner_plots', 'fake_data']
+		useFakeValueInPlots = True
+		sForNameInFake = '_fake'
 	else:
 		useFakeData = False
 		relativeAccidentalRate = False
 		numFakeEvents = -1
+		nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+		lPlots = ['plots', 'corner_plots', 'data']
+		useFakeValueInPlots = False
+else:
+	useFakeData = False
+	relativeAccidentalRate = False
+	numFakeEvents = -1
+	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
+	lPlots = ['plots', 'corner_plots', 'data']
+	useFakeValueInPlots = False
+
+
 
 if useNameNote:
-	if checkFakeData:
+	if useFakeData:
 		name_notes = sys.argv[9]
 	else:
 		name_notes = sys.argv[6]
 
 sForNameInFake = ''
-
-if not useFakeData:
-	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-	lPlots = ['plots', 'corner_plots', 'data']
-	useFakeValueInPlots = False
-else:
-	nameOfResultsDirectory = 'fake_data/results'
-	lPlots = ['plots', 'corner_plots', 'fake_data']
-	useFakeValueInPlots = True
-	sForNameInFake = '_fake'
 
 
 dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)
