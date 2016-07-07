@@ -739,8 +739,8 @@ class neriX_simulation_analysis(object):
 		
 		# load trig efficiency file and store in easy function
 		fTrigEfficiency = File(dFilesForAnalysis['trig_efficiency'])
-		#tf1TrigEfficiency = fTrigEfficiency.eff_func # Na22 only
-		tf1TrigEfficiency = fTrigEfficiency.ThresholdFunc
+		tf1TrigEfficiency = fTrigEfficiency.eff_func # Na22 only
+		#tf1TrigEfficiency = fTrigEfficiency.ThresholdFunc
 		# --------  NOTE: need +1 due to function def in TRIG EFF ONLY
 		self.lParsTrigEff = [tf1TrigEfficiency.GetParameter(i+1) for i in xrange(neriX_simulation_datasets.num_par_trig_eff)]
 		self.lParsTrigEffUncertainty = [tf1TrigEfficiency.GetParError(i+1) for i in xrange(neriX_simulation_datasets.num_par_trig_eff)]
@@ -1310,7 +1310,7 @@ class neriX_simulation_analysis(object):
 	# best fit to get spectrum
 	def perform_mc_match_full(self, photonYield, chargeYield, intrinsicResolutionS1, intrinsicResolutionS2, g1RV, speResRV, par0TacEffRV, par0PFEffRV, par1PFEffRV, g2RV, gasGainRV, gasGainWidthRV, par0TrigEffRV, par1TrigEffRV, par0ExcitonToIonRV, par1ExcitonToIonRV, par2ExcitonToIonRV, drawFit=False, lowerQuantile=0.0, upperQuantile=1.0, drawTracker=False, gpu_compute=False, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)}):
 	
-		#fullStartTime = time.time()
+		fullStartTime = time.time()
 	
 		#neriX_analysis.warning_message('Forcing grid')
 		#d_gpu_scale={'block':(256,256,1), 'grid':(1,1)}
@@ -1411,7 +1411,7 @@ class neriX_simulation_analysis(object):
 
 
 
-		startTime = time.time()
+		#startTime = time.time()
 		
 		
 		# initialize pointers for both methods
@@ -1466,7 +1466,7 @@ class neriX_simulation_analysis(object):
 		else:
 			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2, tacEff, trigEff, pfEff)
 		
-		print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
+		#print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
 
 
 		# ------------------------------------------------
@@ -1571,8 +1571,8 @@ class neriX_simulation_analysis(object):
 		
 		totalLogLikelihood = logLikelihoodMatching + priorLogLikelihoods
 		
-		#print 'Full time in function: %f' % (time.time() - fullStartTime)
-		print 'Likelihood: %f' % (totalLogLikelihood)
+		print 'Full time in function: %f' % (time.time() - fullStartTime)
+		#print 'Likelihood: %f' % (totalLogLikelihood)
 		
 		if np.isnan(totalLogLikelihood):
 			return -np.inf, aS1S2MC
@@ -1910,7 +1910,7 @@ if __name__ == '__main__':
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
 	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=2000000)
-	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
+	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
