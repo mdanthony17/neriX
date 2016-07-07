@@ -27,7 +27,8 @@ drv.init()
 dev = drv.Device(0)
 ctx = dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
 
-gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production')
+#gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production')
+gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production_with_hist')
 
 
 import matplotlib.pyplot as plt
@@ -1198,8 +1199,8 @@ class neriX_simulation_analysis(object):
 		#aS1BinEdges = np.asarray([aS1BinCenters[0] - 0.5*binWidthS1 + i*binWidthS1 for i in xrange(numBinsS1+1)]) # need +1 to capture last bin!!
 		#aS2BinEdges = np.asarray([aS2BinCenters[0] - 0.5*binWidthS2 + i*binWidthS2 for i in xrange(numBinsS2+1)])
 		
-		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1)
-		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1)
+		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1, dtype=np.float32)
+		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1, dtype=np.float32)
 		
 		
 		extractionEfficiency = g2Value / gasGainValue
@@ -1257,8 +1258,9 @@ class neriX_simulation_analysis(object):
 					aS1[i] = -1
 					aS2[i] = -1
 		
-		
+		hist_time = time.time()
 		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
+		print 'Histogram time: %f' % (time.time() - hist_time)
 		
 		
 
@@ -1390,8 +1392,8 @@ class neriX_simulation_analysis(object):
 		# ------------------------------------------------
 
 
-		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1)
-		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1)
+		aS1BinEdges = np.linspace(self.s1LowerBound, self.s1UpperBound, num=self.s1NumBins+1, dtype=np.float32)
+		aS2BinEdges = np.linspace(self.s2LowerBound, self.s2UpperBound, num=self.s2NumBins+1, dtype=np.float32)
 		
 		binWidthS1 = (self.s1UpperBound - self.s1LowerBound) / float(self.s1NumBins)
 		binWidthS2 = (self.s2UpperBound - self.s2LowerBound) / float(self.s2NumBins)
@@ -1447,7 +1449,14 @@ class neriX_simulation_analysis(object):
 		# handle other efficiencies uniformly
 		trigEff = np.asarray(lTrigEff, dtype=np.float32)
 		#pfEff = np.asarray(lPFEff, dtype=np.float32)
-		
+
+
+		# for histogram binning
+		num_bins_s1 = np.asarray(self.s1NumBins, dtype=np.int32)
+		gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(aS1BinEdges)
+		num_bins_s2 = np.asarray(self.s2NumBins, dtype=np.int32)
+		gpu_bin_edges_s2 = pycuda.gpuarray.to_gpu(aS2BinEdges)
+		a_hist_2d = np.zeros(self.s1NumBins*self.s2NumBins, dtype=np.int32)
 		
 
 
@@ -1458,37 +1467,44 @@ class neriX_simulation_analysis(object):
 			except:
 				self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.aEnergy)
 		
-		
-			tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff))
+			# no histogram
+			#tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff))
+			# for histogram
+			tArgs = (drv.In(seed), drv.In(num_trials), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
 			
 			gpu_observables_func(*tArgs, **d_gpu_scale)
+
+			aS1S2MC = np.reshape(a_hist_2d, (self.s1NumBins, self.s2NumBins)).T
 		
 		else:
 			observables_func = c_full_matching_loop(seed, num_trials, aS1, aS2, self.aEnergy, photonYield, chargeYield, excitonToIonRatio, g1Value, extractionEfficiency, gasGainValue, gasGainWidth, speRes, intrinsicResS1, intrinsicResS2, tacEff, trigEff, pfEff)
+
+			# ------------------------------------------------
+			# create 2D histogram of S1s and S2s
+			# ------------------------------------------------
+
+			#analysisTime = time.time()
+			#print list(aS1)
+			#print list(aS2)
+			
+			
+			#neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
+			#c_band_cut_temp(num_trials, aS1, aS2)
+			
+			#hist_time = time.time()
+			aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
+			#print 'Histogram time: %f' % (time.time() - hist_time)
+		
 		
 		#print 'MC full loop time for %d elements: %f' % (num_mc_elements, time.time() - startTime)
-
-
-		# ------------------------------------------------
-		# create 2D histogram of S1s and S2s
-		# ------------------------------------------------
-
-		#analysisTime = time.time()
-		#print list(aS1)
-		#print list(aS2)
-		
-		
-		neriX_analysis.warning_message('Hard coded version of band cut - must change!!!')
-		c_band_cut_temp(num_trials, aS1, aS2)
-		
-		
-		aS1S2MC, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[aS1BinEdges, aS2BinEdges])
 		
 		# scale data such that integral is the same
+		#scale_time = time.time()
 		try:
-			aS1S2MC *= np.sum(self.aS1S2) / float(np.sum(aS1S2MC))
+			aS1S2MC = np.multiply(aS1S2MC, float(np.sum(self.aS1S2)) / float(np.sum(aS1S2MC)))
 		except:
 			return -np.inf, aS1S2MC
+		#print 'Scale time: %f' % (time.time() - scale_time)
 		
 		#print aS1S2MC
 
@@ -1909,8 +1925,10 @@ if __name__ == '__main__':
 	
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
-	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=2000000)
-	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True, d_gpu_scale={'block':(1024,1,1), 'grid':(64,1)})
+	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=10000000)
+	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=False, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 
