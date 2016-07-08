@@ -1,0 +1,30 @@
+<xerawdp>
+	<global>
+		<verbosity>1</verbosity> <!-- 0: none, 1: minimal, 2: extensive, 3: debug, 4: too much -->
+		<dataset_name_format>nerix_YYMMDD_hhmm_NNNNNN</dataset_name_format>
+		<raw_data_dir>/data/nerix/run_16/</raw_data_dir>
+		<merged_data_dir>/data/nerix/merged/run_16/</merged_data_dir>
+		<processed_data_dir>/data/nerix/merged/run_16/</processed_data_dir>
+		<processing_level>0</processing_level>
+	</global>
+	<pmts>
+		<top_pmts>1-16</top_pmts>
+		<bottom_pmts>17-17</bottom_pmts>
+		<external_gains>1-16:10.00, 17:5.0, 18:0.5</external_gains>
+		<calibration_source>
+			<here>
+				<header>gain gain_err qe</header>
+				<values>1-24:[2.00e+6 1.00e+6 2.50e-1]</values>  
+			</here>
+		</calibration_source>
+	</pmts>
+	<single_photoelectron>
+		<nb_baseline_samples>64</nb_baseline_samples>
+		<window_start>64</window_start>
+		<window_width>140</window_width>
+		<pre_peak_samples>5</pre_peak_samples>
+		<post_peak_samples>5</post_peak_samples>
+		<integral_window>1:[163 184], 2:[163 183], 3:[163 183], 4:[163 184], 5:[163 183], 6:[163 183], 7:[163 183], 8:[163 183], 9:[164 183], 10:[163 184], 11:[163 183], 12:[163 183], 13:[163 183], 14:[163 183], 15:[163 183], 16:[163 183], 17:[140 203], 18:[140 203]</integral_window>
+	</single_photoelectron>
+</xerawdp>
+
