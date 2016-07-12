@@ -767,7 +767,7 @@ class neriX_simulation_analysis(object):
 		#self.lParsPFEffUncertainty = [tf1PFEfficiency.GetParError(i) for i in xrange(neriX_simulation_datasets.num_par_pf_eff)]
 		#self.efPFEfficiency = easy_function(tf1PFEfficiency, self.s1NumBins, self.s1LowerBound, self.s1UpperBound)
 		neriX_analysis.warning_message('Hard coding trigger efficiency function from 4/19')
-		self.lParsPFEff = [1.74, 2.11]
+		self.lParsPFEff = [2.13, 2.50]
 		self.lParsPFEffUncertainty = [0.1, 0.17]
 		
 		# test cases
@@ -1451,6 +1451,7 @@ class neriX_simulation_analysis(object):
 		trigEff = np.asarray(lTrigEff, dtype=np.float32)
 		#pfEff = np.asarray(lPFEff, dtype=np.float32)
 
+		a_band_cut = np.asarray([7.406e+02, 6.240e+01, -4.430e-01], dtype=np.float32)
 
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1NumBins, dtype=np.int32)
@@ -1471,7 +1472,7 @@ class neriX_simulation_analysis(object):
 			# no histogram
 			#tArgs = (drv.In(seed), drv.In(num_trials), drv.Out(aS1), drv.Out(aS2), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff))
 			# for histogram
-			tArgs = (drv.In(seed), drv.In(num_trials), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
+			tArgs = (drv.In(seed), drv.In(num_trials), self.gpu_aEnergy, drv.In(photonYield), drv.In(chargeYield), drv.In(excitonToIonRatio), drv.In(g1Value), drv.In(extractionEfficiency), drv.In(gasGainValue), drv.In(gasGainWidth), drv.In(speRes), drv.In(intrinsicResS1), drv.In(intrinsicResS2), drv.In(tacEff), drv.In(trigEff), drv.In(pfEff), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
 			
 			gpu_observables_func(*tArgs, **d_gpu_scale)
 
@@ -1926,9 +1927,17 @@ if __name__ == '__main__':
 	
 	# create test data
 	#test = neriX_simulation_analysis(15, 4.5, 1.054, 3000, use_fake_data=True, accidentalBkgAdjustmentTerm=0.0, assumeRelativeAccidentalRate=0.1, num_fake_events=2000, numMCEvents=50000, name_notes='no_pf_eff')
+	"""
+	test = neriX_simulation_analysis(16, 4.5, 0.345, 2300, accidentalBkgAdjustmentTerm=0.05, numMCEvents=10000000)
+	test.perform_mc_match_full(6.45, 5.65, 0.35, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(8.45, 5.65, 0.35, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(10.45, 5.65, 0.35, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	"""
+	
 	test = neriX_simulation_analysis(16, 4.5, 0.345, 3000, accidentalBkgAdjustmentTerm=0.05, numMCEvents=10000000)
-	test.perform_mc_match_full(7.5, 6.6, 0.3, 0.24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
-	test.perform_mc_match_full(7.9, 6.3, 0.25, 0.1, 0, 0, 0, -0.8, -0.5, -1, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(6.9, 5.9, 0.22, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(6.5, 5.9, 0.22, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
+	test.perform_mc_match_full(7.4, 5.9, 0.22, 0.05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, drawFit=True, lowerQuantile=0.0, upperQuantile=0.9, gpu_compute=True)
 	
 	sParametersFullMatching = (('photon_yield', 10.), ('charge_yield', 8.), ('res_s1', 0.3), ('res_s2', 0.1), ('n_g1', 0), ('n_res_spe', 0), ('n_par0_tac_eff', 0), ('n_par0_pf_eff', 0), ('n_par1_pf_eff', 0), ('n_g2', 0), ('n_gas_gain_mean', 0), ('n_gas_gain_width', 0), ('n_par0_trig_eff', 0), ('n_par1_trig_eff', 0), ('n_par0_e_to_i', 0), ('n_par1_e_to_i', 0), ('n_par2_e_to_i', 0))
 

@@ -28,7 +28,7 @@ current_nr_band_matching = fit_nr_band.nr_band_fitter(filename, anode_setting, c
 # gas_gain_width_rv, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1
 # exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv
 
-current_nr_band_matching.fit_nr_band_nest(num_steps=num_steps, num_walkers=num_walkers, num_threads=num_threads)
+current_nr_band_matching.fit_nr_band_no_nest(num_steps=num_steps, num_walkers=num_walkers, num_threads=num_threads)
 
 
 

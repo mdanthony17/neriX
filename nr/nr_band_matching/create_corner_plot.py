@@ -8,6 +8,7 @@ import nr_band_config
 import numpy as np
 import corner
 import cPickle as pickle
+import time
 
 if len(sys.argv) != 5:
 	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers>'
@@ -40,13 +41,16 @@ else:
 
 
 # need to figure this out
-numDim = 14
+numDim = 30
 
-lLabelsForCorner = ('intrinsic_res_s1', 'intrinsic_res_s2', 'g1_rv', 'spe_res_rv', 'g2_rv', 'gas_gain_rv', 'gas_gain_width_rv', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv')
+lLabelsForCorner = ['py_0', 'py_1', 'py_2', 'py_3', 'py_4', 'py_5', 'py_6', 'py_7', 'qy_0', 'qy_1', 'qy_2', 'qy_3', 'qy_4', 'qy_5', 'qy_6', 'qy_7', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
 
-samples = aSampler[:, -50:, :].reshape((-1, numDim))
+samples = aSampler[:, -5:, :].reshape((-1, numDim))
+
+start_time = time.time()
+print 'Starting corner plot...\n'
 fig = corner.corner(samples, labels=lLabelsForCorner)
-
+print 'Corner plot took %.3f minutes.\n\n' % ((time.time()-start_time)/60.)
 
 # path for save
 sPathForSave = './'

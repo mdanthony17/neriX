@@ -32,7 +32,7 @@ d_hpge['cs137'] = {}
 d_hpge['cs137']['filename'] = 'nerix_150428_1239'
 d_hpge['cs137']['file'] = File('%s/%s.root' % (path_to_data, d_hpge['cs137']['filename']), 'read')
 d_hpge['cs137']['tree'] = d_hpge['cs137']['file'].T1
-d_hpge['cs137']['peak_energy'] = 662.
+d_hpge['cs137']['peak_energy'] = 661.657
 d_hpge['cs137']['guess_voltage'] = 0.951
 d_hpge['cs137']['binning_voltage'] = [200, 0.94, 0.96]
 
@@ -52,7 +52,7 @@ d_hpge['na22_1270keV'] = {}
 d_hpge['na22_1270keV']['filename'] = 'nerix_150428_1248'
 d_hpge['na22_1270keV']['file'] = File('%s/%s.root' % (path_to_data, d_hpge['na22_1270keV']['filename']), 'read')
 d_hpge['na22_1270keV']['tree'] = d_hpge['na22_1270keV']['file'].T1
-d_hpge['na22_1270keV']['peak_energy'] = 1270.
+d_hpge['na22_1270keV']['peak_energy'] = 1274.537
 d_hpge['na22_1270keV']['guess_voltage'] = 1.836
 d_hpge['na22_1270keV']['binning_voltage'] = [200, 1.82, 1.85]
 
@@ -61,7 +61,7 @@ d_hpge['co57_122keV'] = {}
 d_hpge['co57_122keV']['filename'] = 'nerix_150428_1402'
 d_hpge['co57_122keV']['file'] = File('%s/%s.root' % (path_to_data, d_hpge['co57_122keV']['filename']), 'read')
 d_hpge['co57_122keV']['tree'] = d_hpge['co57_122keV']['file'].T1
-d_hpge['co57_122keV']['peak_energy'] = 122.
+d_hpge['co57_122keV']['peak_energy'] = 122.06
 d_hpge['co57_122keV']['guess_voltage'] = 0.1735
 d_hpge['co57_122keV']['binning_voltage'] = [200, 0.167, 0.178]
 
@@ -176,8 +176,8 @@ f_energy_cal.SetLineStyle(2)
 g_energy_cal.Fit('f_energy_cal', 'N')
 f_energy_cal.Draw('same')
 
-s_energy_cal_par0 = 'Intercept = %.2e #pm %.2e keV' % (f_energy_cal.GetParameter(0), f_energy_cal.GetParError(0))
-s_energy_cal_par1 = 'Slope = %.2e #pm %.2e #frac{keV}{V}' % (f_energy_cal.GetParameter(1), f_energy_cal.GetParError(1))
+s_energy_cal_par0 = 'Intercept = %.4e #pm %.4e keV' % (f_energy_cal.GetParameter(0), f_energy_cal.GetParError(0))
+s_energy_cal_par1 = 'Slope = %.4e #pm %.4e #frac{keV}{V}' % (f_energy_cal.GetParameter(1), f_energy_cal.GetParError(1))
 tpt_energy_cal = root.TPaveText(.2,.67,.55,.75,'blNDC')
 tpt_energy_cal.AddText(s_energy_cal_par0)
 tpt_energy_cal.AddText(s_energy_cal_par1)

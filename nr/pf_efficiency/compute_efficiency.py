@@ -4,6 +4,7 @@ matplotlib.use('QT4Agg')
 import ROOT as root
 from ROOT import gROOT
 import sys, os, root_numpy, threading, random, emcee, corner, signal, re
+import neriX_analysis
 from rootpy import stl
 from rootpy.io import File
 from rootpy.tree import Tree, TreeModel, TreeChain
@@ -93,10 +94,21 @@ g_pf_efficiency = h_pf_efficiency.CreateGraph()
 g_pf_efficiency.GetXaxis().SetRangeUser(s1_settings[1], s1_settings[2])
 g_pf_efficiency.Draw('AP')
 
-f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1])) * (x > [0] ? 1. : 0.)', 1, 15)
-f_eff.SetParameters(1., 3.2)
-g_pf_efficiency.Fit('f_eff', 'NRLL')
-f_eff.Draw('same')
+f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1]))', 1.5, 15)
+f_eff.SetParameters(2., 2.5)
+frp_eff = g_pf_efficiency.Fit('f_eff', 'SNRLL')
+#f_eff.Draw('same')
+
+a_fit_pars = np.asarray([f_eff.GetParameter(0), f_eff.GetParameter(1)])
+a_cov_matrix = np.asarray(root_numpy.matrix(frp_eff.GetCovarianceMatrix()))
+def pyfunc_eff(x, center, shape):
+	if x < center:
+		return 0
+	else:
+		return 1. - exp(-(x-center)/shape)
+g_eff_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, s1_settings[1], s1_settings[2])
+g_eff_conf_band.Draw('3 same')
+
 
 c1.Update()
 

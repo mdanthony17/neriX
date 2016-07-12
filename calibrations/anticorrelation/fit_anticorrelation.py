@@ -457,7 +457,7 @@ def fit_anticorrelation(d_files, batch_mode=False):
 
 
 	# independent of energies looked at
-	num_walkers = 2000
+	num_walkers = 1024
 	num_steps = 200
 	num_dim = 3
 	starting_values = [g1_test, g2_test, 13.7]
@@ -485,10 +485,22 @@ def fit_anticorrelation(d_files, batch_mode=False):
 			for pos, lnprob, state in mcmc_sampler:
 				pass
 
-	samples = sampler.chain[:, 100:, :].reshape((-1, num_dim))
+	samples = sampler.chain[:, -10:, :].reshape((-1, num_dim))
 
 	#print samples
 	fig = corner.corner(samples, labels=par_names)
+	a_means_g1_g2 = np.mean(samples, axis=0)[:2]
+	a_cov_matrix_g1_g2 = np.cov(samples.T)[:2,:2]
+
+	a_means_g1_g2 = list(a_means_g1_g2)
+	a_cov_matrix_g1_g2 = list(a_cov_matrix_g1_g2)
+	for i in xrange(2):
+		a_cov_matrix_g1_g2[i] = list(a_cov_matrix_g1_g2[i])
+
+	print a_means_g1_g2
+	# [0.12961637894547148, 20.88715549107226]
+	print a_cov_matrix_g1_g2
+	# [[3.6039167387306653e-06, 0.00057442202683395834], [0.00057442202683395834, 0.093143781598001851]]
 
 	if not os.path.exists(directory_save_name):
 		os.makedirs(directory_save_name)
