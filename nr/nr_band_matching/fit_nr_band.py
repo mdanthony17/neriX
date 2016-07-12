@@ -741,10 +741,11 @@ class nr_band_fitter(object):
 		# -----------------------------------------------
 
 
-		try:
-			a_s1_s2_mc = np.multiply(a_s1_s2_mc, np.sum(self.a_s1_s2, dtype=np.float32) / np.sum(a_s1_s2_mc, dtype=np.float32))
-		except:
+		sum_mc = np.sum(a_s1_s2_mc, dtype=np.float32)
+		if sum_mc == 0:
 			return -np.inf
+
+		a_s1_s2_mc *= np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc
 
 		if draw_fit:
 
@@ -904,7 +905,7 @@ class nr_band_fitter(object):
 	
 	
 
-		#starting_pos = [(np.random.randn(num_dim)*starting_values)*(0.05) + starting_values for i in xrange(num_walkers)]
+		#print starting_pos
 
 		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_no_nest, threads=num_threads, kwargs={})
 		
@@ -913,7 +914,7 @@ class nr_band_fitter(object):
 		
 		start_time_mcmc = time.time()
 
-		with click.progressbar(sampler.sample(starting_pos, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+		with click.progressbar(sampler.sample(starting_pos, iterations=num_steps, rstate0=random_state), length=num_steps) as mcmc_sampler:
 			for pos, lnprob, state in mcmc_sampler:
 				pass
 				
