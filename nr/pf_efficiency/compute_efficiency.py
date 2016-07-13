@@ -41,7 +41,7 @@ for i in xrange(len(l_matches_found)):
 
 # fill histograms as appropriate
 s1_settings = [40, 0, 15]
-gain_adjustment_term = 1.4e6/8.85e5
+gain_adjustment_term = 1. #1.4e6/8.85e5
 s1_branch = 'S1sTotBottom[0]*%f' % gain_adjustment_term
 
 # adjust S1 inputs for appropriate gain
@@ -55,6 +55,11 @@ h_sim_inputs.fill_array(a_sim_inputs)
 
 h_pf_found = Hist(*s1_settings, name='h_pf_found')
 h_pf_found.SetColor(root.kBlue)
+
+h_pf_smearing = Hist2D(20, 0, 40, 20, -0.5, 0.5, name='h_pf_found', title='Peak Finder Smearing')
+h_pf_smearing.SetStats(0)
+h_pf_smearing.GetXaxis().SetTitle('Simulated PE [PE]')
+h_pf_smearing.GetYaxis().SetTitle('#frac{Simulated PE - Reconstructed PE}{Simulated PE}')
 
 f_processed_outputs = File('./nerix_111111_1111.root', 'r')
 t1 = f_processed_outputs.T1
@@ -73,12 +78,13 @@ for i in tqdm(xrange(len(a_distance_from_actual))):
 	input_value = a_sim_inputs[i]
 	
 	l_current_output = a_processed_outputs[i]
-	a_s1 = l_current_output[1]
+	a_s1 = l_current_output[1]*gain_adjustment_term
 	s1_peak = l_current_output[2]
 	if len(a_s1) == 0 or (s1_peak < 898 or s1_peak > 902):
 		continue
 	else:
 		h_pf_found.Fill(input_value)
+		h_pf_smearing.Fill(input_value, (input_value-a_s1[0])/input_value)
 
 
 
@@ -132,7 +138,34 @@ g_eff_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit
 g_eff_conf_band.Draw('3 same')
 
 
+tpt_pf_efficiency = root.TPaveText(.45,.2,.85,.45,'blNDC')
+tpt_pf_efficiency.AddText('#varepsilon_{S1 PF} = e^{-#alpha e^{-#beta S1}}')
+tpt_pf_efficiency.AddText('#alpha = %.2e +/- %.2e' % (f_eff.GetParameter(0), f_eff.GetParError(0)))
+tpt_pf_efficiency.AddText('#beta = %.2e +/- %.2e' % (f_eff.GetParameter(1), f_eff.GetParError(1)))
+tpt_pf_efficiency.SetTextColor(root.kBlack)
+tpt_pf_efficiency.SetFillStyle(0)
+tpt_pf_efficiency.SetBorderSize(0)
+tpt_pf_efficiency.Draw('same')
+
+
+
+
 c1.Update()
+
+
+c2 = Canvas()
+h_pf_smearing.Draw('colz')
+
+
+
+
+c2.Update()
+
+
+neriX_analysis.save_plot(['results'], c1, 's1_pf_efficiency')
+neriX_analysis.save_plot(['results'], c2, 's1_pf_resolution')
+
+
 
 raw_input('Press enter to continue...')
 
