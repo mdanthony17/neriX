@@ -1,14 +1,14 @@
 {
-//=========Macro generated from canvas: d66921f417234f548ef3f67ed9c24583/
-//=========  (Wed Jul 13 17:28:52 2016) by ROOT version5.34/26
-   TCanvas *d66921f417234f548ef3f67ed9c24583 = new TCanvas("d66921f417234f548ef3f67ed9c24583", "",10,45,704,527);
-   d66921f417234f548ef3f67ed9c24583->SetHighLightColor(2);
-   d66921f417234f548ef3f67ed9c24583->Range(-5,-0.625,45,0.625);
-   d66921f417234f548ef3f67ed9c24583->SetFillColor(0);
-   d66921f417234f548ef3f67ed9c24583->SetBorderMode(0);
-   d66921f417234f548ef3f67ed9c24583->SetBorderSize(2);
-   d66921f417234f548ef3f67ed9c24583->SetFrameBorderMode(0);
-   d66921f417234f548ef3f67ed9c24583->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 5a38d5be0d7c458a8f60fd5d5637ac2b/
+//=========  (Wed Jul 13 17:34:24 2016) by ROOT version5.34/26
+   TCanvas *5a38d5be0d7c458a8f60fd5d5637ac2b = new TCanvas("5a38d5be0d7c458a8f60fd5d5637ac2b", "",10,45,704,527);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetHighLightColor(2);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->Range(-5,-0.625,45,0.625);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetFillColor(0);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetBorderMode(0);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetBorderSize(2);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetFrameBorderMode(0);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetFrameBorderMode(0);
    
    TH2F *h_pf_found = new TH2F("h_pf_found","Peak Finder Smearing",20,0,40,20,-0.5,0.5);
    h_pf_found->SetBinContent(1,5);
@@ -433,7 +433,7 @@ palette->SetTitleSize(0.035);
    pt->SetTextFont(42);
    TText *text = pt->AddText("Peak Finder Smearing");
    pt->Draw();
-   d66921f417234f548ef3f67ed9c24583->Modified();
-   d66921f417234f548ef3f67ed9c24583->cd();
-   d66921f417234f548ef3f67ed9c24583->SetSelected(d66921f417234f548ef3f67ed9c24583);
+   5a38d5be0d7c458a8f60fd5d5637ac2b->Modified();
+   5a38d5be0d7c458a8f60fd5d5637ac2b->cd();
+   5a38d5be0d7c458a8f60fd5d5637ac2b->SetSelected(5a38d5be0d7c458a8f60fd5d5637ac2b);
 }
