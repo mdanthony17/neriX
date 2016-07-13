@@ -240,8 +240,8 @@ class nr_band_fitter(object):
 		self.spe_res_value = 0.7
 		self.spe_res_uncertainty = 0.2
 		
-		self.l_means_s1_eff_pars = [2.13, 2.5]
-		self.l_cov_matrix_s1_eff_pars = [[0.2**2, 0], [0, 0.35**2]]
+		self.l_means_s1_eff_pars = [7.95634366, 0.59582331]
+		self.l_cov_matrix_s1_eff_pars = [[1.81608665e0, 5.04390137e-02], [5.04390137e-02, 1.68911586e-03]]
 		
 		
 		
@@ -439,7 +439,8 @@ class nr_band_fitter(object):
 		
 		#print current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)
 		h_s1_s2_band_cut = Hist2D(*(self.s1_settings+self.s2_settings))
-		current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)))
+		#current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)))
+		current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s' % (s_upper_bound_nr_cut)))
 		
 		self.a_s1_s2 = neriX_analysis.convert_2D_hist_to_matrix(h_s1_s2_band_cut, dtype=np.float32)
 		
@@ -692,7 +693,7 @@ class nr_band_fitter(object):
 		s2_eff_par0 = np.asarray(s2_eff_par0, dtype=np.float32)
 		s2_eff_par1 = np.asarray(s2_eff_par1, dtype=np.float32)
 		
-		a_band_cut = np.asarray([7.406e+02, 6.240e+01, -4.430e-01], dtype=np.float32)
+		a_band_cut = np.asarray([830.457, 111.58, -1.60963], dtype=np.float32)
 		
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
@@ -829,7 +830,7 @@ class nr_band_fitter(object):
 
 		total_ln_likelihood = logLikelihoodMatching + prior_ln_likelihood
 		total_ln_likelihood = total_ln_likelihood[0]
-		#print total_ln_likelihood
+		print total_ln_likelihood
 
 		if np.isnan(total_ln_likelihood):
 			return -np.inf
@@ -1040,15 +1041,12 @@ if __name__ == '__main__':
 
 	#a_free_par_guesses = [0.05, 0.25, 1.1, 3.2, 0, 75]
 	#test.minimize_nll_free_pars(a_free_par_guesses)
-	"""
-	test.likelihood_nr_band_nest(intrinsic_res_s1=0.05, intrinsic_res_s2=0.25, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	test.likelihood_nr_band_nest(intrinsic_res_s1=0.05, intrinsic_res_s2=0.25, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	test.likelihood_nr_band_nest(intrinsic_res_s1=0.05, intrinsic_res_s2=0.25, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
-	"""
+
 	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.9, intrinsic_res_s2=2.0, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
 	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]
 	# py_nest: [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15]
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
-	test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	test.likelihood_nr_band_no_nest(py_0=1.04, py_1=4.78, py_2=5.87, py_3=6.32, py_4=7.50, py_5=8.58, py_6=9.76, py_7=10.32, qy_0=7.47-0.5, qy_1=5.82-0.5, qy_2=5.82-0.5, qy_3=5.98-0.5, qy_4=6.09-0.5, qy_5=5.43-0.5, qy_6=5.06-0.5, qy_7=4.21-0.5, intrinsic_res_s1=0.15, intrinsic_res_s2=0.19, g1_value=0.13, spe_res_rv=1.0, g2_value=20.85, gas_gain_rv=-0.02, gas_gain_width_rv=0.06, s1_eff_par0=6.5, s1_eff_par1=0.65, s2_eff_par0=0.53, s2_eff_par1=72.87, exciton_to_ion_par0_rv=-0.14, exciton_to_ion_par1_rv=-0.01, exciton_to_ion_par2_rv=-0.11, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 

@@ -49,7 +49,7 @@ samples = aSampler[:, -5:, :].reshape((-1, numDim))
 
 start_time = time.time()
 print 'Starting corner plot...\n'
-fig = corner.corner(samples, labels=lLabelsForCorner)
+fig = corner.corner(samples, labels=lLabelsForCorner, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_kwargs={"fontsize": 12})
 print 'Corner plot took %.3f minutes.\n\n' % ((time.time()-start_time)/60.)
 
 # path for save

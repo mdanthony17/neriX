@@ -17,6 +17,8 @@ import copy_reg, types, pickle, click, time
 from subprocess import call
 from tqdm import tqdm
 
+root.TVirtualFitter.SetMaxIterations(10000)
+
 with open('./sim_inputs.txt', 'r') as f_sim_input:
 	s_sim_input = f_sim_input.read()
 
@@ -38,8 +40,8 @@ for i in xrange(len(l_matches_found)):
 
 
 # fill histograms as appropriate
-s1_settings = [30, 0, 15]
-gain_adjustment_term = 1.4e6/8.5e5
+s1_settings = [40, 0, 15]
+gain_adjustment_term = 1.4e6/8.85e5
 s1_branch = 'S1sTotBottom[0]*%f' % gain_adjustment_term
 
 # adjust S1 inputs for appropriate gain
@@ -94,19 +96,39 @@ g_pf_efficiency = h_pf_efficiency.CreateGraph()
 g_pf_efficiency.GetXaxis().SetRangeUser(s1_settings[1], s1_settings[2])
 g_pf_efficiency.Draw('AP')
 
-f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1]))', 1.5, 15)
-f_eff.SetParameters(2., 2.5)
-frp_eff = g_pf_efficiency.Fit('f_eff', 'SNRLL')
-#f_eff.Draw('same')
+#f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1]))', 1.5, 15)
+#f_eff.SetParameters(2., 2.5)
+#f_eff = root.TF1('f_eff', '1./((1. + exp(-(x-[0])/[1]))) * 1./((1. + exp(-(x-[2])/[3])))', s1_settings[1], s1_settings[2])
+#f_eff.SetParameters(3., 2.5, 5, 2.5)
 
+# exp of exp is called GOMPERTZ FUNCTIOn
+# parameters must be positive
+f_eff = root.TF1('f_eff', 'exp(-[0]*exp(-x*[1]))', s1_settings[1], s1_settings[2])
+f_eff.SetParameters(8., 0.5)
+frp_eff = g_pf_efficiency.Fit('f_eff', 'SNRLL')
+f_eff.Draw('same')
+
+#a_fit_pars = np.asarray([f_eff.GetParameter(0), f_eff.GetParameter(1), f_eff.GetParameter(2), f_eff.GetParameter(3)])
 a_fit_pars = np.asarray([f_eff.GetParameter(0), f_eff.GetParameter(1)])
 a_cov_matrix = np.asarray(root_numpy.matrix(frp_eff.GetCovarianceMatrix()))
+print a_fit_pars
+print a_cov_matrix
+
+"""
 def pyfunc_eff(x, center, shape):
 	if x < center:
 		return 0
 	else:
 		return 1. - exp(-(x-center)/shape)
-g_eff_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, s1_settings[1], s1_settings[2])
+"""
+"""
+def pyfunc_eff(x, center, shape, center_2, shape_2):
+	return 1./(1. + exp(-(x-center)/shape)) * 1./(1. + exp(-(x-center_2)/shape_2))
+"""
+def pyfunc_eff(x, center, shape):
+	return np.exp(-center*np.exp(-shape*x))
+
+g_eff_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, s1_settings[1], s1_settings[2], confidence_level=0.68)
 g_eff_conf_band.Draw('3 same')
 
 
