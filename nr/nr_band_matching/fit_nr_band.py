@@ -537,7 +537,7 @@ class nr_band_fitter(object):
 
 
 	def get_prior_log_likelihood_nuissance(self, likelihoodNuissance):
-		if likelihoodNuissance > 1e-8:
+		if likelihoodNuissance > 1e-35:
 			return np.log(likelihoodNuissance)
 		else:
 			return -np.inf
@@ -745,7 +745,7 @@ class nr_band_fitter(object):
 		if sum_mc == 0:
 			return -np.inf
 
-		a_s1_s2_mc *= np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc
+		a_s1_s2_mc = np.multiply(a_s1_s2_mc, np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc)
 
 		if draw_fit:
 
@@ -844,17 +844,84 @@ class nr_band_fitter(object):
 
 
 
-	def fit_nr_band_no_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.05):
+	# find initial positions
+	# no NEST is a misnomer because we will use NEST to initialize
+	# the location of the walkers
+	def initial_positions_nr_band_no_nest(self, num_walkers):
+		l_par_names = ['py_0', 'py_1', 'py_2', 'py_3', 'py_4', 'py_5', 'py_6', 'py_7', 'qy_0', 'qy_1', 'qy_2', 'qy_3', 'qy_4', 'qy_5', 'qy_6', 'qy_7', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
+		
+		d_variable_arrays = {}
+		
+		# position array should be (num_walkers, num_dim)
+	
+		for par_name in l_par_names:
+			# handle photon and charge yield initial positions
+			if (par_name[0] == 'p' or par_name[0] == 'q') and par_name[1] == 'y':
+				spline_number = int(par_name[-1])
+				l_yields = nest_nr_mean_yields(self.a_spline_energies[spline_number], self.mean_field)
+				if par_name[0] == 'p':
+					yields_index = 0
+				else:
+					yields_index = 1
+				
+				d_variable_arrays[par_name] = np.random.normal(l_yields[yields_index], 0.1*l_yields[yields_index], size=num_walkers)
+
+			elif par_name[0:9] == 'intrinsic':
+				d_variable_arrays[par_name] = np.random.normal(.15, .04, size=num_walkers)
+
+			# handle g1 and g2 with g1 only
+			elif par_name == 'g1_value':
+				#a_g1_g2_draws = np.random.multivariate_normal(self.l_means_g1_g2, self.l_cov_matrix_g1_g2, size=(2, num_walkers))
+				d_variable_arrays['g1_value'], d_variable_arrays['g2_value'] = np.random.multivariate_normal(self.l_means_g1_g2, self.l_cov_matrix_g1_g2, size=num_walkers).T
+				#print d_variable_arrays['g1_value']
+				#print d_variable_arrays['g2_value']
+
+
+			# catch both parameters of s1 efficiency prior
+			elif par_name == 's1_eff_par0':
+				d_variable_arrays['s1_eff_par0'], d_variable_arrays['s1_eff_par1'] = np.random.multivariate_normal(self.l_means_s1_eff_pars, self.l_cov_matrix_s1_eff_pars, size=num_walkers).T
+
+
+			elif par_name == 's2_eff_par0':
+				d_variable_arrays['s2_eff_par0'] = np.random.normal(0, 10, size=num_walkers)
+				d_variable_arrays['s2_eff_par1'] = np.random.normal(75, 10, size=num_walkers)
+			
+			
+			# catch all normally distributed RVs
+			else:
+				if par_name == 'g2_value' or par_name == 's1_eff_par1' or par_name == 's2_eff_par1':
+					continue
+				d_variable_arrays[par_name] = np.random.randn(num_walkers)
+				
+				
+		l_arrays_for_stacking = []
+		
+		for par_name in l_par_names:
+			l_arrays_for_stacking.append(d_variable_arrays[par_name])
+			#print par_name
+			#print d_variable_arrays[par_name]
+		
+		l_arrays_for_stacking = np.asarray(l_arrays_for_stacking).T
+		#print l_arrays_for_stacking[5]
+
+		return l_arrays_for_stacking
+				
+	
+
+
+
+	def fit_nr_band_no_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01):
 	
 	
 		# don't give zeros as starting values otherwise will be stuck
-		d_variable_guesses = {'py_0':1.03, 'py_1':4.41, 'py_2':5.80, 'py_3':6.60, 'py_4':7.64, 'py_5':8.57, 'py_6':9.19, 'py_7':10.15, 'qy_0':7.69, 'qy_1':6.67, 'qy_2':6.06, 'qy_3':5.72, 'qy_4':5.30, 'qy_5':4.93, 'qy_6':4.68, 'qy_7':4.25, 'intrinsic_res_s1':0.1, 'intrinsic_res_s2':0.25, 'g1_value':0.13, 'spe_res_rv':np.random.rand()-0.5, 'g2_value':20.9, 'gas_gain_rv':np.random.rand()-0.5, 'gas_gain_width_rv':np.random.rand()-0.5, 's1_eff_par0':2.1, 's1_eff_par1':2.5, 's2_eff_par0':np.random.rand()-0.5, 's2_eff_par1':75, 'exciton_to_ion_par0_rv':np.random.rand()-0.5, 'exciton_to_ion_par1_rv':np.random.rand()-0.5, 'exciton_to_ion_par2_rv':np.random.rand()-0.5}
-		l_par_names = ['py_0', 'py_1', 'py_2', 'py_3', 'py_4', 'py_5', 'py_6', 'py_7', 'qy_0', 'qy_1', 'qy_2', 'qy_3', 'qy_4', 'qy_5', 'qy_6', 'qy_7', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
+		#d_variable_guesses = {'py_0':1.03, 'py_1':4.41, 'py_2':5.80, 'py_3':6.60, 'py_4':7.64, 'py_5':8.57, 'py_6':9.19, 'py_7':10.15, 'qy_0':7.69, 'qy_1':6.67, 'qy_2':6.06, 'qy_3':5.72, 'qy_4':5.30, 'qy_5':4.93, 'qy_6':4.68, 'qy_7':4.25, 'intrinsic_res_s1':0.1, 'intrinsic_res_s2':0.25, 'g1_value':0.13, 'spe_res_rv':np.random.rand()-0.5, 'g2_value':20.9, 'gas_gain_rv':np.random.rand()-0.5, 'gas_gain_width_rv':np.random.rand()-0.5, 's1_eff_par0':2.1, 's1_eff_par1':2.5, 's2_eff_par0':np.random.rand()-0.5, 's2_eff_par1':75, 'exciton_to_ion_par0_rv':np.random.rand()-0.5, 'exciton_to_ion_par1_rv':np.random.rand()-0.5, 'exciton_to_ion_par2_rv':np.random.rand()-0.5}
 		
-		num_dim = len(l_par_names)
-		l_guesses = [0. for j in xrange(num_dim)]
-		for i, name in enumerate(l_par_names):
-			l_guesses[i] = d_variable_guesses[name]
+		
+		num_dim = 30
+		
+		#l_guesses = [0. for j in xrange(num_dim)]
+		#for i, name in enumerate(l_par_names):
+		#	l_guesses[i] = d_variable_guesses[name]
 		
 		# before emcee, setup save locations
 		dir_specifier_name = '%.3fkV_%.1fkV' % (self.cathode_setting, self.anode_setting)
@@ -886,7 +953,7 @@ class nr_band_fitter(object):
 			print '\nCould not load previous sampler or none existed - starting new sampler.\n'
 		
 		if not loaded_prev_sampler:
-			starting_pos = [(np.random.randn(num_dim)+l_guesses)*fractional_deviation_start_pos + l_guesses for i in xrange(num_walkers)]
+			starting_pos = self.initial_positions_nr_band_no_nest(num_walkers)
 			random_state = None
 			
 			# create file if it doesn't exist
@@ -914,7 +981,7 @@ class nr_band_fitter(object):
 		
 		start_time_mcmc = time.time()
 
-		with click.progressbar(sampler.sample(starting_pos, iterations=num_steps, rstate0=random_state), length=num_steps) as mcmc_sampler:
+		with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state), length=num_steps) as mcmc_sampler:
 			for pos, lnprob, state in mcmc_sampler:
 				pass
 				
@@ -941,7 +1008,7 @@ class nr_band_fitter(object):
 
 		with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
 			d_sampler = pickle.load(f_prev_sampler)
-		f_prev_sampler.close()
+		#f_prev_sampler.close()
 
 		f_prev_sampler = open(self.path_for_save + 'sampler_dictionary.p', 'w')
 		d_sampler[num_walkers].append(sampler.__dict__)
