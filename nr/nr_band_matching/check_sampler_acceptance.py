@@ -28,16 +28,18 @@ l_plots = ['plots', filename]
 dir_specifier_name = '%.3fkV_%.1fkV' % (cathode_setting, anode_setting)
 
 sPathToFile = '%s/%s/%s/sampler_acceptance_fraction.p' % (nameOfResultsDirectory, dir_specifier_name, filename)
+sPathToFile_autocorrelation = '%s/%s/%s/sampler_acor.p' % (nameOfResultsDirectory, dir_specifier_name, filename)
 
 if os.path.exists(sPathToFile):
 	a_acceptance_fraction = pickle.load(open(sPathToFile, 'r'))
 	print 'Successfully loaded acceptance fraction array!'
+	a_acor = pickle.load(open(sPathToFile_autocorrelation, 'r'))
 else:
 	print sPathToFile
 	print 'Could not find file!'
 	sys.exit()
 
-
+print a_acor
 
 c_acceptance = Canvas()
 h_acceptance = Hist(100, 0, 1, name='h_acceptance', title='Acceptance Fraction of Most Recent Sampler')

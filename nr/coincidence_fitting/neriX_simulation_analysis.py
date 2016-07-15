@@ -895,6 +895,8 @@ class neriX_simulation_analysis(object):
 				xSingleScatter = '(nsteps_target==1)'
 				xLiqSciHeight = '(etotliqsci>700)'
 				xLXeEnergy = '(etot_target>0)'
+				#xLXeEnergy = '(etot_target>0)'
+				xLXeEnergy = '(Alt$(ed_nr_target[1],-1)==-1 && ed_nr_target[0] > 0)'
 
 				#print 'No TOF cut!\n'
 				neriX_analysis.warning_message('Need to finalize how tof is chosen in MC data!')
@@ -907,9 +909,11 @@ class neriX_simulation_analysis(object):
 				xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
 				xZ = '(zpos[0]>-20 && zpos[0]<-4)'
 				xSingleScatter = '(nsteps_target==1)'
-				xLXeEnergy = '(etot_target>0)'
+				#xLXeEnergy = '(etot_target>0)' # this includes ER
+				xSingleScatter_2 = '(Alt$(ed_nr_target[1],-1)==-1)'
+				xLXeEnergy = '(ed_nr_target[0] > 0.)'
 
-				xAll = '%s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy)
+				xAll = '%s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy, xSingleScatter_2)
 
 			# pull min, max, and bins
 			energyMin = neriX_simulation_datasets.energyMin
@@ -919,8 +923,9 @@ class neriX_simulation_analysis(object):
 
 			# create and fill histogram
 			tMC = fSimulation.t2
-			hMC = Hist(energyNumBins, energyMin, energyMax, name='hMC', title='Simulated Spectrum', drawstyle='hist')
-			tMC.Draw('etot_target', hist=hMC, selection=xAll)
+			hMC = Hist(energyNumBins*5, energyMin, energyMax, name='hMC', title='Simulated Spectrum', drawstyle='hist')
+			#tMC.Draw('etot_target', hist=hMC, selection=xAll)
+			tMC.Draw('ed_nr_target[0]', hist=hMC, selection=xAll)
 			hMC.Sumw2()
 
 			# draw histogram to new file for quick retrieval

@@ -171,6 +171,13 @@ class nr_band_fitter(object):
 		
 		# find mean field
 		self.mean_field = d_cathode_voltage_to_field[cathodeVoltage]
+	
+		s1_branch = 'cpS1sTotBottom[0]'
+		s2_branch = 'cpS2sTotBottom[0]'
+		
+		self.s1_settings = (40, 0, 30)
+		self.s2_settings = (40, 0, 3000)
+		self.log_settings = (40, 1, 4.5)
 
 		# -----------------------------------------------
 		# -----------------------------------------------
@@ -185,6 +192,8 @@ class nr_band_fitter(object):
 		current_analysis.add_single_scatter_cut()
 		current_analysis.add_xs1asym_cut()
 		current_analysis.add_xs2asym_cut()
+		current_analysis.add_cut('%s < %f' % (s1_branch, self.s1_settings[2]))
+		current_analysis.add_cut('%s < %f' % (s2_branch, self.s2_settings[2]))
 
 		current_analysis.set_event_list()
 
@@ -199,11 +208,7 @@ class nr_band_fitter(object):
 		# -----------------------------------------------
 		# -----------------------------------------------
 
-		self.s1_settings = (40, 0, 30)
-		self.s2_settings = (40, 0, 3000)
 		
-		s1_branch = 'cpS1sTotBottom[0]'
-		s2_branch = 'cpS2sTotBottom[0]'
 
 		h_s1_s2 = Hist2D(*(self.s1_settings+self.s2_settings))
 		current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2, selection=current_analysis.get_cuts())
@@ -237,11 +242,14 @@ class nr_band_fitter(object):
 		self.gas_gain_width = 9.2
 		self.gas_gain_width_uncertainty = 0.3
 		
-		self.spe_res_value = 0.7
+		self.spe_res_value = 0.66
 		self.spe_res_uncertainty = 0.2
 		
 		self.l_means_s1_eff_pars = [8.01838272, 0.94038425] #[7.95634366, 0.59582331]
 		self.l_cov_matrix_s1_eff_pars = [[2.4251213, 0.09964001], [0.09964001, 0.00502255]]
+		
+		self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
+		self.l_cov_matrix_s2_eff_pars = [[ 274.4, -82.64], [-82.64, 218.2]]
 		
 		
 		
@@ -304,6 +312,143 @@ class nr_band_fitter(object):
 		# -----------------------------------------------
 		# -----------------------------------------------
 		
+		self.s1_fit_min_lower = 5.
+		percent_from_median = 45.
+		
+		c_nr_band = Canvas(name='c_nr_band', title='c_nr_band', width=1600, height=500)
+		c_nr_band.Divide(3, 1)
+
+		c_nr_band.cd(1)
+		
+		h_s1_s2_band_fit = Hist2D(self.s1_settings[0], self.s1_settings[1], self.s1_settings[2], 200, self.log_settings[1], self.log_settings[2], name='h_s1_s2_band_fit', title='Log10(S2/S1) vs S1 - ' + current_analysis.get_filename_no_ext())
+		current_analysis.Draw('%s:log10(%s/%s)' % (s1_branch, s2_branch, s1_branch), hist=h_s1_s2_band_fit, selection=current_analysis.get_cuts())
+		h_s1_s2_band_fit.GetXaxis().SetTitle('Log(%s/%s)' % (s2_branch, s1_branch))
+		h_s1_s2_band_fit.GetYaxis().SetTitle('%s [PE]' % (s2_branch))
+		h_s1_s2_band_fit.SetStats(0)
+		h_s1_s2_band_fit.Draw('colz')
+		
+		t_profile = neriX_analysis.profile_y_median(h_s1_s2_band_fit, percent_from_median=percent_from_median)
+		g_profile_s1 = root.TGraphAsymmErrors(*t_profile)
+		#gProfileS1.SetFillStyle(3005)
+		g_profile_s1.Draw('same p')
+
+		c_nr_band.cd(1).SetLogz()
+		c_nr_band.cd(1).SetGridx()
+		c_nr_band.cd(1).SetGridy()
+		c_nr_band.Update()
+		
+		
+		num_points = t_profile[0]
+		x_values = t_profile[1]
+		y_lower_bound = t_profile[5]
+		y_upper_bound = t_profile[6]
+		for i, y_value in enumerate(t_profile[2]):
+			y_lower_bound[i] = y_value - y_lower_bound[i]
+			y_upper_bound[i] += y_value
+
+		c_nr_band.cd(2)
+			
+		g_lower_bounds = root.TGraph(num_points, x_values, y_lower_bound)
+		g_lower_bounds.SetMarkerStyle(8)
+		g_lower_bounds.SetTitle('Lower Bounds @ %.2f%% - %s' % (50 + percent_from_median, current_analysis.get_filename_no_ext()))
+		g_lower_bounds.GetXaxis().SetRangeUser(self.s1_settings[1], self.s1_settings[2])
+		g_lower_bounds.GetYaxis().SetRangeUser(self.log_settings[1], self.log_settings[2])
+		g_lower_bounds.Draw('ap')
+		
+		
+		c_nr_band.cd(2).SetGridx()
+		c_nr_band.cd(2).SetGridy()
+
+
+		c_nr_band.cd(3)
+
+		g_upper_bounds = root.TGraph(num_points, x_values, y_upper_bound)
+		g_upper_bounds.SetMarkerStyle(8)
+		g_upper_bounds.SetTitle('Upper Bounds @ %.2f%% - %s' % (50 + percent_from_median, current_analysis.get_filename_no_ext()))
+		g_upper_bounds.GetXaxis().SetRangeUser(self.s1_settings[1], self.s1_settings[2])
+		g_upper_bounds.GetYaxis().SetRangeUser(self.log_settings[1], self.log_settings[2])
+		g_upper_bounds.Draw('ap')
+		
+		
+		c_nr_band.cd(3).SetLogz()
+		c_nr_band.cd(3).SetGridx()
+		c_nr_band.cd(3).SetGridy()
+		
+		c_nr_band.Update()
+
+
+		# fit lower bound
+		f_lower_bound = root.TF1('f_lower_bound', 'pol1', self.s1_fit_min_lower, self.s1_settings[2])
+		
+		fit_result_lower = g_lower_bounds.Fit('f_lower_bound', 'MELRS')
+		f_lower_bound.SetLineStyle(1)
+		f_lower_bound.SetLineWidth(2)
+		f_lower_bound.SetLineColor(root.kRed)
+		
+		c_nr_band.cd(1)
+		f_lower_bound.Draw('same')
+		c_nr_band.cd(2)
+		f_lower_bound.Draw('same')
+
+		# draw lower bound
+		f_lower_bound_draw = root.TF1('f_lower_bound_draw', 'pol1', self.s1_settings[1], self.s1_settings[2])
+		f_lower_bound_draw.SetParameters(f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1))
+		f_lower_bound_draw.SetLineStyle(2)
+		f_lower_bound_draw.SetLineWidth(2)
+		f_lower_bound_draw.SetLineColor(root.kRed)
+		
+		c_nr_band.cd(1)
+		f_lower_bound_draw.Draw('same')
+		c_nr_band.cd(2)
+		f_lower_bound_draw.Draw('same')
+		
+		
+		
+		# fit upper bound
+		f_upper_bound = root.TF1('f_upper_bound', '[0]*exp(-x/[1])+[2]', self.s1_fit_min_lower, self.s1_settings[2])
+		f_upper_bound.SetParameters(2, 5, 2)
+		
+		fit_result_upper = g_upper_bounds.Fit('f_upper_bound', 'MELRS')
+		f_upper_bound.SetLineStyle(1)
+		f_upper_bound.SetLineWidth(2)
+		f_upper_bound.SetLineColor(root.kRed)
+		
+		c_nr_band.cd(1)
+		f_upper_bound.Draw('same')
+		c_nr_band.cd(3)
+		f_upper_bound.Draw('same')
+
+		# draw upper bound
+		f_upper_bound_draw = root.TF1('f_upper_bound_draw', '[0]*exp(-x/[1])+[2]', self.s1_settings[1], self.s1_settings[2])
+		f_upper_bound_draw.SetParameters(f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2))
+		f_upper_bound_draw.SetLineStyle(2)
+		f_upper_bound_draw.SetLineWidth(2)
+		f_upper_bound_draw.SetLineColor(root.kRed)
+		
+		c_nr_band.cd(1)
+		f_upper_bound_draw.Draw('same')
+		c_nr_band.cd(3)
+		f_upper_bound_draw.Draw('same')
+
+		c_nr_band.Update()
+
+		# lower_bound curve = [s1 lower limit (for application), par0, par1, ...]
+		# it is important NOT to cut below the s1 lower limit
+		# since otherwise will miss the interesting behavior
+		self.l_lower_bound_curve = [self.s1_fit_min_lower, f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1)]
+		s_lower_bound_nr_cut = '((%s < %f) || (%s > (%f + %f*%s)))' % (s1_branch, self.s1_fit_min_lower, s2_branch, f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1), s1_branch)
+		
+		# save fit values to an array
+		self.a_upper_bound_pars_nr_band = np.asarray([f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2)], dtype=np.float32)
+
+		# upper_bound_curve = [par0, par1, par2]
+		# upper bound cut is used regardless of S1
+		self.l_upper_bound_curve = [f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2)]
+		s_upper_bound_nr_cut = '(log10(%s/%s) < (%f*exp(-%s/%f) + %f))' % (s2_branch, s1_branch, f_upper_bound.GetParameter(0), s1_branch, f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2))
+		
+		#raw_input('\n\ndebug\n')
+		
+		"""
 		self.s1_fit_min_lower = 15.
 		self.s1_fit_min_upper = 7.
 		percent_from_median = 45.
@@ -434,6 +579,7 @@ class nr_band_fitter(object):
 		# upper bound cut is used regardless of S1
 		self.l_upper_bound_curve = [f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2)]
 		s_upper_bound_nr_cut = '((%s > %f) || (%s < (%f + %f*%s + %f*%s^2)))' % (s1_branch, self.s1_settings[2], s2_branch, f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), s1_branch, f_upper_bound.GetParameter(2), s1_branch)
+		"""
 		
 		#raw_input('\nFits okay?\n')
 		
@@ -494,9 +640,13 @@ class nr_band_fitter(object):
 	def get_s1_eff_default(self, s1_eff_par0, s1_eff_par1):
 		return multivariate_normal.pdf([s1_eff_par0, s1_eff_par1], self.l_means_s1_eff_pars, self.l_cov_matrix_s1_eff_pars), s1_eff_par0, s1_eff_par1
 	
+
+
+	def get_s2_eff_default(self, s2_eff_par0, s2_eff_par1):
+		return multivariate_normal.pdf([s2_eff_par0, s2_eff_par1], self.l_means_s2_eff_pars, self.l_cov_matrix_s2_eff_pars), s2_eff_par0, s2_eff_par1
 	
 	
-	"""
+	
 	def get_exciton_ion_ratio(self, lParsRV):
 		likelihood = 1.
 		lParValues = [0. for i in xrange(len(lParsRV))]
@@ -530,7 +680,7 @@ class nr_band_fitter(object):
 		
 		return likelihood, lParValues[0]*(self.meanField**(-lParValues[1])) * ( 1 - exp(-lParValues[2] * 11.5*self.meanEnergy*54**(-7./3.)) )
 		
-	"""
+	
 	
 	def get_likelihood_exciton_to_ion(self, par0, par1, par2):
 		return norm.pdf(par0)*norm.pdf(par1)*norm.pdf(par2)
@@ -547,7 +697,7 @@ class nr_band_fitter(object):
 
 	def get_log_likelihood_s1_eff(self, l_s1_eff_pars):
 		# first par is center, second is shape
-		if 0 < l_s1_eff_pars[0] < 4 and 0.5 < l_s1_eff_pars[1] < 6:
+		if 0 < l_s1_eff_pars[0] < 10 and 0.1 < l_s1_eff_pars[1] < 6:
 			return 0.
 		else:
 			return -np.inf
@@ -643,7 +793,12 @@ class nr_band_fitter(object):
 		# priors of efficiencies
 		current_likelihood, s1_eff_par0, s1_eff_par1 = self.get_s1_eff_default(s1_eff_par0, s1_eff_par1)
 		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
-		prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
+		
+		current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		
+		
+		#prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
 
 		extraction_efficiency = g2_value / float(gas_gain_value)
 
@@ -693,7 +848,7 @@ class nr_band_fitter(object):
 		s2_eff_par0 = np.asarray(s2_eff_par0, dtype=np.float32)
 		s2_eff_par1 = np.asarray(s2_eff_par1, dtype=np.float32)
 		
-		a_band_cut = np.asarray([830.457, 111.58, -1.60963], dtype=np.float32)
+		a_band_cut = self.a_upper_bound_pars_nr_band
 		
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
@@ -765,41 +920,75 @@ class nr_band_fitter(object):
 			c1 = Canvas(1400, 400)
 			c1.Divide(2)
 			
-			h_s1_data = Hist(*self.s1_settings, name='hS1_draw_data', drawstyle='E1')
+			h_s1_data = Hist(*self.s1_settings, name='hS1_draw_data')
 			root_numpy.array2hist(self.a_s1_s2.sum(axis=1), h_s1_data)
 			
-			hS1MC = Hist(*self.s1_settings, name='hS1_draw_mc', drawstyle='hist')
+			hS1MC = Hist(*self.s1_settings, name='hS1_draw_mc')
 			root_numpy.array2hist(a_s1_s2_mc.sum(axis=1), hS1MC)
 			
-			hS1MC.Scale(h_s1_data.Integral() / hS1MC.Integral())
+			s1_scale_factor = h_s1_data.Integral() / float(hS1MC.Integral())
 			
-			h_s1_data.SetLineColor(root.kRed)
-			h_s1_data.SetMarkerSize(0)
+			g_s1_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s1_data)
+			g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=s1_scale_factor)
+			
+			g_s1_mc.SetFillColor(root.kBlue)
+			g_s1_mc.SetMarkerColor(root.kBlue)
+			g_s1_mc.SetLineColor(root.kBlue)
+			g_s1_mc.SetFillStyle(3005)
+			
+			g_s1_data.SetTitle('S1 Comparison')
+			g_s1_data.GetXaxis().SetTitle('S1 [PE]')
+			g_s1_data.GetYaxis().SetTitle('Counts')
+			
+			g_s1_data.SetLineColor(root.kRed)
+			g_s1_data.SetMarkerSize(0)
+			g_s1_data.GetXaxis().SetRangeUser(self.s1_settings[1], self.s1_settings[2])
+			g_s1_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s1_data.GetMaximum(), hS1MC.GetMaximum()))
 			
 			c1.cd(1)
-			h_s1_data.Draw()
-			hS1MC.Draw('same')
+			g_s1_data.Draw('ap')
+			g_s1_mc.Draw('same')
+			g_s1_mc_band = g_s1_mc.Clone()
+			g_s1_mc_band.Draw('3 same')
 			
-			h_s2_data = Hist(*self.s2_settings, name='hS2_draw_data')
+			h_s2_data = Hist(*self.s2_settings, name='h_s2_draw_data')
 			root_numpy.array2hist(self.a_s1_s2.sum(axis=0), h_s2_data)
 			
-			hS2MC = Hist(*self.s2_settings, name='hS2_draw_mc', drawstyle='hist')
-			root_numpy.array2hist(a_s1_s2_mc.sum(axis=0), hS2MC)
-			hS2MC.Scale(h_s2_data.Integral() / hS2MC.Integral())
+			h_s2_mc = Hist(*self.s2_settings, name='h_s2_draw_mc')
+			root_numpy.array2hist(a_s1_s2_mc.sum(axis=0), h_s2_mc)
 			
-			h_s2_data.SetLineColor(root.kRed)
-			h_s2_data.SetMarkerSize(0)
+			s2_scale_factor = h_s2_data.Integral() / float(h_s2_mc.Integral())
+			
+			g_s2_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_data)
+			g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=s2_scale_factor)
+			
+			g_s2_mc.SetFillColor(root.kBlue)
+			g_s2_mc.SetMarkerColor(root.kBlue)
+			g_s2_mc.SetLineColor(root.kBlue)
+			g_s2_mc.SetFillStyle(3005)
+			
+			g_s1_data.SetTitle('S2 Comparison')
+			g_s1_data.GetXaxis().SetTitle('S2 [PE]')
+			g_s1_data.GetYaxis().SetTitle('Counts')
+			
+			g_s2_data.SetLineColor(root.kRed)
+			g_s2_data.SetMarkerSize(0)
+			g_s2_data.GetXaxis().SetRangeUser(self.s2_settings[1], self.s2_settings[2])
+			g_s2_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s2_data.GetMaximum(), h_s2_mc.GetMaximum()))
 			
 			c1.cd(2)
-			h_s2_data.Draw()
-			hS2MC.Draw('same')
+			g_s2_data.Draw('ap')
+			g_s2_mc.Draw('same')
+			g_s2_mc_band = g_s2_mc.Clone()
+			g_s2_mc_band.Draw('3 same')
+			
+			c1.Update()
 			
 			print 'Number of events in data: %f' % h_s1_data.Integral()
 			
 			plt.show()
 			#raw_input('Press enter to continue...')
 		
-			del hS1MC, hS2MC, c1
 
 
 
@@ -865,7 +1054,7 @@ class nr_band_fitter(object):
 				else:
 					yields_index = 1
 				
-				d_variable_arrays[par_name] = np.random.normal(l_yields[yields_index], 0.5*l_yields[yields_index], size=num_walkers)
+				d_variable_arrays[par_name] = np.random.normal(l_yields[yields_index], 0.2*l_yields[yields_index], size=num_walkers)
 
 			elif par_name[0:9] == 'intrinsic':
 				d_variable_arrays[par_name] = np.random.normal(.15, .04, size=num_walkers)
@@ -1047,6 +1236,6 @@ if __name__ == '__main__':
 	# py_nest: [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15]
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
 	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	test.likelihood_nr_band_no_nest(py_0=1.04, py_1=4.78, py_2=5.87, py_3=6.32, py_4=7.50, py_5=8.58, py_6=9.76, py_7=10.32, qy_0=7.47, qy_1=5.82, qy_2=5.82, qy_3=5.98, qy_4=6.09, qy_5=5.43, qy_6=5.06, qy_7=4.21, intrinsic_res_s1=0.15, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=2.0, g2_value=20.85, gas_gain_rv=-0.02, gas_gain_width_rv=0.06, s1_eff_par0=8., s1_eff_par1=0.9, s2_eff_par0=163., s2_eff_par1=50., exciton_to_ion_par0_rv=-0.14, exciton_to_ion_par1_rv=-0.01, exciton_to_ion_par2_rv=-0.11, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	test.likelihood_nr_band_no_nest(py_0=0.90, py_1=5.81, py_2=6.82, py_3=8.16, py_4=8.67, py_5=9.55, py_6=10.08, py_7=10.73, qy_0=8.05, qy_1=8.60, qy_2=5.43, qy_3=6.39, qy_4=5.70, qy_5=5.70, qy_6=4.97, qy_7=3.90, intrinsic_res_s1=0.12, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=-0.48, g2_value=20.89, gas_gain_rv=-0.02, gas_gain_width_rv=0.06, s1_eff_par0=8.95, s1_eff_par1=0.99, s2_eff_par0=258.15, s2_eff_par1=59.36, exciton_to_ion_par0_rv=0.02, exciton_to_ion_par1_rv=0.24, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
