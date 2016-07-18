@@ -248,9 +248,13 @@ class nr_band_fitter(object):
 		self.l_means_s1_eff_pars = [8.01838272, 0.94038425] #[7.95634366, 0.59582331]
 		self.l_cov_matrix_s1_eff_pars = [[2.4251213, 0.09964001], [0.09964001, 0.00502255]]
 		
-		self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
-		self.l_cov_matrix_s2_eff_pars = [[ 274.4, -82.64], [-82.64, 218.2]]
+		#self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
+		#self.l_cov_matrix_s2_eff_pars = [[ 274.4, -82.64], [-82.64, 218.2]]
 		
+		# only for producing initial distribution
+		# NOT FOR LIKELIHOOD
+		self.l_means_s2_eff_pars = [150, 60] #[7.95634366, 0.59582331]
+		self.l_cov_matrix_s2_eff_pars = [[ 80**2, 0], [0, 20**2]]
 		
 		
 		# -----------------------------------------------
@@ -794,11 +798,11 @@ class nr_band_fitter(object):
 		current_likelihood, s1_eff_par0, s1_eff_par1 = self.get_s1_eff_default(s1_eff_par0, s1_eff_par1)
 		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 		
-		current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
-		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		#current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
+		#prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 		
 		
-		#prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
+		prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
 
 		extraction_efficiency = g2_value / float(gas_gain_value)
 
@@ -1056,9 +1060,12 @@ class nr_band_fitter(object):
 				
 				d_variable_arrays[par_name] = np.random.normal(l_yields[yields_index], 0.2*l_yields[yields_index], size=num_walkers)
 
-			elif par_name[0:9] == 'intrinsic':
-				d_variable_arrays[par_name] = np.random.normal(.15, .04, size=num_walkers)
-
+			elif par_name == 'intrinsic_res_s1':
+				d_variable_arrays[par_name] = np.random.normal(.10, .04, size=num_walkers)
+				
+			elif par_name == 'intrinsic_res_s2':
+				d_variable_arrays[par_name] = np.random.normal(.34, .04, size=num_walkers)
+			
 			# handle g1 and g2 with g1 only
 			elif par_name == 'g1_value':
 				#a_g1_g2_draws = np.random.multivariate_normal(self.l_means_g1_g2, self.l_cov_matrix_g1_g2, size=(2, num_walkers))
@@ -1073,8 +1080,7 @@ class nr_band_fitter(object):
 
 
 			elif par_name == 's2_eff_par0':
-				d_variable_arrays['s2_eff_par0'] = np.random.normal(165, 100, size=num_walkers)
-				d_variable_arrays['s2_eff_par1'] = np.random.normal(50, 30, size=num_walkers)
+				d_variable_arrays['s2_eff_par0'], d_variable_arrays['s2_eff_par1'] = np.random.multivariate_normal(self.l_means_s2_eff_pars, self.l_cov_matrix_s2_eff_pars, size=num_walkers).T
 			
 			
 			# catch all normally distributed RVs
@@ -1236,6 +1242,6 @@ if __name__ == '__main__':
 	# py_nest: [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15]
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
 	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	test.likelihood_nr_band_no_nest(py_0=0.90, py_1=5.81, py_2=6.82, py_3=8.16, py_4=8.67, py_5=9.55, py_6=10.08, py_7=10.73, qy_0=8.05, qy_1=8.60, qy_2=5.43, qy_3=6.39, qy_4=5.70, qy_5=5.70, qy_6=4.97, qy_7=3.90, intrinsic_res_s1=0.12, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=-0.48, g2_value=20.89, gas_gain_rv=-0.02, gas_gain_width_rv=0.06, s1_eff_par0=8.95, s1_eff_par1=0.99, s2_eff_par0=258.15, s2_eff_par1=59.36, exciton_to_ion_par0_rv=0.02, exciton_to_ion_par1_rv=0.24, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	test.likelihood_nr_band_no_nest(py_0=0.99, py_1=5.51, py_2=6.25, py_3=6.53, py_4=8.36, py_5=9.36, py_6=10.82, py_7=10.21, qy_0=6.76, qy_1=4.53, qy_2=6.43, qy_3=5.19, qy_4=5.90, qy_5=5.40, qy_6=5.74, qy_7=4.41, intrinsic_res_s1=0.14, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=0.87, g2_value=20.89, gas_gain_rv=0.80, gas_gain_width_rv=0.13, s1_eff_par0=8.07, s1_eff_par1=0.95, s2_eff_par0=234.62, s2_eff_par1=85.79, exciton_to_ion_par0_rv=0.40, exciton_to_ion_par1_rv=0.30, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
 
