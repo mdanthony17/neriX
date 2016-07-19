@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 root.TVirtualFitter.SetMaxIterations(10000)
 
+"""
 with open('./sim_inputs.txt', 'r') as f_sim_input:
 	s_sim_input = f_sim_input.read()
 
@@ -37,10 +38,15 @@ a_sim_inputs = np.zeros(len(l_matches_found))
 for i in xrange(len(l_matches_found)):
 	a_sim_inputs[i] = float(l_matches_found[i][3:])
 #print a_sim_inputs
+"""
 
+f_inputs = File('./wfsim_pre_processing.root')
+t_inputs = f_inputs.tree_out
+a_sim_inputs = root_numpy.tree2array(tree=t_inputs, branches='S1')
+print a_sim_inputs
 
 # fill histograms as appropriate
-s1_settings = [40, 0, 15]
+s1_settings = [400, 0, 15]
 gain_adjustment_term = 1. #1.4e6/8.85e5
 s1_branch = 'S1sTotBottom[0]*%f' % gain_adjustment_term
 
@@ -56,12 +62,12 @@ h_sim_inputs.fill_array(a_sim_inputs)
 h_pf_found = Hist(*s1_settings, name='h_pf_found')
 h_pf_found.SetColor(root.kBlue)
 
-h_pf_smearing = Hist2D(20, 0, 40, 20, -0.5, 0.5, name='h_pf_found', title='Peak Finder Smearing')
+h_pf_smearing = Hist2D(20, 0, 40, 60, -0.5, 0.5, name='h_pf_found', title='Peak Finder Smearing')
 h_pf_smearing.SetStats(0)
 h_pf_smearing.GetXaxis().SetTitle('Simulated PE [PE]')
 h_pf_smearing.GetYaxis().SetTitle('#frac{Simulated PE - Reconstructed PE}{Simulated PE}')
 
-f_processed_outputs = File('./nerix_111111_1111.root', 'r')
+f_processed_outputs = File('./nerix_111111_1112.root', 'r')
 t1 = f_processed_outputs.T1
 t2 = f_processed_outputs.T2
 t2.AddFriend(t1)
@@ -80,6 +86,7 @@ for i in tqdm(xrange(len(a_distance_from_actual))):
 	l_current_output = a_processed_outputs[i]
 	a_s1 = l_current_output[1]*gain_adjustment_term
 	s1_peak = l_current_output[2]
+	#print input_value,
 	if len(a_s1) == 0 or (s1_peak < 898 or s1_peak > 902):
 		continue
 	else:
@@ -102,15 +109,20 @@ g_pf_efficiency = h_pf_efficiency.CreateGraph()
 g_pf_efficiency.GetXaxis().SetRangeUser(s1_settings[1], s1_settings[2])
 g_pf_efficiency.Draw('AP')
 
-#f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1]))', 1.5, 15)
+#f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1]))', 0, 15)
 #f_eff.SetParameters(2., 2.5)
+
+f_eff = root.TF1('f_eff', '1./((1. + exp(-(x-[0])/[1])))', 0, 15)
+f_eff.SetParameters(2., 2.5)
+
 #f_eff = root.TF1('f_eff', '1./((1. + exp(-(x-[0])/[1]))) * 1./((1. + exp(-(x-[2])/[3])))', s1_settings[1], s1_settings[2])
 #f_eff.SetParameters(3., 2.5, 5, 2.5)
 
 # exp of exp is called GOMPERTZ FUNCTIOn
 # parameters must be positive
-f_eff = root.TF1('f_eff', 'exp(-[0]*exp(-x*[1]))', s1_settings[1], s1_settings[2])
-f_eff.SetParameters(8., 0.5)
+#f_eff = root.TF1('f_eff', 'exp(-[0]*exp(-x*[1]))', s1_settings[1], s1_settings[2])
+#f_eff.SetParameters(8., 0.5)
+
 frp_eff = g_pf_efficiency.Fit('f_eff', 'SNRLL')
 f_eff.Draw('same')
 
@@ -127,15 +139,17 @@ def pyfunc_eff(x, center, shape):
 	else:
 		return 1. - exp(-(x-center)/shape)
 """
-"""
+
 def pyfunc_eff(x, center, shape, center_2, shape_2):
 	return 1./(1. + exp(-(x-center)/shape)) * 1./(1. + exp(-(x-center_2)/shape_2))
+
 """
 def pyfunc_eff(x, center, shape):
 	return np.exp(-center*np.exp(-shape*x))
 
 g_eff_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, s1_settings[1], s1_settings[2], confidence_level=0.68)
 g_eff_conf_band.Draw('3 same')
+"""
 
 
 tpt_pf_efficiency = root.TPaveText(.45,.2,.85,.45,'blNDC')
