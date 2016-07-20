@@ -9,10 +9,16 @@ import nr_band_config, string
 import numpy as np
 import cPickle as pickle
 
-if len(sys.argv) != 7:
-	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers> <num steps> <num threads>'
+if len(sys.argv) != 7 and len(sys.argv) != 8:
+	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers> <num steps> <num threads> [<deviation_from_nest(efficiency fit only!!!)>]'
 	sys.exit()
 
+if len(sys.argv) == 8:
+	fit_efficiency = True
+	deviation_from_nest = float(sys.argv[7])
+else:
+	fit_efficiency = False
+	deviation_from_nest = None
 
 filename = sys.argv[1]
 anode_setting = float(sys.argv[2])
@@ -28,7 +34,7 @@ current_nr_band_matching = fit_nr_band.nr_band_fitter(filename, anode_setting, c
 # gas_gain_width_rv, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1
 # exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv
 
-current_nr_band_matching.fit_nr_band_no_nest(num_steps=num_steps, num_walkers=num_walkers, num_threads=num_threads)
+current_nr_band_matching.fit_nr_band_no_nest(num_steps=num_steps, num_walkers=num_walkers, num_threads=num_threads, efficiency_fit=fit_efficiency, deviation_from_nest=deviation_from_nest)
 
 
 

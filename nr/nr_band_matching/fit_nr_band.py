@@ -1123,8 +1123,10 @@ class nr_band_fitter(object):
 	
 		if not efficiency_fit:
 			num_dim = 30
+			print '\n\nFitting yields...\n\n'
 		else:
 			num_dim = 14
+			print '\n\nFitting trigger efficiency...\n\n'
 		
 		#l_guesses = [0. for j in xrange(num_dim)]
 		#for i, name in enumerate(l_par_names):
@@ -1268,7 +1270,7 @@ if __name__ == '__main__':
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
 	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=0.99, py_1=5.51, py_2=6.25, py_3=6.53, py_4=8.36, py_5=9.36, py_6=10.82, py_7=10.21, qy_0=6.76, qy_1=4.53, qy_2=6.43, qy_3=5.19, qy_4=5.90, qy_5=5.40, qy_6=5.74, qy_7=4.41, intrinsic_res_s1=0.14, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=0.87, g2_value=20.89, gas_gain_rv=0.80, gas_gain_width_rv=0.13, s1_eff_par0=8.07, s1_eff_par1=0.95, s2_eff_par0=234.62, s2_eff_par1=85.79, exciton_to_ion_par0_rv=0.40, exciton_to_ion_par1_rv=0.30, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	#test.likelihood_nr_band_no_nest(*a_free_par_guesses, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=1)
-	test.fit_nr_band_no_nest(num_steps=5, num_walkers=30, num_threads=1, efficiency_fit=True, deviation_from_nest=0.)
+	test.likelihood_nr_band_no_nest(*a_free_par_guesses, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=30, num_threads=1, efficiency_fit=True, deviation_from_nest=0.)
+	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=30, num_threads=1, efficiency_fit=False)
 

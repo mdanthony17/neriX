@@ -55,7 +55,7 @@ c_acceptance = Canvas()
 h_acceptance = Hist(100, 0, 1, name='h_acceptance', title='Acceptance Fraction of Most Recent Sampler')
 h_acceptance.fill_array(a_acceptance_fraction)
 h_acceptance.Scale(1./h_acceptance.Integral())
-h_acceptance.SetStats(0)
+#h_acceptance.SetStats(0)
 h_acceptance.Draw()
 c_acceptance.Update()
 
