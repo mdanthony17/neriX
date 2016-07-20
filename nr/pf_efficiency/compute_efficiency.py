@@ -46,23 +46,27 @@ a_sim_inputs = root_numpy.tree2array(tree=t_inputs, branches='S1')
 print a_sim_inputs
 
 # fill histograms as appropriate
-s1_settings = [400, 0, 15]
+s1_settings_small_window = [400, 0, 15]
+s1_settings_large_window = [800, 0, 40]
+rel_diff_settings = [100, -0.5, 0.5]
+
+
 gain_adjustment_term = 1. #1.4e6/8.85e5
 s1_branch = 'S1sTotBottom[0]*%f' % gain_adjustment_term
 
 # adjust S1 inputs for appropriate gain
 a_sim_inputs *= gain_adjustment_term
 
-h_sim_inputs = Hist(*s1_settings, name='h_sim_inputs')
+h_sim_inputs = Hist(*s1_settings_small_window, name='h_sim_inputs')
 h_sim_inputs.fill_array(a_sim_inputs)
 
 #h_processed_outputs = Hist(*s1_settings, name='h_processed_outputs')
 #h_processed_outputs.SetColor(root.kRed)
 
-h_pf_found = Hist(*s1_settings, name='h_pf_found')
+h_pf_found = Hist(*s1_settings_small_window, name='h_pf_found')
 h_pf_found.SetColor(root.kBlue)
 
-h_pf_smearing = Hist2D(20, 0, 40, 60, -0.5, 0.5, name='h_pf_found', title='Peak Finder Smearing')
+h_pf_smearing = Hist2D(*(s1_settings_large_window+rel_diff_settings), name='h_pf_found', title='Peak Finder Smearing')
 h_pf_smearing.SetStats(0)
 h_pf_smearing.GetXaxis().SetTitle('Simulated PE [PE]')
 h_pf_smearing.GetYaxis().SetTitle('#frac{Simulated PE - Reconstructed PE}{Simulated PE}')
@@ -106,7 +110,7 @@ h_pf_efficiency = root.TEfficiency(h_pf_found, h_sim_inputs)
 h_pf_efficiency.SetTitle('S1 Peak Finder Efficiency; Simulated PE [PE]; Percentage Found by Peak Finder');
 
 g_pf_efficiency = h_pf_efficiency.CreateGraph()
-g_pf_efficiency.GetXaxis().SetRangeUser(s1_settings[1], s1_settings[2])
+g_pf_efficiency.GetXaxis().SetRangeUser(s1_settings_small_window[1], s1_settings_small_window[2])
 g_pf_efficiency.Draw('AP')
 
 #f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1]))', 0, 15)
@@ -152,10 +156,11 @@ g_eff_conf_band.Draw('3 same')
 """
 
 
-tpt_pf_efficiency = root.TPaveText(.45,.2,.85,.45,'blNDC')
-tpt_pf_efficiency.AddText('#varepsilon_{S1 PF} = e^{-#alpha e^{-#beta S1}}')
-tpt_pf_efficiency.AddText('#alpha = %.2e +/- %.2e' % (f_eff.GetParameter(0), f_eff.GetParError(0)))
-tpt_pf_efficiency.AddText('#beta = %.2e +/- %.2e' % (f_eff.GetParameter(1), f_eff.GetParError(1)))
+tpt_pf_efficiency = root.TPaveText(.45,.1,.85,.45,'blNDC')
+#tpt_pf_efficiency.AddText('#varepsilon_{S1 PF} = e^{-#alpha e^{-#beta S1}}')
+tpt_pf_efficiency.AddText('#varepsilon_{S1 PF} = #frac{1}{1 + e^{#frac{-(S1-#alpha)}{#beta}}}')
+tpt_pf_efficiency.AddText('#alpha = %.2e +/- %.2e [PE]' % (f_eff.GetParameter(0), f_eff.GetParError(0)))
+tpt_pf_efficiency.AddText('#beta = %.2e +/- %.2e [PE]' % (f_eff.GetParameter(1), f_eff.GetParError(1)))
 tpt_pf_efficiency.SetTextColor(root.kBlack)
 tpt_pf_efficiency.SetFillStyle(0)
 tpt_pf_efficiency.SetBorderSize(0)

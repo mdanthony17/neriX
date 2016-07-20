@@ -166,6 +166,9 @@ class nr_band_fitter(object):
 		# set number of mc events
 		self.num_mc_events = int(num_mc_events)
 		
+		# get name notes
+		self.name_notes = name_notes
+		
 		# set whether yields are free or not
 		self.yields_free = yields_free
 		
@@ -1023,7 +1026,7 @@ class nr_band_fitter(object):
 
 		total_ln_likelihood = logLikelihoodMatching + prior_ln_likelihood
 		total_ln_likelihood = total_ln_likelihood[0]
-		print total_ln_likelihood
+		#print total_ln_likelihood
 
 		if np.isnan(total_ln_likelihood):
 			return -np.inf
@@ -1035,6 +1038,13 @@ class nr_band_fitter(object):
 	def wrapper_nr_band_no_nest(self, a_parameters, kwargs={}):
 		#print a_parameters
 		return self.likelihood_nr_band_no_nest(*a_parameters, **kwargs)
+
+
+
+	def wrapper_nr_band_force_yields(self, a_parameters, a_forced_light_yields, a_forced_charge_yields, kwargs={}):
+		#print a_parameters
+		assert len(a_parameters) == 14 and len(a_forced_light_yields) == 8 and len(a_forced_charge_yields) == 8
+		return self.likelihood_nr_band_no_nest(*(np.concatenate([a_forced_light_yields, a_forced_charge_yields, a_parameters])), **kwargs)
 
 
 
@@ -1105,15 +1115,16 @@ class nr_band_fitter(object):
 	
 
 
-
-	def fit_nr_band_no_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01):
+	# default is to do a yields fit
+	def fit_nr_band_no_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, efficiency_fit=False, deviation_from_nest=None):
 	
+		if efficiency_fit:
+			assert deviation_from_nest != None, '\nMust give deviation from NEST values!\n'
 	
-		# don't give zeros as starting values otherwise will be stuck
-		#d_variable_guesses = {'py_0':1.03, 'py_1':4.41, 'py_2':5.80, 'py_3':6.60, 'py_4':7.64, 'py_5':8.57, 'py_6':9.19, 'py_7':10.15, 'qy_0':7.69, 'qy_1':6.67, 'qy_2':6.06, 'qy_3':5.72, 'qy_4':5.30, 'qy_5':4.93, 'qy_6':4.68, 'qy_7':4.25, 'intrinsic_res_s1':0.1, 'intrinsic_res_s2':0.25, 'g1_value':0.13, 'spe_res_rv':np.random.rand()-0.5, 'g2_value':20.9, 'gas_gain_rv':np.random.rand()-0.5, 'gas_gain_width_rv':np.random.rand()-0.5, 's1_eff_par0':2.1, 's1_eff_par1':2.5, 's2_eff_par0':np.random.rand()-0.5, 's2_eff_par1':75, 'exciton_to_ion_par0_rv':np.random.rand()-0.5, 'exciton_to_ion_par1_rv':np.random.rand()-0.5, 'exciton_to_ion_par2_rv':np.random.rand()-0.5}
-		
-		
-		num_dim = 30
+		if not efficiency_fit:
+			num_dim = 30
+		else:
+			num_dim = 14
 		
 		#l_guesses = [0. for j in xrange(num_dim)]
 		#for i, name in enumerate(l_par_names):
@@ -1122,7 +1133,11 @@ class nr_band_fitter(object):
 		# before emcee, setup save locations
 		dir_specifier_name = '%.3fkV_%.1fkV' % (self.cathode_setting, self.anode_setting)
 		self.results_directory_name = nr_band_config.results_directory_name
-		self.path_for_save = '%s/%s/%s/' % (self.results_directory_name, dir_specifier_name, self.filename)
+		if not efficiency_fit:
+			self.path_for_save = '%s/yields_fit/%s/%s/' % (self.results_directory_name, dir_specifier_name, self.filename)
+		else:
+			#assert self.name_notes != None, 'name note must be used'
+			self.path_for_save = '%s/efficiency_fit/%.2f_deviation_from_nest/%s/%s/' % (self.results_directory_name, deviation_from_nest, dir_specifier_name, self.filename)
 		
 		if not os.path.isdir(self.path_for_save):
 			os.makedirs(self.path_for_save)
@@ -1150,6 +1165,9 @@ class nr_band_fitter(object):
 		
 		if not loaded_prev_sampler:
 			starting_pos = self.initial_positions_nr_band_no_nest(num_walkers)
+			if efficiency_fit:
+				starting_pos = starting_pos[:, 16:]
+			
 			random_state = None
 			
 			# create file if it doesn't exist
@@ -1169,9 +1187,15 @@ class nr_band_fitter(object):
 	
 
 		#print starting_pos
+		if not efficiency_fit:
+			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_no_nest, a=1.15, threads=num_threads, kwargs={})
+		else:
+			a_forced_light_yields = self.a_nest_photon_yields*(1.+deviation_from_nest)
+			a_forced_charge_yields = self.a_nest_charge_yields*(1.+deviation_from_nest)
+			
+			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_force_yields, a=2., threads=num_threads, kwargs={'a_forced_light_yields':a_forced_light_yields, 'a_forced_charge_yields':a_forced_charge_yields})
 
-		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_no_nest, threads=num_threads, kwargs={})
-		
+
 		print '\n\nBeginning MCMC sampler\n\n'
 		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (num_walkers, num_steps, num_walkers*num_steps)
 		
@@ -1234,8 +1258,9 @@ class nr_band_fitter(object):
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345)
 
-	a_free_par_guesses = [0.99, 5.18, 7.06, 7.86, 8.73, 9.65, 10.64, 10.11, 10.16, 7.31, 5.81, 6.05, 5.80, 5.32, 5.57, 4.43, 0.06, 0.33, 0.13, -1.28, 20.83, 0.08, -0.26, 8.21, 0.95, -13.70, 43.99, 0.17, -0.22, -0.24]
-	test.minimize_nll_free_pars(a_free_par_guesses)
+	a_free_par_guesses = [0.95, 5.49, 7.73, 8.21, 9.08, 10.04, 10.81, 10.54, 11.37, 7.31, 5.99, 6.31, 5.88, 5.46, 5.71, 4.51, 0.04, 0.33, 0.13, -1.84, 20.80, 0.08, -0.15, 8.02, 0.96, -36.71, 32.43, 0.09, -0.20, -0.22]
+	#print len(a_free_par_guesses)
+	#test.minimize_nll_free_pars(a_free_par_guesses)
 
 	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.9, intrinsic_res_s2=2.0, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
 	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]
@@ -1244,5 +1269,6 @@ if __name__ == '__main__':
 	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=0.99, py_1=5.51, py_2=6.25, py_3=6.53, py_4=8.36, py_5=9.36, py_6=10.82, py_7=10.21, qy_0=6.76, qy_1=4.53, qy_2=6.43, qy_3=5.19, qy_4=5.90, qy_5=5.40, qy_6=5.74, qy_7=4.41, intrinsic_res_s1=0.14, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=0.87, g2_value=20.89, gas_gain_rv=0.80, gas_gain_width_rv=0.13, s1_eff_par0=8.07, s1_eff_par1=0.95, s2_eff_par0=234.62, s2_eff_par1=85.79, exciton_to_ion_par0_rv=0.40, exciton_to_ion_par1_rv=0.30, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(*a_free_par_guesses, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=6)
+	#test.fit_nr_band_nest(num_steps=20, num_walkers=100, num_threads=1)
+	test.fit_nr_band_no_nest(num_steps=5, num_walkers=30, num_threads=1, efficiency_fit=True, deviation_from_nest=0.)
 

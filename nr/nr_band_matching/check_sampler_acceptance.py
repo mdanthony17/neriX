@@ -10,10 +10,15 @@ import corner
 import cPickle as pickle
 import time
 
-if len(sys.argv) != 5:
-	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers>'
+if len(sys.argv) != 5 and len(sys.argv) != 6:
+	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers> [<deviation_from_nest(efficiency fit only!!!)>]'
 	sys.exit()
 
+if len(sys.argv) == 6:
+	fit_efficiency = True
+	deviation_from_nest = float(sys.argv[5])
+else:
+	fit_efficiency = False
 
 filename = sys.argv[1]
 anode_setting = float(sys.argv[2])
@@ -27,6 +32,11 @@ l_plots = ['plots', filename]
 
 dir_specifier_name = '%.3fkV_%.1fkV' % (cathode_setting, anode_setting)
 
+if not fit_efficiency:
+	nameOfResultsDirectory += '/yields_fit'
+else:
+	nameOfResultsDirectory += '/efficiency_fit/%.2f_deviation_from_nest' % (deviation_from_nest)
+	
 sPathToFile = '%s/%s/%s/sampler_acceptance_fraction.p' % (nameOfResultsDirectory, dir_specifier_name, filename)
 sPathToFile_autocorrelation = '%s/%s/%s/sampler_acor.p' % (nameOfResultsDirectory, dir_specifier_name, filename)
 
@@ -51,8 +61,13 @@ c_acceptance.Update()
 
 raw_input('Press enter to continue...')
 
+plot_name = 'nr_band_acceptance_fraction_%s' % (filename)
+if not fit_efficiency:
+	plot_name = 'yields_fit_%s' % (plot_name)
+else:
+	plot_name = 'efficiency_fit_%.2f_deviation_%s' % (deviation_from_nest, plot_name)
 
-neriX_analysis.save_plot(l_plots, c_acceptance, 'nr_band_acceptance_fraction_%s' % (filename))
+neriX_analysis.save_plot(l_plots, c_acceptance, plot_name)
 
 
 
