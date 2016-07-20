@@ -1,30 +1,72 @@
 {
-//=========Macro generated from canvas: d19643885f56451f844548513de1499b/
-//=========  (Wed Jul 20 11:58:35 2016) by ROOT version5.34/26
-   TCanvas *d19643885f56451f844548513de1499b = new TCanvas("d19643885f56451f844548513de1499b", "",10,45,704,527);
-   d19643885f56451f844548513de1499b->SetHighLightColor(2);
-   d19643885f56451f844548513de1499b->Range(-0.125,-0.05957066,1.125,0.5361359);
-   d19643885f56451f844548513de1499b->SetFillColor(0);
-   d19643885f56451f844548513de1499b->SetBorderMode(0);
-   d19643885f56451f844548513de1499b->SetBorderSize(2);
-   d19643885f56451f844548513de1499b->SetFrameBorderMode(0);
-   d19643885f56451f844548513de1499b->SetFrameBorderMode(0);
+//=========Macro generated from canvas: Canvas_BM9g5QLtoDqX63yN6ztUJQ/
+//=========  (Wed Jul 20 12:49:57 2016) by ROOT version5.34/30
+   TCanvas *Canvas_BM9g5QLtoDqX63yN6ztUJQ = new TCanvas("Canvas_BM9g5QLtoDqX63yN6ztUJQ", "",10,32,704,528);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetHighLightColor(2);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->Range(-0.125,-0.02208833,1.125,0.198795);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetFillColor(0);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetBorderMode(0);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetBorderSize(2);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetFrameBorderMode(0);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetFrameBorderMode(0);
    
    TH1F *h_acceptance = new TH1F("h_acceptance","Acceptance Fraction of Most Recent Sampler",100,0,1);
-   h_acceptance->SetBinContent(1,0.137931);
-   h_acceptance->SetBinContent(21,0.1724138);
-   h_acceptance->SetBinContent(41,0.3448276);
-   h_acceptance->SetBinContent(61,0.2413793);
-   h_acceptance->SetBinContent(81,0.1034483);
-   h_acceptance->SetBinContent(101,0.03448276);
-   h_acceptance->SetBinError(1,0.06896552);
-   h_acceptance->SetBinError(21,0.07710579);
-   h_acceptance->SetBinError(41,0.1090441);
-   h_acceptance->SetBinError(61,0.0912328);
-   h_acceptance->SetBinError(81,0.05972589);
-   h_acceptance->SetBinError(101,0.03448276);
-   h_acceptance->SetEntries(30);
-   h_acceptance->SetStats(0);
+   h_acceptance->SetBinContent(3,0.00390625);
+   h_acceptance->SetBinContent(7,0.00390625);
+   h_acceptance->SetBinContent(9,0.01171875);
+   h_acceptance->SetBinContent(11,0.0078125);
+   h_acceptance->SetBinContent(13,0.01171875);
+   h_acceptance->SetBinContent(15,0.05078125);
+   h_acceptance->SetBinContent(17,0.06640625);
+   h_acceptance->SetBinContent(19,0.09765625);
+   h_acceptance->SetBinContent(21,0.1015625);
+   h_acceptance->SetBinContent(23,0.1445312);
+   h_acceptance->SetBinContent(25,0.109375);
+   h_acceptance->SetBinContent(27,0.09765625);
+   h_acceptance->SetBinContent(29,0.0859375);
+   h_acceptance->SetBinContent(31,0.06640625);
+   h_acceptance->SetBinContent(33,0.05859375);
+   h_acceptance->SetBinContent(35,0.04296875);
+   h_acceptance->SetBinContent(37,0.015625);
+   h_acceptance->SetBinContent(39,0.015625);
+   h_acceptance->SetBinContent(41,0.0078125);
+   h_acceptance->SetBinError(3,0.00390625);
+   h_acceptance->SetBinError(7,0.00390625);
+   h_acceptance->SetBinError(9,0.006765823);
+   h_acceptance->SetBinError(11,0.005524272);
+   h_acceptance->SetBinError(13,0.006765823);
+   h_acceptance->SetBinError(15,0.01408418);
+   h_acceptance->SetBinError(17,0.01610588);
+   h_acceptance->SetBinError(19,0.01953125);
+   h_acceptance->SetBinError(21,0.01991804);
+   h_acceptance->SetBinError(23,0.02376079);
+   h_acceptance->SetBinError(25,0.02066993);
+   h_acceptance->SetBinError(27,0.01953125);
+   h_acceptance->SetBinError(29,0.01832194);
+   h_acceptance->SetBinError(31,0.01610588);
+   h_acceptance->SetBinError(33,0.01512884);
+   h_acceptance->SetBinError(35,0.01295557);
+   h_acceptance->SetBinError(37,0.0078125);
+   h_acceptance->SetBinError(39,0.0078125);
+   h_acceptance->SetBinError(41,0.005524272);
+   h_acceptance->SetEntries(256);
+   
+   TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
+   ptstats->SetName("stats");
+   ptstats->SetBorderSize(1);
+   ptstats->SetFillColor(0);
+   ptstats->SetTextAlign(12);
+   ptstats->SetTextFont(42);
+   TText *text = ptstats->AddText("h_acceptance");
+   text->SetTextSize(0.0368);
+   text = ptstats->AddText("Entries = 256    ");
+   text = ptstats->AddText("Mean  = 0.2345");
+   text = ptstats->AddText("RMS   = 0.06606");
+   ptstats->SetOptStat(1111);
+   ptstats->SetOptFit(0);
+   ptstats->Draw();
+   h_acceptance->GetListOfFunctions()->Add(ptstats);
+   ptstats->SetParent(h_acceptance);
    h_acceptance->SetFillStyle(0);
    h_acceptance->SetMarkerStyle(20);
    h_acceptance->GetXaxis()->SetLabelFont(42);
@@ -41,15 +83,15 @@
    h_acceptance->GetZaxis()->SetTitleFont(42);
    h_acceptance->Draw("");
    
-   TPaveText *pt = new TPaveText(0.15,0.9374,0.85,0.995,"blNDC");
+   TPaveText *pt = new TPaveText(0.15,0.9326,0.85,0.995,"blNDC");
    pt->SetName("title");
    pt->SetBorderSize(0);
    pt->SetFillColor(0);
    pt->SetFillStyle(0);
    pt->SetTextFont(42);
-   TText *text = pt->AddText("Acceptance Fraction of Most Recent Sampler");
+   text = pt->AddText("Acceptance Fraction of Most Recent Sampler");
    pt->Draw();
-   d19643885f56451f844548513de1499b->Modified();
-   d19643885f56451f844548513de1499b->cd();
-   d19643885f56451f844548513de1499b->SetSelected(d19643885f56451f844548513de1499b);
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->Modified();
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->cd();
+   Canvas_BM9g5QLtoDqX63yN6ztUJQ->SetSelected(Canvas_BM9g5QLtoDqX63yN6ztUJQ);
 }

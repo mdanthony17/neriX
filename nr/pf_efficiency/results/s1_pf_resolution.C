@@ -1,14 +1,14 @@
 {
-//=========Macro generated from canvas: cea662ecfe00406987a92bed2c9717d2/
-//=========  (Tue Jul 19 12:39:18 2016) by ROOT version5.34/26
-   TCanvas *cea662ecfe00406987a92bed2c9717d2 = new TCanvas("cea662ecfe00406987a92bed2c9717d2", "",10,45,704,527);
-   cea662ecfe00406987a92bed2c9717d2->SetHighLightColor(2);
-   cea662ecfe00406987a92bed2c9717d2->Range(-5,-0.625,45,0.625);
-   cea662ecfe00406987a92bed2c9717d2->SetFillColor(0);
-   cea662ecfe00406987a92bed2c9717d2->SetBorderMode(0);
-   cea662ecfe00406987a92bed2c9717d2->SetBorderSize(2);
-   cea662ecfe00406987a92bed2c9717d2->SetFrameBorderMode(0);
-   cea662ecfe00406987a92bed2c9717d2->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 2e15cd3b9bd2493ca4e17627de37f1ba/
+//=========  (Wed Jul 20 14:05:37 2016) by ROOT version5.34/26
+   TCanvas *2e15cd3b9bd2493ca4e17627de37f1ba = new TCanvas("2e15cd3b9bd2493ca4e17627de37f1ba", "",10,45,704,527);
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetHighLightColor(2);
+   2e15cd3b9bd2493ca4e17627de37f1ba->Range(-5,-0.625,45,0.625);
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetFillColor(0);
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetBorderMode(0);
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetBorderSize(2);
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetFrameBorderMode(0);
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetFrameBorderMode(0);
    
    TH2F *h_pf_found = new TH2F("h_pf_found","Peak Finder Smearing",800,0,40,100,-0.5,0.5);
    h_pf_found->SetBinContent(1,1);
@@ -34995,7 +34995,6 @@ palette->SetTitleSize(0.035);
    h_pf_found->GetXaxis()->SetTitleSize(0.035);
    h_pf_found->GetXaxis()->SetTitleFont(42);
    h_pf_found->GetYaxis()->SetTitle("#frac{Simulated PE - Reconstructed PE}{Simulated PE}");
-   h_pf_found->GetYaxis()->SetRange(1,100);
    h_pf_found->GetYaxis()->SetLabelFont(42);
    h_pf_found->GetYaxis()->SetLabelSize(0.035);
    h_pf_found->GetYaxis()->SetTitleSize(0.035);
@@ -35014,7 +35013,7 @@ palette->SetTitleSize(0.035);
    pt->SetTextFont(42);
    TText *text = pt->AddText("Peak Finder Smearing");
    pt->Draw();
-   cea662ecfe00406987a92bed2c9717d2->Modified();
-   cea662ecfe00406987a92bed2c9717d2->cd();
-   cea662ecfe00406987a92bed2c9717d2->SetSelected(cea662ecfe00406987a92bed2c9717d2);
+   2e15cd3b9bd2493ca4e17627de37f1ba->Modified();
+   2e15cd3b9bd2493ca4e17627de37f1ba->cd();
+   2e15cd3b9bd2493ca4e17627de37f1ba->SetSelected(2e15cd3b9bd2493ca4e17627de37f1ba);
 }

@@ -248,8 +248,8 @@ class nr_band_fitter(object):
 		self.spe_res_value = 0.66
 		self.spe_res_uncertainty = 0.2
 		
-		self.l_means_s1_eff_pars = [8.01838272, 0.94038425] #[7.95634366, 0.59582331]
-		self.l_cov_matrix_s1_eff_pars = [[2.4251213, 0.09964001], [0.09964001, 0.00502255]]
+		self.l_means_s1_eff_pars = [1.96178522, 0.46718076] #[7.95634366, 0.59582331]
+		self.l_cov_matrix_s1_eff_pars = [[7.58956686e-05, 9.78759376e-07], [9.78759376e-07, 2.79732862e-05]]
 		
 		#self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
 		#self.l_cov_matrix_s2_eff_pars = [[ 274.4, -82.64], [-82.64, 218.2]]
@@ -442,8 +442,8 @@ class nr_band_fitter(object):
 		# lower_bound curve = [s1 lower limit (for application), par0, par1, ...]
 		# it is important NOT to cut below the s1 lower limit
 		# since otherwise will miss the interesting behavior
-		self.l_lower_bound_curve = [self.s1_fit_min_lower, f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1)]
-		s_lower_bound_nr_cut = '((%s < %f) || (%s > (%f + %f*%s)))' % (s1_branch, self.s1_fit_min_lower, s2_branch, f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1), s1_branch)
+		self.a_lower_bound_pars_nr_band = np.asarray([f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1)], dtype=np.float32)
+		s_lower_bound_nr_cut = '(log10(%s/%s) > (%f + %f*%s))' % (s2_branch, s1_branch, f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1), s1_branch)
 		
 		# save fit values to an array
 		self.a_upper_bound_pars_nr_band = np.asarray([f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2)], dtype=np.float32)
@@ -592,10 +592,12 @@ class nr_band_fitter(object):
 		
 		#print current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)
 		h_s1_s2_band_cut = Hist2D(*(self.s1_settings+self.s2_settings))
-		#current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)))
-		current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s' % (s_upper_bound_nr_cut)))
+		current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)))
+		#current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s' % (s_upper_bound_nr_cut)))
 		
 		self.a_s1_s2 = neriX_analysis.convert_2D_hist_to_matrix(h_s1_s2_band_cut, dtype=np.float32)
+		
+		#raw_input('Press enter line 600')
 		
 		c_nr_band.Clear()
 		c_nr_band.Close()
@@ -855,7 +857,7 @@ class nr_band_fitter(object):
 		s2_eff_par0 = np.asarray(s2_eff_par0, dtype=np.float32)
 		s2_eff_par1 = np.asarray(s2_eff_par1, dtype=np.float32)
 		
-		a_band_cut = self.a_upper_bound_pars_nr_band
+		a_band_cut = np.concatenate([self.a_lower_bound_pars_nr_band, self.a_upper_bound_pars_nr_band])
 		
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
@@ -869,6 +871,7 @@ class nr_band_fitter(object):
 		#print a_spline_charge_yields
 		#print self.a_nest_charge_yields
 		
+		#print s2_eff_par0, s2_eff_par1
 		
 		if gpu_compute:
 		
@@ -882,7 +885,7 @@ class nr_band_fitter(object):
 			tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
 			
 			gpu_observables_func(*tArgs, **d_gpu_scale)
-			#print a_hist_2d
+			#print a_hist_2d[:4]
 
 			a_s1_s2_mc = np.reshape(a_hist_2d, (self.s1_settings[0], self.s2_settings[0])).T
 			
@@ -1260,7 +1263,7 @@ class nr_band_fitter(object):
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345)
 
-	a_free_par_guesses = [0.95, 5.49, 7.73, 8.21, 9.08, 10.04, 10.81, 10.54, 11.37, 7.31, 5.99, 6.31, 5.88, 5.46, 5.71, 4.51, 0.04, 0.33, 0.13, -1.84, 20.80, 0.08, -0.15, 8.02, 0.96, -36.71, 32.43, 0.09, -0.20, -0.22]
+	a_free_par_guesses = [0.95, 5.49, 7.73, 8.21, 9.08, 10.04, 10.81, 10.54, 11.37, 7.31, 5.99, 6.31, 5.88, 5.46, 5.71, 4.51, 0.04, 0.33, 0.13, -1.84, 20.80, 0.08, -0.15, 1.96, 0.46, 200, 200, 0.09, -0.20, -0.22]
 	#print len(a_free_par_guesses)
 	#test.minimize_nll_free_pars(a_free_par_guesses)
 
