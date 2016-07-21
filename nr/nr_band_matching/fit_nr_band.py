@@ -596,6 +596,7 @@ class nr_band_fitter(object):
 		#current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s' % (s_upper_bound_nr_cut)))
 		
 		self.a_s1_s2 = neriX_analysis.convert_2D_hist_to_matrix(h_s1_s2_band_cut, dtype=np.float32)
+		self.num_data_points = np.sum(self.a_s1_s2)
 		
 		#raw_input('Press enter line 600')
 		
@@ -1048,6 +1049,239 @@ class nr_band_fitter(object):
 		#print a_parameters
 		assert len(a_parameters) == 14 and len(a_forced_light_yields) == 8 and len(a_forced_charge_yields) == 8
 		return self.likelihood_nr_band_no_nest(*(np.concatenate([a_forced_light_yields, a_forced_charge_yields, a_parameters])), **kwargs)
+	
+	
+	
+	def likelihood_s2_efficiency(self, scale_parameter, s2_eff_par0, s2_eff_par1, deviation_from_nest, parameter_to_adjust=None, parameter_adjustment=0., draw_fit=False):
+
+
+
+		# need to do slightly fewer elements than
+		# originally perscribed bc energies already
+		# produced
+		d_gpu_scale = {}
+		d_gpu_scale['block'] = (1024,1,1)
+		numBlocks = floor(self.num_mc_events / 1024.)
+		d_gpu_scale['grid'] = (int(numBlocks), 1)
+		num_mc_events = int(numBlocks*1024)
+
+
+		# -----------------------------------------------
+		# -----------------------------------------------
+		# set variables to means
+		# -----------------------------------------------
+		# -----------------------------------------------
+
+
+		g1_value, g2_value = self.l_means_g1_g2
+		
+		gas_gain_value = self.gas_gain_value
+		
+		gas_gain_width = self.gas_gain_width
+		
+		spe_res_value = self.spe_res_value
+		
+		s1_eff_par0, s1_eff_par1 = self.l_means_s1_eff_pars
+		
+		extraction_efficiency = g2_value / gas_gain_value
+		
+		exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0
+		
+		intrinsic_res_s1 = 0.05
+		intrinsic_res_s2 = 0.34
+
+
+
+		# -----------------------------------------------
+		# -----------------------------------------------
+		# run MC
+		# -----------------------------------------------
+		# -----------------------------------------------
+
+		# hard-code nuissance parameters
+		#g1_rv, spe_res_rv, g2_rv, gas_gain_rv, gas_gain_width_rv, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0, 0, 0, 0, 0, 0
+
+
+		seed = np.asarray(int(time.time()*1000), dtype=np.int32)
+		num_trials = np.asarray(num_mc_events, dtype=np.int32)
+		mean_field = np.asarray(self.mean_field, dtype=np.float32)
+		num_spline_points = np.asarray(len(self.a_spline_energies), dtype=np.int32)
+		
+		a_spline_energies = np.asarray(self.a_spline_energies, dtype=np.float32)
+		a_spline_photon_yields = np.asarray(self.a_nest_photon_yields*(1.+deviation_from_nest), dtype=np.float32)
+		a_spline_charge_yields = np.asarray(self.a_nest_charge_yields*(1.+deviation_from_nest), dtype=np.float32)
+		
+		g1_value = np.asarray(g1_value, dtype=np.float32)
+		extraction_efficiency = np.asarray(extraction_efficiency, dtype=np.float32)
+		spe_res = np.asarray(spe_res_value, dtype=np.float32)
+		gas_gain_value = np.asarray(gas_gain_value, dtype=np.float32)
+		gas_gain_width = np.asarray(gas_gain_width, dtype=np.float32)
+		
+		intrinsic_res_s1 = np.asarray(intrinsic_res_s1, dtype=np.float32)
+		intrinsic_res_s2 = np.asarray(intrinsic_res_s2, dtype=np.float32)
+
+		exciton_to_ion_par0_rv = np.asarray(exciton_to_ion_par0_rv, dtype=np.float32)
+		exciton_to_ion_par1_rv = np.asarray(exciton_to_ion_par1_rv, dtype=np.float32)
+		exciton_to_ion_par2_rv = np.asarray(exciton_to_ion_par2_rv, dtype=np.float32)
+		
+		s1_eff_par0 = np.asarray(s1_eff_par0, dtype=np.float32)
+		s1_eff_par1 = np.asarray(s1_eff_par1, dtype=np.float32)
+
+		s2_eff_par0 = np.asarray(s2_eff_par0, dtype=np.float32)
+		s2_eff_par1 = np.asarray(s2_eff_par1, dtype=np.float32)
+		
+		a_band_cut = np.concatenate([self.a_lower_bound_pars_nr_band, self.a_upper_bound_pars_nr_band])
+		
+		# for histogram binning
+		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
+		gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.a_s1_bin_edges)
+		num_bins_s2 = np.asarray(self.s2_settings[0], dtype=np.int32)
+		gpu_bin_edges_s2 = pycuda.gpuarray.to_gpu(self.a_s2_bin_edges)
+		a_hist_2d = np.zeros(self.s1_settings[0]*self.s2_settings[0], dtype=np.int32)
+		
+		#print a_spline_photon_yields
+		#print self.a_nest_photon_yields
+		#print a_spline_charge_yields
+		#print self.a_nest_charge_yields
+		
+		#print s2_eff_par0, s2_eff_par1
+		
+	
+		try:
+			self.gpu_aEnergy
+		except:
+			self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.a_energy)
+		
+		
+		# for histogram
+		tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
+		
+		gpu_observables_func(*tArgs, **d_gpu_scale)
+		#print a_hist_2d[:4]
+
+		a_s1_s2_mc = np.reshape(a_hist_2d, (self.s1_settings[0], self.s2_settings[0])).T
+		
+
+
+		# -----------------------------------------------
+		# -----------------------------------------------
+		# Bin MC results and if requested draw
+		# comparison of data and MC
+		# -----------------------------------------------
+		# -----------------------------------------------
+
+
+		sum_mc = np.sum(a_s1_s2_mc, dtype=np.float32)
+		if sum_mc == 0 or scale_parameter <= 0:
+			return -np.inf
+
+		a_s1_s2_mc = np.multiply(a_s1_s2_mc, 1./scale_parameter)
+		
+
+		if draw_fit:
+
+			f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+			
+			s1_s2_data_plot = np.rot90(self.a_s1_s2)
+			s1_s2_data_plot = np.flipud(s1_s2_data_plot)
+			ax1.pcolormesh(self.a_s1_bin_edges, self.a_s2_bin_edges, s1_s2_data_plot)
+			
+			s1_s2_mc_plot = np.rot90(a_s1_s2_mc)
+			s1_s2_mc_plot = np.flipud(s1_s2_mc_plot)
+			ax2.pcolormesh(self.a_s1_bin_edges, self.a_s2_bin_edges, s1_s2_mc_plot)
+			#plt.colorbar()
+			
+			
+			c1 = Canvas(1400, 400)
+			c1.Divide(2)
+			
+			h_s1_data = Hist(*self.s1_settings, name='hS1_draw_data')
+			root_numpy.array2hist(self.a_s1_s2.sum(axis=1), h_s1_data)
+			
+			hS1MC = Hist(*self.s1_settings, name='hS1_draw_mc')
+			root_numpy.array2hist(a_s1_s2_mc.sum(axis=1), hS1MC)
+			
+			s1_scale_factor = h_s1_data.Integral() / float(hS1MC.Integral())
+			
+			g_s1_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s1_data)
+			g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=s1_scale_factor)
+			
+			g_s1_mc.SetFillColor(root.kBlue)
+			g_s1_mc.SetMarkerColor(root.kBlue)
+			g_s1_mc.SetLineColor(root.kBlue)
+			g_s1_mc.SetFillStyle(3005)
+			
+			g_s1_data.SetTitle('S1 Comparison')
+			g_s1_data.GetXaxis().SetTitle('S1 [PE]')
+			g_s1_data.GetYaxis().SetTitle('Counts')
+			
+			g_s1_data.SetLineColor(root.kRed)
+			g_s1_data.SetMarkerSize(0)
+			g_s1_data.GetXaxis().SetRangeUser(self.s1_settings[1], self.s1_settings[2])
+			g_s1_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s1_data.GetMaximum(), hS1MC.GetMaximum()))
+			
+			c1.cd(1)
+			g_s1_data.Draw('ap')
+			g_s1_mc.Draw('same')
+			g_s1_mc_band = g_s1_mc.Clone()
+			g_s1_mc_band.Draw('3 same')
+			
+			h_s2_data = Hist(*self.s2_settings, name='h_s2_draw_data')
+			root_numpy.array2hist(self.a_s1_s2.sum(axis=0), h_s2_data)
+			
+			h_s2_mc = Hist(*self.s2_settings, name='h_s2_draw_mc')
+			root_numpy.array2hist(a_s1_s2_mc.sum(axis=0), h_s2_mc)
+			
+			s2_scale_factor = h_s2_data.Integral() / float(h_s2_mc.Integral())
+			
+			g_s2_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_data)
+			g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=s2_scale_factor)
+			
+			g_s2_mc.SetFillColor(root.kBlue)
+			g_s2_mc.SetMarkerColor(root.kBlue)
+			g_s2_mc.SetLineColor(root.kBlue)
+			g_s2_mc.SetFillStyle(3005)
+			
+			g_s2_data.SetTitle('S2 Comparison')
+			g_s2_data.GetXaxis().SetTitle('S2 [PE]')
+			g_s2_data.GetYaxis().SetTitle('Counts')
+			
+			g_s2_data.SetLineColor(root.kRed)
+			g_s2_data.SetMarkerSize(0)
+			g_s2_data.GetXaxis().SetRangeUser(self.s2_settings[1], self.s2_settings[2])
+			g_s2_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s2_data.GetMaximum(), h_s2_mc.GetMaximum()))
+			
+			c1.cd(2)
+			g_s2_data.Draw('ap')
+			g_s2_mc.Draw('same')
+			g_s2_mc_band = g_s2_mc.Clone()
+			g_s2_mc_band.Draw('3 same')
+			
+			c1.Update()
+			
+			print 'Number of events in data: %f' % h_s1_data.Integral()
+			
+			plt.show()
+			#raw_input('Press enter to continue...')
+		
+		total_ln_likelihood = smart_log_likelihood(self.a_s1_s2.sum(axis=0), a_s1_s2_mc.sum(axis=0), num_mc_events)
+		total_ln_likelihood = total_ln_likelihood[0]
+		#print total_ln_likelihood
+		
+		if np.isnan(total_ln_likelihood):
+			return -np.inf
+		else:
+			return total_ln_likelihood
+
+
+
+
+	def wrapper_s2_trigger_efficiency_likeilihood(self, a_parameters, kwargs={}):
+		#print a_parameters
+		assert 'deviation_from_nest' in kwargs
+		return self.likelihood_s2_efficiency(*a_parameters, **kwargs)
+
+	
 
 
 
@@ -1128,7 +1362,7 @@ class nr_band_fitter(object):
 			num_dim = 30
 			print '\n\nFitting yields...\n\n'
 		else:
-			num_dim = 14
+			num_dim = 3
 			print '\n\nFitting trigger efficiency...\n\n'
 		
 		#l_guesses = [0. for j in xrange(num_dim)]
@@ -1171,7 +1405,10 @@ class nr_band_fitter(object):
 		if not loaded_prev_sampler:
 			starting_pos = self.initial_positions_nr_band_no_nest(num_walkers)
 			if efficiency_fit:
-				starting_pos = starting_pos[:, 16:]
+				#starting_pos = starting_pos[:, 16:]
+				ratio_mc_data = self.num_mc_events/float(self.num_data_points)
+				starting_pos = emcee.utils.sample_ball([ratio_mc_data, 75, 75], [0.2*ratio_mc_data, 5, 5], size=num_walkers)
+				#print starting_pos
 			
 			random_state = None
 			
@@ -1195,10 +1432,15 @@ class nr_band_fitter(object):
 		if not efficiency_fit:
 			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_no_nest, a=1.15, threads=num_threads, kwargs={})
 		else:
+			"""
 			a_forced_light_yields = self.a_nest_photon_yields*(1.+deviation_from_nest)
 			a_forced_charge_yields = self.a_nest_charge_yields*(1.+deviation_from_nest)
 			
 			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_force_yields, a=2., threads=num_threads, kwargs={'a_forced_light_yields':a_forced_light_yields, 'a_forced_charge_yields':a_forced_charge_yields})
+			"""
+
+			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_s2_trigger_efficiency_likeilihood, a=2., threads=num_threads, kwargs={'kwargs':{'deviation_from_nest':deviation_from_nest}})
+		
 
 
 		print '\n\nBeginning MCMC sampler\n\n'
@@ -1273,7 +1515,13 @@ if __name__ == '__main__':
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
 	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=0.99, py_1=5.51, py_2=6.25, py_3=6.53, py_4=8.36, py_5=9.36, py_6=10.82, py_7=10.21, qy_0=6.76, qy_1=4.53, qy_2=6.43, qy_3=5.19, qy_4=5.90, qy_5=5.40, qy_6=5.74, qy_7=4.41, intrinsic_res_s1=0.14, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=0.87, g2_value=20.89, gas_gain_rv=0.80, gas_gain_width_rv=0.13, s1_eff_par0=8.07, s1_eff_par1=0.95, s2_eff_par0=234.62, s2_eff_par1=85.79, exciton_to_ion_par0_rv=0.40, exciton_to_ion_par1_rv=0.30, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	test.likelihood_nr_band_no_nest(*a_free_par_guesses, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=30, num_threads=1, efficiency_fit=True, deviation_from_nest=0.)
+	#test.likelihood_nr_band_no_nest(*a_free_par_guesses, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	test.fit_nr_band_no_nest(num_steps=5, num_walkers=50, num_threads=1, efficiency_fit=True, deviation_from_nest=0.)
 	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=30, num_threads=1, efficiency_fit=False)
+
+
+	# simpler efficiency fitter
+	#test.likelihood_s2_efficiency(test.num_mc_events/test.num_data_points, 75, 75, 0, draw_fit=True)
+
+
 
