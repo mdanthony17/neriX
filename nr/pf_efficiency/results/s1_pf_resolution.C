@@ -1,14 +1,14 @@
 {
-//=========Macro generated from canvas: 2e15cd3b9bd2493ca4e17627de37f1ba/
-//=========  (Wed Jul 20 14:05:37 2016) by ROOT version5.34/26
-   TCanvas *2e15cd3b9bd2493ca4e17627de37f1ba = new TCanvas("2e15cd3b9bd2493ca4e17627de37f1ba", "",10,45,704,527);
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetHighLightColor(2);
-   2e15cd3b9bd2493ca4e17627de37f1ba->Range(-5,-0.625,45,0.625);
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetFillColor(0);
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetBorderMode(0);
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetBorderSize(2);
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetFrameBorderMode(0);
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 6bba912337df4e5bb9ad4bf039111c1e/
+//=========  (Fri Jul 22 12:44:51 2016) by ROOT version5.34/26
+   TCanvas *6bba912337df4e5bb9ad4bf039111c1e = new TCanvas("6bba912337df4e5bb9ad4bf039111c1e", "",10,45,704,527);
+   6bba912337df4e5bb9ad4bf039111c1e->SetHighLightColor(2);
+   6bba912337df4e5bb9ad4bf039111c1e->Range(-5,-0.625,45,0.625);
+   6bba912337df4e5bb9ad4bf039111c1e->SetFillColor(0);
+   6bba912337df4e5bb9ad4bf039111c1e->SetBorderMode(0);
+   6bba912337df4e5bb9ad4bf039111c1e->SetBorderSize(2);
+   6bba912337df4e5bb9ad4bf039111c1e->SetFrameBorderMode(0);
+   6bba912337df4e5bb9ad4bf039111c1e->SetFrameBorderMode(0);
    
    TH2F *h_pf_found = new TH2F("h_pf_found","Peak Finder Smearing",800,0,40,100,-0.5,0.5);
    h_pf_found->SetBinContent(1,1);
@@ -35013,7 +35013,82 @@ palette->SetTitleSize(0.035);
    pt->SetTextFont(42);
    TText *text = pt->AddText("Peak Finder Smearing");
    pt->Draw();
-   2e15cd3b9bd2493ca4e17627de37f1ba->Modified();
-   2e15cd3b9bd2493ca4e17627de37f1ba->cd();
-   2e15cd3b9bd2493ca4e17627de37f1ba->SetSelected(2e15cd3b9bd2493ca4e17627de37f1ba);
+   
+   TF1 *f_upper_std_curve = new TF1("f_upper_std_curve","[0]+[1]+[2]*exp(-x/[3])",0,40);
+   f_upper_std_curve->SetFillColor(19);
+   f_upper_std_curve->SetFillStyle(0);
+   f_upper_std_curve->SetLineColor(2);
+   f_upper_std_curve->SetLineWidth(2);
+   f_upper_std_curve->SetLineStyle(3);
+   f_upper_std_curve->GetXaxis()->SetLabelFont(42);
+   f_upper_std_curve->GetXaxis()->SetLabelSize(0.035);
+   f_upper_std_curve->GetXaxis()->SetTitleSize(0.035);
+   f_upper_std_curve->GetXaxis()->SetTitleFont(42);
+   f_upper_std_curve->GetYaxis()->SetLabelFont(42);
+   f_upper_std_curve->GetYaxis()->SetLabelSize(0.035);
+   f_upper_std_curve->GetYaxis()->SetTitleSize(0.035);
+   f_upper_std_curve->GetYaxis()->SetTitleFont(42);
+   f_upper_std_curve->SetParameter(0,0.0353075);
+   f_upper_std_curve->SetParError(0,0);
+   f_upper_std_curve->SetParLimits(0,0,0);
+   f_upper_std_curve->SetParameter(1,0.01467304);
+   f_upper_std_curve->SetParError(1,0);
+   f_upper_std_curve->SetParLimits(1,0,0);
+   f_upper_std_curve->SetParameter(2,0.5284061);
+   f_upper_std_curve->SetParError(2,0);
+   f_upper_std_curve->SetParLimits(2,0,0);
+   f_upper_std_curve->SetParameter(3,4.322827);
+   f_upper_std_curve->SetParError(3,0);
+   f_upper_std_curve->SetParLimits(3,0,0);
+   f_upper_std_curve->Draw("same");
+   
+   TF1 *f_lower_std_curve = new TF1("f_lower_std_curve","[0]-[1]-[2]*exp(-x/[3])",0,40);
+   f_lower_std_curve->SetFillColor(19);
+   f_lower_std_curve->SetFillStyle(0);
+   f_lower_std_curve->SetLineColor(2);
+   f_lower_std_curve->SetLineWidth(2);
+   f_lower_std_curve->SetLineStyle(3);
+   f_lower_std_curve->GetXaxis()->SetLabelFont(42);
+   f_lower_std_curve->GetXaxis()->SetLabelSize(0.035);
+   f_lower_std_curve->GetXaxis()->SetTitleSize(0.035);
+   f_lower_std_curve->GetXaxis()->SetTitleFont(42);
+   f_lower_std_curve->GetYaxis()->SetLabelFont(42);
+   f_lower_std_curve->GetYaxis()->SetLabelSize(0.035);
+   f_lower_std_curve->GetYaxis()->SetTitleSize(0.035);
+   f_lower_std_curve->GetYaxis()->SetTitleFont(42);
+   f_lower_std_curve->SetParameter(0,0.0353075);
+   f_lower_std_curve->SetParError(0,0);
+   f_lower_std_curve->SetParLimits(0,0,0);
+   f_lower_std_curve->SetParameter(1,0.01467304);
+   f_lower_std_curve->SetParError(1,0);
+   f_lower_std_curve->SetParLimits(1,0,0);
+   f_lower_std_curve->SetParameter(2,0.5284061);
+   f_lower_std_curve->SetParError(2,0);
+   f_lower_std_curve->SetParLimits(2,0,0);
+   f_lower_std_curve->SetParameter(3,4.322827);
+   f_lower_std_curve->SetParError(3,0);
+   f_lower_std_curve->SetParLimits(3,0,0);
+   f_lower_std_curve->Draw("same");
+   
+   TF1 *f_bias = new TF1("f_bias","[0]",0,40);
+   f_bias->SetFillColor(19);
+   f_bias->SetFillStyle(0);
+   f_bias->SetLineColor(2);
+   f_bias->SetLineWidth(2);
+   f_bias->SetLineStyle(2);
+   f_bias->GetXaxis()->SetLabelFont(42);
+   f_bias->GetXaxis()->SetLabelSize(0.035);
+   f_bias->GetXaxis()->SetTitleSize(0.035);
+   f_bias->GetXaxis()->SetTitleFont(42);
+   f_bias->GetYaxis()->SetLabelFont(42);
+   f_bias->GetYaxis()->SetLabelSize(0.035);
+   f_bias->GetYaxis()->SetTitleSize(0.035);
+   f_bias->GetYaxis()->SetTitleFont(42);
+   f_bias->SetParameter(0,0.0353075);
+   f_bias->SetParError(0,0);
+   f_bias->SetParLimits(0,0,0);
+   f_bias->Draw("same");
+   6bba912337df4e5bb9ad4bf039111c1e->Modified();
+   6bba912337df4e5bb9ad4bf039111c1e->cd();
+   6bba912337df4e5bb9ad4bf039111c1e->SetSelected(6bba912337df4e5bb9ad4bf039111c1e);
 }

@@ -1,14 +1,14 @@
 {
-//=========Macro generated from canvas: 5e6647397dc94e459ccea90b8394bd81/
-//=========  (Wed Jul 20 14:05:36 2016) by ROOT version5.34/26
-   TCanvas *5e6647397dc94e459ccea90b8394bd81 = new TCanvas("5e6647397dc94e459ccea90b8394bd81", "",10,45,704,527);
-   5e6647397dc94e459ccea90b8394bd81->SetHighLightColor(2);
-   5e6647397dc94e459ccea90b8394bd81->Range(-1.876875,-0.1375,16.89188,1.2375);
-   5e6647397dc94e459ccea90b8394bd81->SetFillColor(0);
-   5e6647397dc94e459ccea90b8394bd81->SetBorderMode(0);
-   5e6647397dc94e459ccea90b8394bd81->SetBorderSize(2);
-   5e6647397dc94e459ccea90b8394bd81->SetFrameBorderMode(0);
-   5e6647397dc94e459ccea90b8394bd81->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 7e4d21352a284b2cbf1c3e8a84213a3c/
+//=========  (Fri Jul 22 12:44:51 2016) by ROOT version5.34/26
+   TCanvas *7e4d21352a284b2cbf1c3e8a84213a3c = new TCanvas("7e4d21352a284b2cbf1c3e8a84213a3c", "",10,45,704,527);
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetHighLightColor(2);
+   7e4d21352a284b2cbf1c3e8a84213a3c->Range(-1.876875,-0.1375,16.89188,1.2375);
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetFillColor(0);
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetBorderMode(0);
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetBorderSize(2);
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetFrameBorderMode(0);
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetFrameBorderMode(0);
    
    TGraphAsymmErrors *grae = new TGraphAsymmErrors(400);
    grae->SetName("eff_graph");
@@ -883,7 +883,7 @@
    pt->SetTextFont(42);
    text = pt->AddText("S1 Peak Finder Efficiency");
    pt->Draw();
-   5e6647397dc94e459ccea90b8394bd81->Modified();
-   5e6647397dc94e459ccea90b8394bd81->cd();
-   5e6647397dc94e459ccea90b8394bd81->SetSelected(5e6647397dc94e459ccea90b8394bd81);
+   7e4d21352a284b2cbf1c3e8a84213a3c->Modified();
+   7e4d21352a284b2cbf1c3e8a84213a3c->cd();
+   7e4d21352a284b2cbf1c3e8a84213a3c->SetSelected(7e4d21352a284b2cbf1c3e8a84213a3c);
 }

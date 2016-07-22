@@ -7,9 +7,10 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 from rootpy.io import root_open, File
 import numpy as np
 from tqdm import tqdm
+import root_numpy
 
 if(len(sys.argv) != 2):
-	print 'Usage is s1_tac_correction.py <ROOT filename>'
+	print 'Usage is s2_trig_from_gas_gain.py <ROOT filename>'
 	sys.exit(1)
 	
 filename = sys.argv[1]
@@ -17,18 +18,18 @@ filename = sys.argv[1]
 
 current_analysis = neriX_analysis.neriX_analysis(filename)
 
-lowTimeDiff = 50
-highTimeDiff = 100
-
-
 
 #--------------- Start Parameters to Change ----------------
 
+l_s2_settings = [50, 0, 2000]
 
-#parameterToExamineS1 = 'S1sTotBottom[0]'
-lowerBoundS2 = 0
-upperBoundS2 = 4000
-nBinsS1 = 20
+l_s2_time_diff = [100, 0.5, 20] # us
+s2_time_diff_branch = '(S2sPeak[] - S2sPeak[0])/100.'
+
+l_s2_width_settings = [50, 0, 400]
+s2_width_branch = 'S2sLowWidth[]'
+
+l_s2_trig_time_diff = [100, -500, 2000]
 
 
 #--------------- End Parameters to Change ----------------
@@ -36,10 +37,133 @@ nBinsS1 = 20
 #tof_analysis.get_T1().Scan('EventId:TrigLeftEdge-S1sPeak[0]:S1sTotBottom[0]', 'S1sTotBottom[0] > 20')
 
 
-c1 = root.TCanvas('c1','c1',200,10,1000,700)
-c1.SetGridx()
-c1.SetGridy()
+c_s2_time_diff = Canvas()
+c_s2_time_diff.SetGridx()
+c_s2_time_diff.SetGridy()
 
+#current_analysis.add_cut('(S2sTot[1]/S2sTot[0])<0.02')
+#current_analysis.add_cut('S2sPeak[] != S2sPeak[0]')
+
+h_s2_time_diff = Hist(*l_s2_time_diff, name='h_s2_time_diff')
+current_analysis.Draw(s2_time_diff_branch, hist=h_s2_time_diff, selection=current_analysis.get_cuts())
+h_s2_time_diff.SetStats(0)
+h_s2_time_diff.SetMarkerSize(0)
+h_s2_time_diff.Draw()
+
+c_s2_time_diff.Update()
+
+
+lb_s2_time_diff_cut = 15#float(raw_input('\nPlease enter the lower bound of the cathode cut: '))
+ub_s2_time_diff_cut = 17#float(raw_input('\nPlease enter the upper bound of the cathode cut: '))
+
+#s_s2_time_diff_cut = '(%s > %f && %s < %f)' % (s2_time_diff_branch, lb_s2_time_diff_cut, s2_time_diff_branch, ub_s2_time_diff_cut)
+
+#current_analysis.add_cut(s_s2_time_diff_cut)
+current_analysis.set_event_list()
+
+
+c_s2_width = Canvas()
+
+h_s2_width = Hist(*l_s2_width_settings, name='h_s2_width')
+current_analysis.Draw(s2_width_branch, hist=h_s2_width, selection=current_analysis.get_cuts())
+h_s2_width.SetStats(0)
+h_s2_width.SetMarkerSize(0)
+
+h_s2_width.Draw()
+
+
+c_s2_tot_bottom = Canvas()
+
+h_s2_tot_bottom = Hist(*l_s2_settings, name='h_s2_tot_bottom')
+current_analysis.Draw('S2sTotBottom[0]', hist=h_s2_tot_bottom, selection=current_analysis.get_cuts())
+h_s2_tot_bottom.SetStats(0)
+h_s2_tot_bottom.SetMarkerSize(0)
+
+h_s2_tot_bottom.Draw()
+
+
+c_s2_tot_bottom.Update()
+
+current_analysis.get_T1().Scan('EventId:S2sTotBottom[0]', 'S2sTotBottom[0] < 200')
+
+
+h_s2_spec_no_trig_cut = Hist(*l_s2_settings, name='h_s2_spec_no_trig_cut')
+h_s2_spec_no_trig_cut.SetStats(0)
+h_s2_spec_no_trig_cut.SetColor(root.kBlue)
+h_s2_spec_no_trig_cut.SetMarkerSize(0)
+
+h_s2_spec_with_trig_cut = Hist(*l_s2_settings, name='h_s2_spec_with_trig_cut')
+h_s2_spec_with_trig_cut.SetStats(0)
+h_s2_spec_with_trig_cut.SetColor(root.kRed)
+h_s2_spec_with_trig_cut.SetMarkerSize(0)
+
+h_s2_trig_time_diff = Hist(*l_s2_trig_time_diff, name='h_s2_trig_time_diff')
+h_s2_trig_time_diff.SetStats(0)
+h_s2_trig_time_diff.SetColor(root.kBlue)
+h_s2_trig_time_diff.SetMarkerSize(0)
+
+
+#num_events = current_analysis.get_num_events_before_cuts()
+num_events = 10000
+for i in tqdm(xrange(num_events)):
+
+	current_analysis.get_T1().GetEntry(i)
+	current_analysis.get_T2().GetEntry(i)
+
+	l_s2_peak = list(current_analysis.get_T1().S2sPeak)
+	l_s2_tot_bottom = list(current_analysis.get_T2().S2sTotBottom)
+	l_trig_left_edge = list(current_analysis.get_T1().TrigLeftEdge)
+
+	if len(l_s2_peak) < 2:
+		continue
+
+	for peak_num, peak_location in enumerate(l_s2_peak):
+		if peak_num == 0:
+			continue
+
+		#if (peak_location-l_s2_peak[0])/100. < lb_s2_time_diff_cut or (peak_location-l_s2_peak[0])/100. > ub_s2_time_diff_cut:
+		if (peak_location-l_s2_peak[0]) < 2000:
+			continue
+
+		h_s2_spec_no_trig_cut.Fill(l_s2_tot_bottom[peak_num])
+		#print i
+
+		# short cut to check if there is a trigger late in the waveform
+		if len(l_trig_left_edge) == 1:
+			continue
+
+		for trigger in l_trig_left_edge:
+		
+			h_s2_trig_time_diff.Fill(trigger - peak_location)
+			
+			#print len(l_trig_left_edge)
+			#print trigger
+			#print peak_location
+			if (trigger - peak_location) > -50 and (trigger - peak_location) < 50:
+				#print l_s2_tot_bottom[peak_num]
+				h_s2_spec_with_trig_cut.Fill(l_s2_tot_bottom[peak_num])
+
+
+
+c_cut_comparison = Canvas()
+
+h_s2_spec_no_trig_cut.Draw()
+h_s2_spec_with_trig_cut.Draw('same')
+
+c_cut_comparison.Update()
+
+c_s2_trig_time_diff = Canvas()
+
+h_s2_trig_time_diff.Draw()
+
+c_s2_trig_time_diff.Update()
+
+raw_input('Press enter to continue')
+
+
+
+
+"""
 
 hNoCut = Hist(nBinsS1, lowerBoundS2, upperBoundS2, name='s2_spec_no_trig_cut', title='s1_spec_no_trig_cut', drawstyle='hist')
 
@@ -148,7 +272,9 @@ c1.Update()
 
 
 
-raw_input('Enter to continue...')
+
+"""
+"""
 
 response = raw_input('Would you like to save the histograms used for TEfficiency for later analysis?  Press "y" to proceed, otherwise press anything: ')
 
@@ -161,4 +287,4 @@ if response == 'y':
 
 	#sCuts = root.TObjString('cuts_used')
 	#sCuts.Write(current_analysis.get_cuts(), root.TObject.kOverwrite)
-
+"""

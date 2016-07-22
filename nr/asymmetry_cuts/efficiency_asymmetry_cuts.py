@@ -48,7 +48,7 @@ if(len(sys.argv) != 2):
 	sys.exit(1)
 
 file1 = sys.argv[1]
-currentAnalysis = neriX_analysis.neriX_analysis(file1)
+current_analysis = neriX_analysis.neriX_analysis(file1)
 
 
 #choose options
@@ -57,24 +57,32 @@ optionSame = 'SAME'
 
 
 #choose cuts for run 1
-currentAnalysis.add_z_cut()
-currentAnalysis.add_radius_cut(0, 0.85)
-currentAnalysis.add_cut('%s < %f && %s < %f' % (s1Branch, s1Max, s2Branch, s2Max))
-#currentAnalysis.add_cut('log10(%s/%s) < 3.5' % (s2Branch, s1Branch)) # no NR band events above this cut so safe
+current_analysis.add_z_cut()
+current_analysis.add_radius_cut(0, 0.85)
+#current_analysis.add_cut('S1sCoin[0] > 1')
+current_analysis.add_cut('log10((S1Tot + S2Tot)/(AreaTot - S1Tot - S2Tot)) > 0.')
+current_analysis.add_cut('%s < %f && %s < %f' % (s1Branch, s1Max, s2Branch, s2Max))
+#current_analysis.add_cut('log10(%s/%s) < 3.5' % (s2Branch, s1Branch)) # no NR band events above this cut so safe
+#current_analysis.add_cut('%s < %f' % (s2Branch, 500))
 
 # cuts to test
-currentAnalysis.add_single_scatter_cut()
-currentAnalysis.add_xs1asym_cut()
-currentAnalysis.add_xs2asym_cut()
+current_analysis.add_single_scatter_cut()
+current_analysis.add_xs1asym_cut()
+current_analysis.add_xs2asym_cut()
+
+current_analysis.add_cut('%s < %f*exp(-%s/%f)+%f' % (s2_asym_branch, -0.5, s2Branch, 400, 0.4))
 
 
-currentAnalysis.set_event_list()
+current_analysis.set_event_list()
 
+
+#current_analysis.get_T1().Scan('EventId:S1sPeak[0]:%s:S2sPeak[0]:%s' % (s1Branch, s2Branch), '%s < 4 && %s > 1250 && %s < 1500' % (s1Branch, s2Branch, s2Branch))
 
 # create functions for cuts
 
 f_s1_asym = root.TF1('f_s1_asym', '-1.4*exp(-x/10.)+0.4', s1Min, s1Max)
 f_s2_asym = root.TF1('f_s2_asym', '-0.9*exp(-x/400.)-0.05', s2Min, s2Max)
+f_s2_asym_upper = root.TF1('f_s2_asym_upper', '-0.5*exp(-x/400.)+0.4', s2Min, s2Max)
 f_log_s1_s2 = root.TF1('f_log_s1_s2', '[0]*exp(-x/[1])+[2]', s1FitMin, s1Max)
 
 
@@ -82,10 +90,10 @@ f_log_s1_s2 = root.TF1('f_log_s1_s2', '[0]*exp(-x/[1])+[2]', s1FitMin, s1Max)
 
 c1 = Canvas(name='c1', title='c1', width=600, height=500)
 
-#create histograms for currentAnalysis
+#create histograms for current_analysis
 
 h_s1_asym = Hist2D(s1NumBins, s1Min, s1Max, asym_num_bins, asym_low, asym_high, name='h_s1_asym', title='S1 vs S1 Asymmetry - ' + file1)
-currentAnalysis.Draw('%s:%s' % (s1Branch, s1_asym_branch), hist=h_s1_asym, selection=currentAnalysis.get_cuts())
+current_analysis.Draw('%s:%s' % (s1Branch, s1_asym_branch), hist=h_s1_asym, selection=current_analysis.get_cuts())
 h_s1_asym.GetXaxis().SetTitle('%s [PE]' % (s1Branch))
 h_s1_asym.GetYaxis().SetTitle('%s' % (s1_asym_branch))
 h_s1_asym.SetStats(0)
@@ -101,16 +109,17 @@ c1.Update()
 
 c2 = Canvas(name='c2', title='c2', width=600, height=500)
 
-#create histograms for currentAnalysis
+#create histograms for current_analysis
 
 h_s2_asym = Hist2D(s2NumBins, s2Min, s2Max, asym_num_bins, asym_low, asym_high, name='h_s2_asym', title='S2 vs S2 Asymmetry - ' + file1)
-currentAnalysis.Draw('%s:%s' % (s2Branch, s2_asym_branch), hist=h_s2_asym, selection=currentAnalysis.get_cuts())
-h_s2_asym.GetXaxis().SetTitle('%s [PE]' % (s1Branch))
-h_s2_asym.GetYaxis().SetTitle('%s' % (s1_asym_branch))
+current_analysis.Draw('%s:%s' % (s2Branch, s2_asym_branch), hist=h_s2_asym, selection=current_analysis.get_cuts())
+h_s2_asym.GetXaxis().SetTitle('%s [PE]' % (s2Branch))
+h_s2_asym.GetYaxis().SetTitle('%s' % (s2_asym_branch))
 h_s2_asym.SetStats(0)
 h_s2_asym.Draw('colz')
 
 f_s2_asym.Draw('same')
+f_s2_asym_upper.Draw('same')
 
 c2.SetLogz()
 c2.SetGridx()
@@ -124,10 +133,10 @@ c2.Update()
 
 c4 = Canvas(name='c4', title='c4', width=600, height=500)
 
-#create histograms for currentAnalysis
+#create histograms for current_analysis
 
 h_log_s1_s2 = Hist2D(s1NumBins, s1Min, s1Max, log_num_bins, log_low, log_high, name='h_log_s1_s2', title='Log10(S2/S1) vs S1 - ' + file1)
-currentAnalysis.Draw('%s:log10(%s/%s)' % (s1Branch, s2Branch, s1Branch), hist=h_log_s1_s2, selection=currentAnalysis.get_cuts())
+current_analysis.Draw('%s:log10(%s/%s)' % (s1Branch, s2Branch, s1Branch), hist=h_log_s1_s2, selection=current_analysis.get_cuts())
 h_log_s1_s2.GetXaxis().SetTitle('%s [PE]' % (s1Branch))
 h_log_s1_s2.GetYaxis().SetTitle('Log(%s/%s)' % (s2Branch, s1Branch))
 h_log_s1_s2.SetStats(0)
@@ -177,17 +186,17 @@ c4.Update()
 # function for drawing
 
 s_log_cut = 'log10(%s/%s) < (%f*exp(-%s/%f) + %f)' % (s2Branch, s1Branch, f_log_s1_s2.GetParameter(0), s1Branch, f_log_s1_s2.GetParameter(1), f_log_s1_s2.GetParameter(2))
-currentAnalysis.add_cut(s_log_cut)
+#current_analysis.add_cut(s_log_cut)
 
 
 
 
 c3 = Canvas(name='c3', title='c3', width=600, height=500)
 
-#create histograms for currentAnalysis
+#create histograms for current_analysis
 
 h_s1_s2 = Hist2D(s1NumBins, s1Min, s1Max, s2NumBins, s2Min, s2Max, name='h_s1_s2', title='S1 vs S2 - ' + file1)
-currentAnalysis.Draw('%s:%s' % (s1Branch, s2Branch), hist=h_s1_s2, selection=currentAnalysis.get_cuts())
+current_analysis.Draw('%s:%s' % (s1Branch, s2Branch), hist=h_s1_s2, selection=current_analysis.get_cuts())
 h_s1_s2.GetXaxis().SetTitle('%s [PE]' % (s1Branch))
 h_s1_s2.GetYaxis().SetTitle('%s [PE]' % (s2Branch))
 h_s1_s2.SetStats(0)
