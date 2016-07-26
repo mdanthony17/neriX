@@ -1,0 +1,1265 @@
+
+import matplotlib
+matplotlib.use('QT4Agg')
+import ROOT as root
+from ROOT import gROOT
+import sys, os, root_numpy, threading, random, emcee, corner, signal
+from rootpy import stl
+from rootpy.io import File
+from rootpy.tree import Tree, TreeModel, TreeChain
+from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
+import neriX_simulation_datasets, neriX_simulation_config, neriX_analysis, neriX_datasets
+import neriX_simulation_datasets
+import numpy as np
+from math import exp, factorial, erf, ceil, log, pow, floor
+from scipy import optimize, misc, stats
+from scipy.stats import norm
+import copy_reg, types, pickle, click, time
+from subprocess import call
+from pprint import pprint
+from produce_nest_yields import nest_nr_mean_yields
+from scipy.stats import multivariate_normal
+
+import cuda_full_observables_production
+from pycuda.compiler import SourceModule
+import pycuda.driver as drv
+import pycuda.tools
+import pycuda.gpuarray
+
+#drv.init()
+#dev = drv.Device(0)
+#ctx = dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
+import pycuda.autoinit
+
+#gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production')
+gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production_with_log_hist_spline')
+
+
+import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
+import rootpy.compiled as C
+from numpy.random import normal, binomial, seed, poisson
+from rootpy.plotting import root2matplotlib as rplt
+
+#import gc
+#gc.disable()
+
+"""
+import warnings
+#warnings.filterwarnings('error')
+# this turns runtime warnings into errors to
+# catch unexpected behavior
+warnings.simplefilter('error', RuntimeWarning)
+# this turns off a deprecation warning in general but aimed
+# at corners plot creation (should try to only put there)
+# and move back to all warnings as errors)
+warnings.simplefilter('ignore', DeprecationWarning)
+warnings.simplefilter('ignore', FutureWarning)
+"""
+
+# MUST INCLUDE TYPES TO AVOID SEG FAULT
+stl.vector(stl.vector('float'))
+stl.vector(stl.vector('double'))
+stl.vector(stl.vector('int'))
+
+
+# create dot product in c++ for speed
+# and thread safety
+
+C.register_file('../../../python_modules/mc_code/c_safe_dot.C', ['safe_dot'])
+C.register_file('../../../python_modules/mc_code/c_full_observables_production.C', ['full_matching_loop'])
+
+
+c_full_matching_loop = C.full_matching_loop
+
+
+def reduce_method(m):
+	return (getattr, (m.__self__, m.__func__.__name__))
+
+
+
+def integrate_normalized_gaussian(leftEdge, rightEdge, mu, sigma):
+	try:
+		return 0.5*(erf( (rightEdge - mu) / (2.**0.5 * sigma))  -  erf( (leftEdge - mu) / (2.**0.5 * sigma)))
+	except:
+		return 0.
+
+
+def safe_poisson(mean):
+	try:
+		return True, poisson(mean)
+	except:
+		return False, 0
+
+
+
+def safe_binomial(numberOfTrials, probabiltyOfSuccess):
+	try:
+		return True, binomial(numberOfTrials, probabiltyOfSuccess)
+	except:
+		return False, 0
+
+
+
+def safe_normal(mean, sigma):
+	try:
+		return True, normal(mean, sigma)
+	except:
+		return False, 0
+
+
+
+def smart_log_likelihood(aData, aMC, num_mc_events, confidenceIntervalLimit=0.95):
+	totalLogLikelihood = 0.
+	for (data, mc) in zip(aData, aMC):
+		if mc == 0 and data != 0:
+			# use 95% confidence interval
+			# confidenceIntervalLimit = 1 - probability of the zero occuring
+			probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./num_mc_events)
+			totalLogLikelihood += smart_log(smart_binomial(data, num_mc_events, probabiltyOfSuccess))
+		else:
+			totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+
+	return totalLogLikelihood
+
+
+
+def smart_log_likelihood_quantiles(aData, aMC, num_mc_events, aS1BinCenters, aS2BinCenters, lowerQuantileS1, upperQuantileS1, lowerQuantileS2, upperQuantileS2, confidenceIntervalLimit=0.95):
+	totalLogLikelihood = 0.
+	
+	try:
+		aMC = aMC*np.sum(aData)/np.sum(aMC)
+	except:
+		return -np.inf
+	
+	for s1_index, s1_value in enumerate(aS1BinCenters):
+		if s1_value < lowerQuantileS1:
+			continue
+		if s1_value > upperQuantileS1:
+			break
+		for s2_index, s2_value in enumerate(aS2BinCenters):
+			if s2_value < lowerQuantileS2:
+				continue
+			if s2_value > upperQuantileS2:
+				break
+
+			# other wise calculate as you normally would
+			data, mc = aData[s1_index, s2_index], aMC[s1_index, s2_index]
+			if mc == 0 and data != 0:
+				# use 95% confidence interval
+				# confidenceIntervalLimit = 1 - probability of the zero occuring
+				probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./num_mc_events)
+				totalLogLikelihood += smart_log(smart_binomial(data, num_mc_events, probabiltyOfSuccess))
+			else:
+				totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+
+	return totalLogLikelihood
+
+
+
+
+def smart_stirling(lInput):
+	if not hasattr(lInput, '__iter__'):
+		lInput = [lInput]
+	aOutput = np.array(lInput)
+	for index, input in enumerate(lInput):
+		if input < 10:
+			aOutput[index] = np.log(factorial(input))
+		else:
+			aOutput[index] = input*np.log(input) - input
+	return aOutput
+
+
+def smart_log(lInput):
+	if not hasattr(lInput, '__iter__'):
+		lInput = [lInput]
+	aOutput = np.array(lInput)
+	for index, input in enumerate(lInput):
+		if input < 1e-310:
+			aOutput[index] = -1000
+		else:
+			aOutput[index] = np.log(input)
+	return aOutput
+
+
+def smart_binomial(numberOfSucceses, numberOfTrials, probabiltyOfSuccess):
+	"""
+	if not hasattr(numberOfSucceses, '__iter__'):
+		numberOfSucceses = [numberOfSucceses]
+	if not hasattr(numberOfTrials, '__iter__'):
+		numberOfTrials = [numberOfTrials]
+	"""
+	nChooseK = smart_stirling(numberOfTrials) - smart_stirling(numberOfSucceses) - smart_stirling(numberOfTrials - numberOfSucceses)
+	probabilityTerm = numberOfSucceses*smart_log(probabiltyOfSuccess) + (numberOfTrials-numberOfSucceses)*smart_log(1.-probabiltyOfSuccess)
+	if nChooseK + probabilityTerm < -10:
+		return 0
+	else:
+		return np.exp(nChooseK + probabilityTerm)
+
+
+
+
+
+
+class fit_nr(object):
+	def __init__(self, d_coincidence_data, d_band_data=None, free_exciton_to_ion_ratio=False, num_mc_events=500000, name_notes=None):
+	
+		# d_coincidence_data should be in the following form:
+		# d_coincidence_data['degree_settings'] = [2300, 3000, ...]
+		# d_coincidence_data['cathode_settings'] = [0.345, 1.054, ...]
+		# d_coincidence_data['cathode_settings'] = [4.5]
+	
+		copy_reg.pickle(types.MethodType, reduce_method)
+		
+		self.num_mc_events = int(num_mc_events)
+		
+		
+		# ------------------------------------------------
+		# ------------------------------------------------
+		# Set paths and allowed values
+		# ------------------------------------------------
+		# ------------------------------------------------
+		
+
+		l_allowed_degree_settings = [2300, 3000, 3500, 4500, 5300, 6200]
+		l_allowed_cathode_settings = [0.345, 1.054, 2.356]
+		l_allowed_anode_settings = [4.5]
+
+		self.d_cathode_voltages_to_field = {0.345:190,
+									   1.054:490,
+									   2.356:1020} # in kV:V/cm
+		self.d_degree_setting_to_energy_name = {2300:3,
+										   3000:5,
+										   3500:7,
+										   4500:10,
+										   5300:15,
+										   6200:20} # colloquial names of each
+		self.d_degree_setting_to_mean_energy = {2300:2.96,
+										   3000:4.93,
+										   3500:6.61,
+										   4500:9.76,
+										   5300:13.88,
+										   6200:17.50} # actual energies that degree corresponds to
+
+		self.name_notes = name_notes
+		self.path_to_coincidence_data = '../analysis/full_angle_files/'
+		self.path_to_energy_spectra = './simulated_data/'
+		self.path_to_reduced_energy_spectra = './reduced_simulation_data/'
+
+		self.l_energy_settings = [300, 0, 30]
+
+
+		# ------------------------------------------------
+		# ------------------------------------------------
+		# Get information for data
+		# ------------------------------------------------
+		# ------------------------------------------------
+
+
+		self.d_coincidence_data_information = {}
+		
+		# get all degrees and cathode settings and sort
+		self.l_degree_settings_in_use = sorted(d_coincidence_data['degree_settings'])
+		self.l_cathode_settings_in_use = sorted(d_coincidence_data['cathode_settings'])
+		
+		for cathode_setting in self.l_cathode_settings_in_use:
+			self.d_coincidence_data_information[cathode_setting] = {}
+			for degree_setting in self.l_degree_settings_in_use:
+				self.d_coincidence_data_information[cathode_setting][degree_setting] = {}
+				
+				# add basic information to dictionary
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['file'] = File('%sresults_%.3fkV_%ddeg.root' % (self.path_to_coincidence_data, cathode_setting, degree_setting), 'read')
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hS1
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['s2_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hS2
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_s2_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hS1S2
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['log_s2_s1_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hLogS2S1
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'] = neriX_analysis.convert_2D_hist_to_matrix(self.d_coincidence_data_information[cathode_setting][degree_setting]['log_s2_s1_hist'], dtype=np.float32)
+		
+		# grab S1, S2, and log settings of any histogram
+		# since they should all be the same
+		h_first_s1 = self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['s1_hist']
+		h_first_s2 = self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['s2_hist']
+		h_first_log_s2_s1 = self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['log_s2_s1_hist']
+		
+		self.l_s1_settings = [h_first_s1.GetNbinsX(), h_first_s1.GetXaxis().GetXmin(), h_first_s1.GetXaxis().GetXmax()]
+		self.l_s2_settings = [h_first_s2.GetNbinsX(), h_first_s2.GetXaxis().GetXmin(), h_first_s2.GetXaxis().GetXmax()]
+		self.l_log_settings = [h_first_log_s2_s1.nbins(1), h_first_log_s2_s1.GetYaxis().GetXmin(), h_first_log_s2_s1.GetYaxis().GetXmax()]
+		
+		
+		# define bin edges for use in MC
+		self.a_s1_bin_edges = np.linspace(self.l_s1_settings[1], self.l_s1_settings[2], num=self.l_s1_settings[0]+1, dtype=np.float32)
+		self.a_s2_bin_edges = np.linspace(self.l_s2_settings[1], self.l_s2_settings[2], num=self.l_s2_settings[0]+1, dtype=np.float32)
+		self.a_log_bin_edges = np.linspace(self.l_log_settings[1], self.l_log_settings[2], num=self.l_log_settings[0]+1, dtype=np.float32)
+		
+		print self.l_s1_settings, self.l_s2_settings, self.l_log_settings
+		
+		# ------------------------------------------------
+		# ------------------------------------------------
+		# Check that given settings are appropriate
+		# ------------------------------------------------
+		# ------------------------------------------------
+		
+		
+		for cathode_setting in self.l_cathode_settings_in_use:
+			assert cathode_setting in l_allowed_cathode_settings, '%.3f kV is not an allowed cathode setting: %s' % (cathode_setting, str(self.l_allowed_cathode_settings))
+		
+		for degree_setting in self.l_degree_settings_in_use:
+			assert degree_setting in l_allowed_degree_settings, '%d deg is not an allowed degree setting: %s' % (degree_setting, str(self.l_allowed_degree_settings))
+		
+		
+		
+		# set whether or not we can fit electron to ion ratio
+		if len(self.l_cathode_settings_in_use) == 1 and not free_exciton_to_ion_ratio:
+			print '\nCannot fit exciton to ion ratio with only one field - setting as a nuissance parameter.\n'
+			self.free_exciton_to_ion_ratio = False
+		else:
+			print '\nCurrently not setup to handle free exciton to ion ratio so setting to nuissance parameter.\n'
+			self.free_exciton_to_ion_ratio = False
+		
+		
+		
+		# ------------------------------------------------
+		# ------------------------------------------------
+		# Load MC files or create reduced file if not present
+		# and load into easy_graph
+		# ------------------------------------------------
+		# ------------------------------------------------
+
+		self.load_mc_data('MC')
+		
+		# fill energy array
+		self.fill_energy_array(view_energy_spectrum=False)
+
+
+		#print self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]
+
+
+
+		# ------------------------------------------------
+		# ------------------------------------------------
+		# Set default parameter values for use in MC
+		# ------------------------------------------------
+		# ------------------------------------------------
+		
+		
+		neriX_analysis.warning_message('Detector parameters hard-coded')
+		
+		self.l_means_g1_g2 = [0.12961637894547148, 20.88715549107226]
+		self.l_cov_matrix_g1_g2 = [[3.6039167387306653e-06, 0.00057442202683395834], [0.00057442202683395834, 0.093143781598001851]]
+		
+		self.gas_gain_value = 21.85
+		self.gas_gain_uncertainty = 0.3
+		
+		self.gas_gain_width = 9.2
+		self.gas_gain_width_uncertainty = 0.3
+		
+		self.spe_res_value = 0.66
+		self.spe_res_uncertainty = 0.2
+		
+		self.l_means_pf_stdev_pars = [0.014673497158526188, 0.5284272187436192, 4.3229124008196411]
+		self.l_cov_matrix_pf_stdev_pars = [[9.4927705182690691e-10, 2.352933249729148e-08, -2.4920029049639913e-07], [2.352933249729148e-08, 4.8381636138100317e-06, -1.7993529191388666e-05], [-2.4920029049639913e-07, -1.7993529191388666e-05, 0.00013121519103705991]]
+		
+		self.l_means_pf_eff_pars = [1.96178522, 0.46718076]
+		self.l_cov_matrix_pf_eff_pars = [[7.58956686e-05, 9.78759376e-07], [9.78759376e-07, 2.79732862e-05]]
+		
+		# only for producing initial distribution
+		# NOT FOR LIKELIHOOD
+		self.l_means_s1_eff_pars = [3, 1.2] #[7.95634366, 0.59582331]
+		self.l_cov_matrix_s1_eff_pars = [[.3**2, 0], [0, .1**2]]
+		
+		# only for producing initial distribution
+		# NOT FOR LIKELIHOOD
+		self.l_means_s2_eff_pars = [150, 60]
+		self.l_cov_matrix_s2_eff_pars = [[ 80**2, 0], [0, 20**2]]
+		
+		
+		
+		
+		# -----------------------------------------------
+		# -----------------------------------------------
+		# set spline points in energy
+		# -----------------------------------------------
+		# -----------------------------------------------
+		
+		
+		#
+		
+		# will fill spline points dynamically since depends on
+		# energies given
+		l_spline_energies = [0.5]
+		for degree_setting in self.l_degree_settings_in_use:
+			l_spline_energies.append(self.d_degree_setting_to_mean_energy[degree_setting])
+		l_spline_energies.append(25.)
+		
+		self.a_spline_energies = np.asarray(l_spline_energies, dtype=np.float32)
+		
+		
+		print '\n\nEnergy Spline Points:\n'
+		pprint(list(self.a_spline_energies))
+		print '\n\n'
+	
+		self.a_nest_photon_yields = np.zeros(len(self.a_spline_energies), dtype=np.float32)
+		self.a_nest_charge_yields = np.zeros(len(self.a_spline_energies), dtype=np.float32)
+		for i in xrange(len(self.a_spline_energies)):
+			l_yields = nest_nr_mean_yields(self.a_spline_energies[i], self.d_cathode_voltages_to_field[cathode_setting])
+			self.a_nest_photon_yields[i] = l_yields[0]
+			self.a_nest_charge_yields[i] = l_yields[1]
+		
+		
+		
+		
+
+
+
+	def read_g1_from_file(self, g1_root_file):
+		return (0, 0)
+	
+	
+	
+	def read_g2_from_file(self, g2_root_file):
+		return (0, 0)
+	
+	
+	
+	def read_gas_gain_from_file(self, gas_gain_root_file):
+		return (0, 0)
+	
+	
+	
+	def fill_energy_array(self, view_energy_spectrum=False):
+		
+		random.seed()
+		
+		for cathode_setting in self.l_cathode_settings_in_use:
+			for degree_setting in self.l_degree_settings_in_use:
+		
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['a_energy'] = np.zeros(self.num_mc_events, dtype=np.float32)
+				for i in xrange(self.num_mc_events):
+					self.d_coincidence_data_information[cathode_setting][degree_setting]['a_energy'][i] = self.d_coincidence_data_information[cathode_setting][degree_setting]['h_energy'].GetRandom()
+						
+				if view_energy_spectrum:
+					cEnergySpec = Canvas()
+					hEnergySpec = self.hMC.empty_clone()
+					hEnergySpec.fill_array(self.aEnergy)
+					hEnergySpec.Draw()
+					cEnergySpec.Update()
+					raw_input('Press enter to continue...')
+					
+					del hEnergySpec
+					del cEnergySpec
+
+
+		
+
+
+	def load_mc_data(self, sFileType):
+	
+		for cathode_setting in self.l_cathode_settings_in_use:
+			for degree_setting in self.l_degree_settings_in_use:
+	
+	
+				# check if reduced file exists
+				current_path_to_reduced_energy_spectra = '%snerixsim-%dkeV.root' % (self.path_to_reduced_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
+				
+				
+				if not os.path.exists(current_path_to_reduced_energy_spectra):
+					# if the file doesn't exist we need to create it!
+				
+					# load the raw data file
+					current_path_to_energy_spectra = '%snerixsim-%dkeV.root' % (self.path_to_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
+					f_simulation = File(current_path_to_energy_spectra, 'read')
+
+					if sFileType == 'MC':
+
+						# set cuts
+						xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
+						xZ = '(zpos[0]>-20 && zpos[0]<-4)'
+						xSingleScatter = '(nsteps_target==1)'
+						xLiqSciHeight = '(etotliqsci>700)'
+						xLXeEnergy = '(etot_target>0)'
+						#xLXeEnergy = '(etot_target>0)'
+						xLXeEnergy = '(Alt$(ed_nr_target[1],-1)==-1 && ed_nr_target[0] > 0)'
+
+						#print 'No TOF cut!\n'
+						neriX_analysis.warning_message('Need to finalize how tof is chosen in MC data!')
+						xTOF = '(timeliqsci-tpos[0]>5 && timeliqsci-tpos[0]<40)'
+
+						xAll = '%s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLiqSciHeight, xLXeEnergy, xTOF)
+					
+					elif sFileType == 'MC_accidentals':
+						# set cuts
+						xRadius = '(sqrt(xpos[0]**2+ypos[0]**2) < 18)'
+						xZ = '(zpos[0]>-20 && zpos[0]<-4)'
+						xSingleScatter = '(nsteps_target==1)'
+						#xLXeEnergy = '(etot_target>0)' # this includes ER
+						xSingleScatter_2 = '(Alt$(ed_nr_target[1],-1)==-1)'
+						xLXeEnergy = '(ed_nr_target[0] > 0.)'
+
+						xAll = '%s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy, xSingleScatter_2)
+
+
+					# create and fill histogram
+					t_mc = f_simulation.t2
+					h_mc = Hist(*self.l_energy_settings, name='h_mc', title='Simulated Spectrum', drawstyle='hist')
+					#t_mc.Draw('etot_target', hist=hMC, selection=xAll)
+					t_mc.Draw('ed_nr_target[0]', hist=h_mc, selection=xAll)
+					h_mc.Sumw2()
+
+					# draw histogram to new file for quick retrieval
+					f_reduced = File(current_path_to_reduced_energy_spectra, 'recreate')
+					h_mc.Write()
+					f_reduced.Close()
+				
+					neriX_analysis.success_message('Created new reduced MC file!')
+				
+				
+
+				self.f_reduced = File(current_path_to_reduced_energy_spectra, 'read')
+				h_mc = self.f_reduced.h_mc
+				#g_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_mc)
+	
+				self.d_coincidence_data_information[cathode_setting][degree_setting]['h_energy'] = h_mc
+				#self.d_coincidence_data_information[cathode_setting][degree_setting]['g_energy'] = g_mc
+
+
+
+
+	def get_g1_g2_default(self, g1, g2):
+		return multivariate_normal.pdf([g1, g2], self.l_means_g1_g2, self.l_cov_matrix_g1_g2), g1, g2
+	
+	
+	
+	
+	# get likelihood and gas gain given random variable (nuissance parameter)
+	# gasGainRV should be normally distributed
+	def get_gas_gain_default(self, gasGainRV):
+		return norm.pdf(gasGainRV), self.gas_gain_value + (gasGainRV*self.gas_gain_uncertainty)
+	
+	
+	# get likelihood and gas gain width given random variable (nuissance parameter)
+	# gasGainWidthRV should be normally distributed
+	def get_gas_gain_width_default(self, gasGainWidthRV):
+		return norm.pdf(gasGainWidthRV), self.gas_gain_width + (gasGainWidthRV*self.gas_gain_width_uncertainty)
+	
+	
+	# get likelihood and spe res width given random variable (nuissance parameter)
+	# gasGainWidthRV should be normally distributed
+	def get_spe_res_default(self, speResRV):
+		return norm.pdf(speResRV), self.spe_res_value + (speResRV*self.spe_res_uncertainty)
+	
+	
+	# get likelihood and s1 efficiency parameters given random variable (nuissance parameter)
+	def get_pf_eff_default(self, pf_eff_par0, pf_eff_par1):
+		return multivariate_normal.pdf([pf_eff_par0, pf_eff_par1], self.l_means_pf_eff_pars, self.l_cov_matrix_pf_eff_pars), pf_eff_par0, pf_eff_par1
+	
+	
+	
+	def get_pf_stdev_default(self, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2):
+		return multivariate_normal.pdf([pf_stdev_par0, pf_stdev_par1, pf_stdev_par2], self.l_means_pf_stdev_pars, self.l_cov_matrix_pf_stdev_pars), pf_stdev_par0, pf_stdev_par1, pf_stdev_par2
+	
+
+
+	def get_s2_eff_default(self, s2_eff_par0, s2_eff_par1):
+		return multivariate_normal.pdf([s2_eff_par0, s2_eff_par1], self.l_means_s2_eff_pars, self.l_cov_matrix_s2_eff_pars), s2_eff_par0, s2_eff_par1
+	
+	
+	
+	def get_exciton_ion_ratio(self, lParsRV):
+		likelihood = 1.
+		lParValues = [0. for i in xrange(len(lParsRV))]
+		for parNumber, parRV in enumerate(lParsRV):
+			likelihood *= norm.pdf(parRV)
+			if parNumber == 0:
+				# alpha
+				meanFromNEST = 1.240
+				sigmaLowFromNEST = 0.073
+				sigmaHighFromNEST = 0.079
+			elif parNumber == 1:
+				# zeta
+				meanFromNEST = 0.0472
+				sigmaLowFromNEST = 0.0073
+				sigmaHighFromNEST = 0.0088
+			elif parNumber == 2:
+				# beta
+				meanFromNEST = 239.0
+				sigmaLowFromNEST = 8.8
+				sigmaHighFromNEST = 28.0
+			else:
+				print 'FAILURE: Incorrect number of parameters given for exciton to ion ratio.'
+				sys.exit()
+
+			if parRV >= 0:
+				valueForPar = meanFromNEST + parRV*sigmaHighFromNEST
+			else:
+				valueForPar = meanFromNEST - parRV*sigmaLowFromNEST
+
+			lParValues[parNumber] = valueForPar
+		
+		return likelihood, lParValues[0]*(self.meanField**(-lParValues[1])) * ( 1 - exp(-lParValues[2] * 11.5*self.meanEnergy*54**(-7./3.)) )
+		
+	
+	
+	def get_likelihood_exciton_to_ion(self, par0, par1, par2):
+		return norm.pdf(par0)*norm.pdf(par1)*norm.pdf(par2)
+
+
+
+	def get_prior_log_likelihood_nuissance(self, likelihoodNuissance):
+		if likelihoodNuissance > 1e-65:
+			return np.log(likelihoodNuissance)
+		else:
+			return -np.inf
+
+
+
+	def get_log_likelihood_s1_eff(self, l_s1_eff_pars):
+		# first par is center, second is shape
+		if 0 < l_s1_eff_pars[0] < 10 and 0.1 < l_s1_eff_pars[1] < 6:
+			return 0.
+		else:
+			return -np.inf
+
+
+
+	def get_log_likelihood_s2_eff(self, l_s2_eff_pars):
+		# first par is center, second is shape
+		if -100 < l_s2_eff_pars[0] < 1000 and 1 < l_s2_eff_pars[1] < 1000:
+			return 0.
+		else:
+			return -np.inf
+
+
+
+	def get_prior_log_likelihood_resolution(self, intrinsicResolution):
+		if intrinsicResolution < 0 or intrinsicResolution > 0.5:
+			return -np.inf
+		else:
+			return 0
+
+
+
+	def get_prior_log_likelihood_scale_par(self, scale_par):
+		if scale_par < 0:
+			return -np.inf
+		else:
+			return 0
+
+
+
+	def get_prior_log_likelihood_yields(self, l_yields):
+		for value in l_yields:
+			if value < 0. or value > 18.:
+				return -np.inf
+		return 0.
+
+
+
+	def get_indices_for_given_quantile(self, aBinCenters, aCountsInBins, leftPercentile, rightPercentile):
+		aX = aBinCenters.flatten()
+		aY = aCountsInBins.flatten()
+		
+		totalCounts = int(np.rint(np.sum(aCountsInBins)))
+		aForQuantiles = np.zeros(totalCounts)
+		
+		# build array for quantile analysis
+		# essentially add another index for each count in array
+		currentIndex = 0
+		
+		for i in xrange(len(aX)):
+			for j in xrange(int(np.rint(aY[i]))):
+				aForQuantiles[currentIndex] = aX[i]
+				currentIndex += 1
+
+		valueLeft = np.percentile(aForQuantiles, leftPercentile*100)
+		valueRight = np.percentile(aForQuantiles, rightPercentile*100)
+		
+		indexLeft = np.argmin(np.abs(aBinCenters - valueLeft))
+		indexRight = np.argmin(np.abs(aBinCenters - valueRight))
+		
+		# add 1 to right index to keep it inclusive
+		return (indexLeft, indexRight + 1)
+	
+	
+	
+
+	
+	
+	
+	
+	# ************************************************
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# Full matching (S1 and S2)
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ------------------------------------------------
+	# ************************************************
+		
+		
+		
+	# function will return both log likelihood and graph with
+	# matched spectrum
+	# will simply call this for likelihood maximization
+	# and take just the likelihood - can call after that with
+	# best fit to get spectrum
+	def ln_likelihood_coincidence_matching(self, a_py, a_qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_scale_pars, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True):
+
+		assert len(self.a_spline_energies) == len(a_py) == len(a_qy), '\nNumber of spline points (%d) must match the number of photon yields (%d) and charge yields (%d) given.\n' % (len(self.a_spline_energies), len(a_py), len(a_qy))
+
+
+		if gpu_compute:
+			# need to do slightly fewer elements than
+			# originally perscribed bc energies already
+			# produced
+			d_gpu_scale = {}
+			d_gpu_scale['block'] = (1024,1,1)
+			numBlocks = floor(self.num_mc_events / 1024.)
+			d_gpu_scale['grid'] = (int(numBlocks), 1)
+			num_mc_events = int(numBlocks*1024)
+
+		#print d_gpu_scale
+
+		# -----------------------------------------------
+		# -----------------------------------------------
+		# determine prior likelihood and variables
+		# -----------------------------------------------
+		# -----------------------------------------------
+
+
+		prior_ln_likelihood = 0
+		
+		
+		# priors of yields
+		# can do them all together since uniform within
+		# the same range
+		prior_ln_likelihood += self.get_prior_log_likelihood_yields(a_py + a_qy)
+		
+		
+		# priors of resolutions
+		prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s1)
+		prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s2)
+		
+		
+		# get exciton to ion prior
+		current_likelihood = self.get_likelihood_exciton_to_ion(exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+
+		# priors of detector variables
+		current_likelihood, g1_value, g2_value = self.get_g1_g2_default(g1_value, g2_value)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		
+		current_likelihood, spe_res = self.get_spe_res_default(spe_res_rv)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+
+		current_likelihood, gas_gain_value = self.get_gas_gain_default(gas_gain_rv)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+		current_likelihood, gas_gain_width = self.get_gas_gain_width_default(gas_gain_width_rv)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+
+		# priors of efficiencies
+		current_likelihood, pf_eff_par0, pf_eff_par1 = self.get_pf_eff_default(pf_eff_par0, pf_eff_par1)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		
+		#current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
+		#prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		
+		
+		prior_ln_likelihood += self.get_log_likelihood_s1_eff([s1_eff_par0, s1_eff_par1])
+		
+		prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
+		
+		current_likelihood, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.get_pf_stdev_default(pf_stdev_par0, pf_stdev_par1, pf_stdev_par2)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+		extraction_efficiency = g2_value / float(gas_gain_value)
+
+
+		# if prior is -inf then don't bother with MC
+		if not np.isfinite(prior_ln_likelihood) and not draw_fit:
+			return -np.inf
+
+		total_ln_likelihood = prior_ln_likelihood
+
+		# -----------------------------------------------
+		# -----------------------------------------------
+		# run MC
+		# -----------------------------------------------
+		# -----------------------------------------------
+
+
+		seed = np.asarray(int(time.time()*1000), dtype=np.int32)
+		num_trials = np.asarray(num_mc_events, dtype=np.int32)
+		num_spline_points = np.asarray(len(self.a_spline_energies), dtype=np.int32)
+		
+		a_spline_energies = np.asarray(self.a_spline_energies, dtype=np.float32)
+		a_spline_photon_yields = np.asarray(a_py, dtype=np.float32)
+		#a_spline_photon_yields = np.asarray(self.a_nest_photon_yields, dtype=np.float32)
+		a_spline_charge_yields = np.asarray(a_qy, dtype=np.float32)
+		#a_spline_charge_yields = np.asarray(self.a_nest_charge_yields, dtype=np.float32)
+		
+		g1_value = np.asarray(g1_value, dtype=np.float32)
+		extraction_efficiency = np.asarray(extraction_efficiency, dtype=np.float32)
+		spe_res = np.asarray(spe_res, dtype=np.float32)
+		gas_gain_value = np.asarray(gas_gain_value, dtype=np.float32)
+		gas_gain_width = np.asarray(gas_gain_width, dtype=np.float32)
+		
+		intrinsic_res_s1 = np.asarray(intrinsic_res_s1, dtype=np.float32)
+		intrinsic_res_s2 = np.asarray(intrinsic_res_s2, dtype=np.float32)
+
+		exciton_to_ion_par0_rv = np.asarray(exciton_to_ion_par0_rv, dtype=np.float32)
+		exciton_to_ion_par1_rv = np.asarray(exciton_to_ion_par1_rv, dtype=np.float32)
+		exciton_to_ion_par2_rv = np.asarray(exciton_to_ion_par2_rv, dtype=np.float32)
+		
+		pf_eff_par0 = np.asarray(pf_eff_par0, dtype=np.float32)
+		pf_eff_par1 = np.asarray(pf_eff_par1, dtype=np.float32)
+		
+		s1_eff_par0 = np.asarray(s1_eff_par0, dtype=np.float32)
+		s1_eff_par1 = np.asarray(s1_eff_par1, dtype=np.float32)
+
+		s2_eff_par0 = np.asarray(s2_eff_par0, dtype=np.float32)
+		s2_eff_par1 = np.asarray(s2_eff_par1, dtype=np.float32)
+		
+		a_pf_stdev = np.asarray([pf_stdev_par0, pf_stdev_par1, pf_stdev_par2], dtype=np.float32)
+		
+		a_band_cut = np.asarray([-5, 0, 0, 1, 10], dtype=np.float32)
+		
+		# for histogram binning
+		num_bins_s1 = np.asarray(self.l_s1_settings[0], dtype=np.int32)
+		gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.a_s1_bin_edges)
+		num_bins_s2 = np.asarray(self.l_log_settings[0], dtype=np.int32)
+		gpu_bin_edges_s2 = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
+		a_hist_2d = np.zeros(self.l_s1_settings[0]*self.l_log_settings[0], dtype=np.int32)
+		
+		#print a_spline_photon_yields
+		#print self.a_nest_photon_yields
+		#print a_spline_charge_yields
+		#print self.a_nest_charge_yields
+		#print s2_eff_par0, s2_eff_par1
+
+
+
+		for cathode_setting in self.l_cathode_settings_in_use:
+			for degree_setting in self.l_degree_settings_in_use:
+
+				mean_field = np.asarray(self.d_cathode_voltages_to_field[cathode_setting], dtype=np.float32)
+				
+				if gpu_compute:
+				
+					try:
+						self.d_coincidence_data_information[cathode_setting][degree_setting]['gpu_a_energy']
+					except:
+						self.d_coincidence_data_information[cathode_setting][degree_setting]['gpu_a_energy'] = pycuda.gpuarray.to_gpu(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_energy'])
+					
+					
+					# for histogram
+					tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.d_coincidence_data_information[cathode_setting][degree_setting]['gpu_a_energy'], drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
+					
+					gpu_observables_func(*tArgs, **d_gpu_scale)
+					#print a_hist_2d[:4]
+
+					a_s1_s2_mc = np.reshape(a_hist_2d, (self.l_log_settings[0], self.l_s1_settings[0])).T
+					
+				
+				else:
+					print '\nC loop not implemented!\n'
+					sys.exit()
+
+
+
+
+				# -----------------------------------------------
+				# -----------------------------------------------
+				# Bin MC results and if requested draw
+				# comparison of data and MC
+				# -----------------------------------------------
+				# -----------------------------------------------
+
+
+				a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(d_scale_pars[cathode_setting][degree_setting])/float(self.num_mc_events))
+
+
+				if draw_fit:
+
+					f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+					
+					s1_s2_data_plot = np.rot90(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'])
+					s1_s2_data_plot = np.flipud(s1_s2_data_plot)
+					ax1.pcolormesh(self.a_s1_bin_edges, self.a_log_bin_edges, s1_s2_data_plot)
+					
+					s1_s2_mc_plot = np.rot90(a_s1_s2_mc)
+					s1_s2_mc_plot = np.flipud(s1_s2_mc_plot)
+					ax2.pcolormesh(self.a_s1_bin_edges, self.a_log_bin_edges, s1_s2_mc_plot)
+					#plt.colorbar()
+					
+					
+					c1 = Canvas(1400, 400)
+					c1.Divide(2)
+					
+					h_s1_data = Hist(*self.l_s1_settings, name='hS1_draw_data')
+					root_numpy.array2hist(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'].sum(axis=1), h_s1_data)
+					
+					hS1MC = Hist(*self.l_s1_settings, name='hS1_draw_mc')
+					root_numpy.array2hist(a_s1_s2_mc.sum(axis=1), hS1MC)
+					
+					s1_scale_factor = h_s1_data.Integral() / float(hS1MC.Integral())
+					
+					g_s1_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s1_data)
+					g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=s1_scale_factor)
+					
+					g_s1_mc.SetFillColor(root.kBlue)
+					g_s1_mc.SetMarkerColor(root.kBlue)
+					g_s1_mc.SetLineColor(root.kBlue)
+					g_s1_mc.SetFillStyle(3005)
+					
+					g_s1_data.SetTitle('S1 Comparison')
+					g_s1_data.GetXaxis().SetTitle('S1 [PE]')
+					g_s1_data.GetYaxis().SetTitle('Counts')
+					
+					g_s1_data.SetLineColor(root.kRed)
+					g_s1_data.SetMarkerSize(0)
+					g_s1_data.GetXaxis().SetRangeUser(self.l_s1_settings[1], self.l_s1_settings[2])
+					g_s1_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s1_data.GetMaximum(), hS1MC.GetMaximum()))
+					
+					c1.cd(1)
+					g_s1_data.Draw('ap')
+					g_s1_mc.Draw('same')
+					g_s1_mc_band = g_s1_mc.Clone()
+					g_s1_mc_band.Draw('3 same')
+					
+					h_s2_data = Hist(*self.l_log_settings, name='h_s2_draw_data')
+					root_numpy.array2hist(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'].sum(axis=0), h_s2_data)
+					
+					h_s2_mc = Hist(*self.l_log_settings, name='h_s2_draw_mc')
+					root_numpy.array2hist(a_s1_s2_mc.sum(axis=0), h_s2_mc)
+					
+					s2_scale_factor = h_s2_data.Integral() / float(h_s2_mc.Integral())
+					
+					g_s2_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_data)
+					g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=s2_scale_factor)
+					
+					g_s2_mc.SetFillColor(root.kBlue)
+					g_s2_mc.SetMarkerColor(root.kBlue)
+					g_s2_mc.SetLineColor(root.kBlue)
+					g_s2_mc.SetFillStyle(3005)
+					
+					g_s2_data.SetTitle('S2 Comparison')
+					g_s2_data.GetXaxis().SetTitle('S2 [PE]')
+					g_s2_data.GetYaxis().SetTitle('Counts')
+					
+					g_s2_data.SetLineColor(root.kRed)
+					g_s2_data.SetMarkerSize(0)
+					g_s2_data.GetXaxis().SetRangeUser(self.l_s2_settings[1], self.l_s2_settings[2])
+					g_s2_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s2_data.GetMaximum(), h_s2_mc.GetMaximum()))
+					
+					c1.cd(2)
+					g_s2_data.Draw('ap')
+					g_s2_mc.Draw('same')
+					g_s2_mc_band = g_s2_mc.Clone()
+					g_s2_mc_band.Draw('3 same')
+					
+					c1.Update()
+					
+					print 'Number of events in data: %f' % h_s1_data.Integral()
+					
+					plt.show()
+					#raw_input('Press enter to continue...')
+				
+
+
+
+				if lowerQuantile != 0. or upperQuantile != 1.:
+					a_quantiles_results = np.zeros(2, dtype=np.float64)
+					a_quantiles = np.asarray([lowerQuantile, upperQuantile], dtype=np.float64)
+					
+					self.h_s1_data.GetQuantiles(2, a_quantiles_results, a_quantiles)
+					lowerQuantileS1 = a_quantiles_results[0]
+					upperQuantileS1 = a_quantiles_results[1]
+					
+					self.h_s2_data.GetQuantiles(2, a_quantiles_results, a_quantiles)
+					lowerQuantileS2 = a_quantiles_results[0]
+					upperQuantileS2 = a_quantiles_results[1]
+					
+					#print lowerQuantileS1, upperQuantileS1
+					#print lowerQuantileS2, upperQuantileS2
+				
+
+				if lowerQuantile != 0. or upperQuantile != 1.:
+					log_likelihood_matching = smart_log_likelihood_quantiles(self.aS1S2, aS1S2MC, num_mc_elements, aS1BinCenters, aS2BinCenters, lowerQuantileS1, upperQuantileS1, lowerQuantileS2, upperQuantileS2)
+				else:
+					#print self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1']
+					#print a_s1_s2_mc
+					flatS1S2Data = self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'].flatten()
+					flatS1S2MC = a_s1_s2_mc.flatten()
+					log_likelihood_matching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
+
+				total_ln_likelihood += log_likelihood_matching
+				#print total_ln_likelihood
+				if np.isnan(total_ln_likelihood):
+					return -np.inf
+
+
+
+		return total_ln_likelihood
+		
+		
+		
+	def wrapper_ln_likelihood_coincidence_matching(self, a_parameters, kwargs={}):
+		#print a_parameters
+		return self.likelihood_nr_band_no_nest(*a_parameters, **kwargs)
+	
+	
+	def wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(self, a_parameters, kwargs={}):
+		#print a_parameters
+		
+		g1_value, g2_value = self.l_means_g1_g2
+		gas_gain_rv = 0
+		gas_gain_width_rv = 0
+		spe_res_rv = 0
+		pf_eff_par0, pf_eff_par1 = self.l_means_pf_eff_pars
+		pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.l_means_pf_stdev_pars
+		exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0
+		
+		num_yields = len(self.a_spline_energies)
+		
+		# scales are tricky since changes per dataset
+		# scales MUST be given (and interpreted) in order of cathode
+		# and then degree setting
+		offset_for_scales = 2*num_yields+6
+		for cathode_setting in self.l_cathode_settings_in_use:
+			d_scale_pars[cathode_setting] = {}
+			for degree_setting in self.l_degree_settings_in_use:
+				d_scale_pars[cathode_setting][degree_setting] = a_parameters[offset_for_scales]
+				offset_for_scales += 1
+	
+	
+		# ln_likelihood_coincidence_matching(self, a_py, a_qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_scale_pars, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+
+	
+		return self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=g1_value, spe_res_rv=spe_res_rv, g2_value=g2_value, gas_gain_rv=gas_gain_rv, gas_gain_width_rv=gas_gain_width_rv, pf_eff_par0=pf_eff_par0, pf_eff_par1=pf_eff_par1, s1_eff_par0=a_parameters[2*num_yields+2], s1_eff_par1=a_parameters[2*num_yields+3], s2_eff_par0=a_parameters[2*num_yields+4], s2_eff_par1=a_parameters[2*num_yields+5], pf_stdev_par0=pf_stdev_par0, pf_stdev_par1=pf_stdev_par1, pf_stdev_par2=pf_stdev_par2, exciton_to_ion_par0_rv=exciton_to_ion_par0_rv, exciton_to_ion_par1_rv=exciton_to_ion_par1_rv, exciton_to_ion_par2_rv=exciton_to_ion_par2_rv, d_scale_pars=d_scale_pars, **kwargs)
+	
+	
+
+
+	def run_mcmc(self, sMeasurement, sParameters, numWalkers, numSteps, numThreads, fractionalDeviationStartPos = 1e-3, gpu_compute=False, d_gpu_scale={}, lowerQuantile=0., upperQuantile=1.):
+		if sMeasurement == 'photon_yield':
+			numDim = 8
+			assert len(sParameters) == numDim
+			func = self.mcmc_func_photon_yield_mc_matching
+		elif sMeasurement == 'charge_yield':
+			numDim = 8
+			assert len(sParameters) == numDim
+			func = self.mcmc_func_charge_yield_mc_matching
+		elif sMeasurement == 'full_matching':
+			numDim = 17
+			assert len(sParameters) == numDim
+			func = self.mcmc_func_full_matching
+		else:
+			print 'Currently not setup to handle the input measurement: %s' % sMeasurement
+			sys.exit()
+	
+		# ------------------------------------------------
+		# Setup save locations
+		# ------------------------------------------------
+		
+		
+		if not self.use_fake_data:
+			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (self.degree_setting, self.cathode_setting, self.anode_setting)
+		else:
+			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (self.degree_setting, self.cathode_setting, self.anode_setting, self.assume_relative_accidental_rate, self.num_fake_events)
+		
+		
+		if not self.name_notes == None:
+				dir_specifier_name += '_' + self.name_notes
+		
+		if not self.use_fake_data:
+			self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
+			self.sPathForSave = '%s/%s/%s/' % (self.resultsDirectoryName, dir_specifier_name, sMeasurement)
+		
+		else:
+			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
+			
+ 			self.sPathForSave = '%s/%s/%s/' % (self.resultsDirectoryName, dir_specifier_name, sMeasurement)
+			# for fake data add events and relative rate to path after
+			# deg, cathode, and anode
+			# _%.2f_%d_events
+		
+		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
+		
+		if not os.path.isdir(self.sPathForSave):
+			os.makedirs(self.sPathForOldFiles)
+		else:
+			for file in os.listdir(self.sPathForSave):
+				if file == 'previous_results' or 'sampler_dictionary.p':
+					continue
+				call(['mv', self.sPathForSave + file, self.sPathForOldFiles + file])
+			
+		
+		
+		# ------------------------------------------------
+		# initialize walkers and corner plot
+		# ------------------------------------------------
+
+
+		initialParameters = np.zeros(numDim)
+		lLabelsForCorner = ['' for i in xrange(numDim)]
+		for i, set in enumerate(sParameters):
+			lLabelsForCorner[i] = '%s' % set[0]
+			initialParameters[i] = set[1]
+
+
+		# chain dictionary will have the following format
+		# dSampler[walkers] = [sampler_000, sampler_001, ...]
+
+		loadedPreviousSampler = False
+		try:
+			# two things will fail potentially
+			# 1. open if file doesn't exist
+			# 2. posWalkers load since initialized to None
+			with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
+				dSampler = pickle.load(fPrevSampler)
+				prevSampler = dSampler[numWalkers][-1]
+				# need to load in weird way bc can't pickle
+				# ensembler object
+				posWalkers = prevSampler['_chain'][:,-1,:]
+				randomState = prevSampler['_random']
+			loadedPreviousSampler = True
+			print '\nSuccessfully loaded previous chain!\n'
+		except:
+			print '\nCould not load previous sampler or none existed - starting new sampler.\n'
+
+
+		if not loadedPreviousSampler:
+			posWalkers = [(np.random.randn(numDim)+initialParameters)*fractionalDeviationStartPos + initialParameters for i in xrange(numWalkers)]
+			randomState = None
+			
+			# create file if it doesn't exist
+			if not os.path.exists(self.sPathForSave + 'sampler_dictionary.p'):
+				with open(self.sPathForSave + 'sampler_dictionary.p', 'w') as fPrevSampler:
+					dSampler = {}
+					dSampler[numWalkers] = []
+					pickle.dump(dSampler, fPrevSampler)
+			else:
+				with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
+					dSampler = pickle.load(fPrevSampler)
+				with open(self.sPathForSave + 'sampler_dictionary.p', 'w') as fPrevSampler:
+					dSampler[numWalkers] = []
+					pickle.dump(dSampler, fPrevSampler)
+
+
+		print '\n\nBeginning MCMC sampler\n\n'
+		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, numSteps, numWalkers*numSteps)
+		sampler = emcee.EnsembleSampler(numWalkers, numDim, func, threads=numThreads, kwargs={'d_gpu_scale':d_gpu_scale, 'gpu_compute':gpu_compute, 'lowerQuantile':lowerQuantile, 'upperQuantile':upperQuantile})
+		
+		# run mcmc sampler
+		
+		startTimeMCMC = time.time()
+		
+		currentStep = 1
+		with click.progressbar(sampler.sample(posWalkers, iterations=numSteps, rstate0=randomState), length=numSteps) as mcmc_sampler:
+			for pos, lnprob, state in mcmc_sampler:
+				#print '\nCompleted step %d of %d.\n' % (currentStep, numSteps)
+				currentStep += 1
+			
+		totalTimeMCMC = (time.time() - startTimeMCMC) / 3600.
+		print '\n\n%d function calls took %.2f hours.\n\n' % (numWalkers*numSteps, totalTimeMCMC)
+
+
+		"""
+		for pos, lnprob, state in sampler.sample(posWalkers, iterations=numSteps):
+			print '\nCompleted step %d of %d.\n' % (currentStep, numSteps)
+			currentStep += 1
+		"""
+
+
+		# ------------------------------------------------
+		# Prepare and save data and plots
+		# ------------------------------------------------
+
+		#print sampler.__dict__
+		dictionary_for_sampler = sampler.__dict__
+		if 'lnprobfn' in dictionary_for_sampler:
+			del dictionary_for_sampler['lnprobfn']
+		if 'pool' in dictionary_for_sampler:
+			del dictionary_for_sampler['pool']
+
+		with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
+			dSampler = pickle.load(fPrevSampler)
+		fPrevSampler.close()
+
+		fPrevSampler = open(self.sPathForSave + 'sampler_dictionary.p', 'w')
+		dSampler[numWalkers].append(sampler.__dict__)
+		pickle.dump(dSampler, fPrevSampler)
+		fPrevSampler.close()
+
+		
+
+		#sampler.run_mcmc(posWalkers, numSteps) # shortcut of above method
+		pickle.dump(sampler.acceptance_fraction, open(self.sPathForSave + 'sampler_acceptance_fraction.p', 'w'))
+		try:
+			pickle.dump(sampler.acor, open(self.sPathForSave + 'sampler_acor.p', 'w'))
+		except:
+			print '\n\nWARNING: Not enough sample points to estimate the autocorrelation time - this likely means that the fit is bad since the burn-in time was not reached.\n\n'
+		"""
+		try:
+			samples = sampler.chain[:, int(max(sampler.acor)):, :].reshape((-1, numDim))
+			fig = corner.corner(samples, labels=lLabelsForCorner)
+			fig.savefig(self.sPathForSave + 'corner_plot.png')
+		except AssertionError:
+			print 'Too few samples (number of samples fewer than number of dimensions) - cannot reasonably create correlation plots.'
+			sys.exit()
+		"""
+
+
+
+	def differential_evolution_minimizer_free_pars(self, a_bounds, maxiter=250, tol=0.05, popsize=15):
+		def neg_log_likelihood_diff_ev(a_guesses):
+			return -self.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(a_guesses, {'gpu_compute':True})
+		print '\n\nStarting differential evolution minimizer...\n\n'
+		result = optimize.differential_evolution(neg_log_likelihood_diff_ev, a_bounds, disp=True, maxiter=maxiter, tol=tol, popsize=popsize)
+		print result
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+	copy_reg.pickle(types.MethodType, reduce_method)
+
+	# d_coincidence_data should be in the following form:
+	# d_coincidence_data['degree_settings'] = [2300, 3000, ...]
+	# d_coincidence_data['cathode_settings'] = [0.345, 1.054, ...]
+	# d_coincidence_data['cathode_settings'] = [4.5]
+
+	d_coincidence_data = {}
+	d_coincidence_data['degree_settings'] = [3500, 4500]
+	d_coincidence_data['cathode_settings'] = [0.345]
+	
+	d_scale_pars = {}
+	d_scale_pars[0.345] = {}
+	d_scale_pars[0.345][3500] = 2500
+	d_scale_pars[0.345][4500] = 680
+	
+	test = fit_nr(d_coincidence_data, num_mc_events=500000)
+
+
+	#test.ln_likelihood_coincidence_matching(a_py=[1.03, 6.60, 7.64, 10.15], a_qy=[7.69, 5.72, 5.30, 4.25], intrinsic_res_s1=0.04, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.474, s1_eff_par1=3.94, s2_eff_par0=358, s2_eff_par1=576, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+
+	a_free_par_bounds = [(0.5, 2.5), (5, 10), (4.5, 12), (6, 14),
+						(4, 11), (2.5, 9.5), (2.5, 9.5), (1.5, 8),
+						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000)]
+
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=10, popsize=15, tol=0.05)
+
+
