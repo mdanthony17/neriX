@@ -1045,6 +1045,86 @@ class fit_nr(object):
 
 	
 		return self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=g1_value, spe_res_rv=spe_res_rv, g2_value=g2_value, gas_gain_rv=gas_gain_rv, gas_gain_width_rv=gas_gain_width_rv, pf_eff_par0=pf_eff_par0, pf_eff_par1=pf_eff_par1, s1_eff_par0=a_parameters[2*num_yields+2], s1_eff_par1=a_parameters[2*num_yields+3], s2_eff_par0=a_parameters[2*num_yields+4], s2_eff_par1=a_parameters[2*num_yields+5], pf_stdev_par0=pf_stdev_par0, pf_stdev_par1=pf_stdev_par1, pf_stdev_par2=pf_stdev_par2, exciton_to_ion_par0_rv=exciton_to_ion_par0_rv, exciton_to_ion_par1_rv=exciton_to_ion_par1_rv, exciton_to_ion_par2_rv=exciton_to_ion_par2_rv, d_scale_pars=d_scale_pars, **kwargs)
+		
+		
+		
+	
+	def initial_positions_for_ensemble(self, a_free_parameters, num_walkers, percent_deviation):
+		l_par_names = ['a_py', 'a_qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'd_scale_pars']
+		
+		d_variable_arrays = {}
+		num_yields = len(self.a_spline_energies)
+		
+		# position array should be (num_walkers, num_dim)
+		
+		"""
+		g1_value, g2_value = self.l_means_g1_g2
+		gas_gain_rv = 0
+		gas_gain_width_rv = 0
+		spe_res_rv = 0
+		pf_eff_par0, pf_eff_par1 = self.l_means_pf_eff_pars
+		pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.l_means_pf_stdev_pars
+		exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0
+		"""
+	
+		for par_name in l_par_names:
+			# handle photon and charge yield initial positions
+			if par_name == 'a_py':
+				d_variable_arrays[par_name] = a_free_parameters[:num_yields]
+			
+			elif par_name == 'a_qy':
+				d_variable_arrays[par_name] = a_free_parameters[num_yields:2*num_yields]
+
+			elif par_name == 'intrinsic_res_s1':
+				d_variable_arrays[par_name] = a_free_parameters[2*num_yields+0]
+				
+			elif par_name == 'intrinsic_res_s2':
+				d_variable_arrays[par_name] = a_free_parameters[2*num_yields+1]
+			
+			# handle g1 and g2 with g1 only
+			elif par_name == 'g1_value':
+				d_variable_arrays['g1_value'], d_variable_arrays['g2_value'] = self.l_means_g1_g2
+
+
+			# catch both parameters of s1 efficiency prior
+			elif par_name == 'pf_eff_par0':
+				d_variable_arrays['pf_eff_par0'], d_variable_arrays['pf_eff_par1'] = self.l_means_pf_eff_pars
+				
+			
+			elif par_name == 's1_eff_par0':
+				d_variable_arrays['s1_eff_par0'], d_variable_arrays['s1_eff_par1'] = a_free_parameters[2*num_yields+2], a_free_parameters[2*num_yields+3]
+
+
+			elif par_name == 's2_eff_par0':
+				d_variable_arrays['s2_eff_par0'], d_variable_arrays['s2_eff_par1'] = a_free_parameters[2*num_yields+4], a_free_parameters[2*num_yields+5]
+				
+				
+			elif par_name == 'pf_stdev_par0':
+				d_variable_arrays['pf_stdev_par0'], d_variable_arrays['pf_stdev_par1'], d_variable_arrays['pf_stdev_par2'] = self.l_means_pf_stdev_pars
+				
+				
+			elif par_name == 'd_scale_pars':
+				d_variable_arrays[par_name] = a_free_parameters[2*num_yields+6:]
+			
+			
+			# catch all normally distributed RVs
+			else:
+				if par_name == 'g2_value' or par_name == 'pf_eff_par1' or par_name == 's1_eff_par1' or par_name == 's2_eff_par1'  or par_name == 'pf_stdev_par1' or par_name == 'pf_stdev_par2':
+					continue
+				d_variable_arrays[par_name] = np.random.randn()
+				
+				
+		l_parameters = []
+		
+		for par_name in l_par_names:
+			l_arrays_for_stacking.append(d_variable_arrays[par_name])
+			#print par_name
+			#print d_variable_arrays[par_name]
+		
+		l_arrays_for_stacking = np.asarray(l_arrays_for_stacking)
+		#print l_arrays_for_stacking[5]
+
+		return emcee.utils.sample_ball(l_arrays_for_stacking, l_arrays_for_stacking*percent_deviation, num_walkers)
 	
 	
 
@@ -1243,23 +1323,34 @@ if __name__ == '__main__':
 	# d_coincidence_data['cathode_settings'] = [4.5]
 
 	d_coincidence_data = {}
-	d_coincidence_data['degree_settings'] = [3500, 4500]
+	d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500]
 	d_coincidence_data['cathode_settings'] = [0.345]
 	
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][3500] = 2500
-	d_scale_pars[0.345][4500] = 680
+	d_scale_pars[0.345][3500] = 3018
+	d_scale_pars[0.345][4500] = 790
 	
 	test = fit_nr(d_coincidence_data, num_mc_events=500000)
 
 
 	#test.ln_likelihood_coincidence_matching(a_py=[1.03, 6.60, 7.64, 10.15], a_qy=[7.69, 5.72, 5.30, 4.25], intrinsic_res_s1=0.04, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.474, s1_eff_par1=3.94, s2_eff_par0=358, s2_eff_par1=576, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
-	a_free_par_bounds = [(0.5, 2.5), (5, 10), (4.5, 12), (6, 14),
-						(4, 11), (2.5, 9.5), (2.5, 9.5), (1.5, 8),
+	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14),
+						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8),
 						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000)]
 
 	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=10, popsize=15, tol=0.05)
 
+	d_scale_pars = {}
+	d_scale_pars[0.345] = {}
+	d_scale_pars[0.345][3500] = 3160
+	d_scale_pars[0.345][4500] = 805
+	#test.ln_likelihood_coincidence_matching(a_py=[2.4, 7.6, 6.6, 11.2], a_qy=[5.2, 5.0, 4.9, 4.0], intrinsic_res_s1=0.18, intrinsic_res_s2=0.16, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=4.0, s1_eff_par1=1.3, s2_eff_par0=403, s2_eff_par1=612, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
+	#test.initial_positions_for_ensemble(
+
+
+	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]
+	# py_nest: [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15]
+	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
