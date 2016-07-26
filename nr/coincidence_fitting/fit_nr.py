@@ -291,7 +291,7 @@ class fit_nr(object):
 		self.a_s2_bin_edges = np.linspace(self.l_s2_settings[1], self.l_s2_settings[2], num=self.l_s2_settings[0]+1, dtype=np.float32)
 		self.a_log_bin_edges = np.linspace(self.l_log_settings[1], self.l_log_settings[2], num=self.l_log_settings[0]+1, dtype=np.float32)
 		
-		print self.l_s1_settings, self.l_s2_settings, self.l_log_settings
+		#print self.l_s1_settings, self.l_s2_settings, self.l_log_settings
 		
 		# ------------------------------------------------
 		# ------------------------------------------------
@@ -482,7 +482,30 @@ class fit_nr(object):
 
 						#print 'No TOF cut!\n'
 						neriX_analysis.warning_message('Need to finalize how tof is chosen in MC data!')
-						xTOF = '(timeliqsci-tpos[0]>5 && timeliqsci-tpos[0]<40)'
+						
+						low_time_tof = -1
+						high_time_tof = -1
+						if degree_setting == 2300:
+							low_time_tof = 24
+							high_time_tof = 34
+						elif degree_setting == 3000:
+							low_time_tof = 31
+							high_time_tof = 41
+						elif degree_setting == 3500:
+							low_time_tof = 15
+							high_time_tof = 25
+						elif degree_setting == 4500:
+							low_time_tof = 22
+							high_time_tof = 34
+						elif degree_setting == 5300:
+							low_time_tof = 14
+							high_time_tof = 24
+						elif degree_setting == 6200:
+							low_time_tof = 8
+							high_time_tof = 25
+						
+						
+						xTOF = '(timeliqsci-tpos[0]> %d && timeliqsci-tpos[0] < %d)' % (low_time_tof, high_time_tof)
 
 						xAll = '%s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLiqSciHeight, xLXeEnergy, xTOF)
 					
@@ -1323,24 +1346,28 @@ if __name__ == '__main__':
 	# d_coincidence_data['cathode_settings'] = [4.5]
 
 	d_coincidence_data = {}
-	d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500]
+	d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300, 6200]
 	d_coincidence_data['cathode_settings'] = [0.345]
 	
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][3500] = 3018
-	d_scale_pars[0.345][4500] = 790
+	d_scale_pars[0.345][2300] = 3000
+	d_scale_pars[0.345][3000] = 1018
+	d_scale_pars[0.345][3500] = 1018
+	d_scale_pars[0.345][4500] = 390
+	d_scale_pars[0.345][5300] = 1200
+	d_scale_pars[0.345][6200] = 1200
 	
 	test = fit_nr(d_coincidence_data, num_mc_events=500000)
 
 
-	#test.ln_likelihood_coincidence_matching(a_py=[1.03, 6.60, 7.64, 10.15], a_qy=[7.69, 5.72, 5.30, 4.25], intrinsic_res_s1=0.04, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.474, s1_eff_par1=3.94, s2_eff_par0=358, s2_eff_par1=576, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.ln_likelihood_coincidence_matching(a_py=[1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15], a_qy=[7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25], intrinsic_res_s1=0.04, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.474, s1_eff_par1=3.94, s2_eff_par0=358, s2_eff_par1=576, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
-	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14),
-						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8),
-						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000)]
+	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14), (6, 14), (6, 14),
+						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8), (1.5, 8),
+						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
 
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=10, popsize=15, tol=0.05)
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=15, tol=0.01)
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
