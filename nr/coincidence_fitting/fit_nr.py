@@ -11,14 +11,14 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
 import neriX_simulation_datasets, neriX_simulation_config, neriX_analysis, neriX_datasets
 import neriX_simulation_datasets
 import numpy as np
-from math import exp, factorial, erf, ceil, log, pow, floor
+from math import exp, factorial, erf, ceil, log, pow, floor, lgamma
 from scipy import optimize, misc, stats
 from scipy.stats import norm
 import copy_reg, types, pickle, click, time
 from subprocess import call
 from pprint import pprint
 from produce_nest_yields import nest_nr_mean_yields
-from scipy.stats import multivariate_normal
+from scipy.stats import multivariate_normal, binom
 
 import cuda_full_observables_production
 from pycuda.compiler import SourceModule
@@ -35,11 +35,18 @@ import pycuda.autoinit
 gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production_with_log_hist_spline')
 
 
+
+
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import rootpy.compiled as C
 from numpy.random import normal, binomial, seed, poisson
 from rootpy.plotting import root2matplotlib as rplt
+
+path_to_this_module = neriX_simulation_config.path_to_this_module
+print path_to_this_module
+C.register_file('%s/../../../python_modules/mc_code/c_log_likelihood.C' % path_to_this_module, ['smart_log_likelihood'])
+c_log_likelihood = C.smart_log_likelihood
 
 #import gc
 #gc.disable()
@@ -116,9 +123,11 @@ def smart_log_likelihood(aData, aMC, num_mc_events, confidenceIntervalLimit=0.95
 			# use 95% confidence interval
 			# confidenceIntervalLimit = 1 - probability of the zero occuring
 			probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./num_mc_events)
-			totalLogLikelihood += smart_log(smart_binomial(data, num_mc_events, probabiltyOfSuccess))
+			#totalLogLikelihood += smart_log(smart_binomial(data, num_mc_events, probabiltyOfSuccess))
+			totalLogLikelihood += binom.logpmf(data, num_mc_events, probabiltyOfSuccess)
 		else:
-			totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+			#totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
+			totalLogLikelihood += data*np.log(mc) - mc - lgamma(data+1)
 
 	return totalLogLikelihood
 
@@ -731,6 +740,8 @@ class fit_nr(object):
 	# and take just the likelihood - can call after that with
 	# best fit to get spectrum
 	def ln_likelihood_coincidence_matching(self, a_py, a_qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_scale_pars, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True):
+	
+		#start_time_priors = time.time()
 
 		assert len(self.a_spline_energies) == len(a_py) == len(a_qy), '\nNumber of spline points (%d) must match the number of photon yields (%d) and charge yields (%d) given.\n' % (len(self.a_spline_energies), len(a_py), len(a_qy))
 
@@ -869,18 +880,21 @@ class fit_nr(object):
 		#print s2_eff_par0, s2_eff_par1
 
 
+		#print '\nTime for priors: %.4f\n' % (time.time() - start_time_priors)
 
 		for cathode_setting in self.l_cathode_settings_in_use:
+			mean_field = np.asarray(self.d_cathode_voltages_to_field[cathode_setting], dtype=np.float32)
+				
 			for degree_setting in self.l_degree_settings_in_use:
 
-				mean_field = np.asarray(self.d_cathode_voltages_to_field[cathode_setting], dtype=np.float32)
-				
+				#start_time_mc = time.time()
 				if gpu_compute:
 				
 					try:
 						self.d_coincidence_data_information[cathode_setting][degree_setting]['gpu_a_energy']
 					except:
 						self.d_coincidence_data_information[cathode_setting][degree_setting]['gpu_a_energy'] = pycuda.gpuarray.to_gpu(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_energy'])
+					
 					
 					
 					# for histogram
@@ -896,7 +910,7 @@ class fit_nr(object):
 					print '\nC loop not implemented!\n'
 					sys.exit()
 
-
+				#print '\nTime for MC loop %d deg: %.4f\n' % (degree_setting, time.time() - start_time_mc)
 
 
 				# -----------------------------------------------
@@ -907,14 +921,17 @@ class fit_nr(object):
 				# -----------------------------------------------
 
 
-				a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(d_scale_pars[cathode_setting][degree_setting])/float(self.num_mc_events))
+				#start_time_post_mc = time.time()
+
+				#print d_scale_pars[cathode_setting][degree_setting]
+				a_s1_s2_mc = np.asarray(np.multiply(a_s1_s2_mc, float(d_scale_pars[cathode_setting][degree_setting])/float(self.num_mc_events)), dtype=np.float32)
 
 
 				if draw_fit:
 				
 					# normalizing distributions for drawing only
-					print '\nNormalizing spectra for drawing only.\n'
-					a_s1_s2_mc *= (np.sum(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1']) / float(np.sum(a_s1_s2_mc)))
+					#print '\nNormalizing spectra for drawing only.\n'
+					#a_s1_s2_mc *= (np.sum(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1']) / float(np.sum(a_s1_s2_mc)))
 
 					f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
 					
@@ -1028,9 +1045,13 @@ class fit_nr(object):
 					#print a_s1_s2_mc
 					flatS1S2Data = self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'].flatten()
 					flatS1S2MC = a_s1_s2_mc.flatten()
-					log_likelihood_matching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
+					#log_likelihood_matching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
+					log_likelihood_matching = c_log_likelihood(flatS1S2Data, flatS1S2MC, len(flatS1S2Data), self.num_mc_events, 0.95)
 
 				total_ln_likelihood += log_likelihood_matching
+
+				#print '\nTime for post MC loop %d deg: %.4f\n' % (degree_setting, time.time() - start_time_post_mc)
+
 				#print total_ln_likelihood
 				if np.isnan(total_ln_likelihood):
 					return -np.inf
@@ -1044,6 +1065,8 @@ class fit_nr(object):
 	def wrapper_ln_likelihood_coincidence_matching(self, a_parameters, kwargs={}):
 		#print a_parameters
 		
+		#start_time_wrapper = time.time()
+		
 		num_yields = len(self.a_spline_energies)
 		
 		offset_for_scales = 2*num_yields+19
@@ -1054,7 +1077,9 @@ class fit_nr(object):
 				d_scale_pars[cathode_setting][degree_setting] = a_parameters[offset_for_scales]
 				offset_for_scales += 1
 		
-		return self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=a_parameters[2*num_yields+2], spe_res_rv=a_parameters[2*num_yields+3], g2_value=a_parameters[2*num_yields+4], gas_gain_rv=a_parameters[2*num_yields+5], gas_gain_width_rv=a_parameters[2*num_yields+6], pf_eff_par0=a_parameters[2*num_yields+7], pf_eff_par1=a_parameters[2*num_yields+8], s1_eff_par0=a_parameters[2*num_yields+9], s1_eff_par1=a_parameters[2*num_yields+10], s2_eff_par0=a_parameters[2*num_yields+11], s2_eff_par1=a_parameters[2*num_yields+12], pf_stdev_par0=a_parameters[2*num_yields+13], pf_stdev_par1=a_parameters[2*num_yields+14], pf_stdev_par2=a_parameters[2*num_yields+15], exciton_to_ion_par0_rv=a_parameters[2*num_yields+16], exciton_to_ion_par1_rv=a_parameters[2*num_yields+17], exciton_to_ion_par2_rv=a_parameters[2*num_yields+18], d_scale_pars=d_scale_pars, **kwargs)
+		likelihood =  self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=a_parameters[2*num_yields+2], spe_res_rv=a_parameters[2*num_yields+3], g2_value=a_parameters[2*num_yields+4], gas_gain_rv=a_parameters[2*num_yields+5], gas_gain_width_rv=a_parameters[2*num_yields+6], pf_eff_par0=a_parameters[2*num_yields+7], pf_eff_par1=a_parameters[2*num_yields+8], s1_eff_par0=a_parameters[2*num_yields+9], s1_eff_par1=a_parameters[2*num_yields+10], s2_eff_par0=a_parameters[2*num_yields+11], s2_eff_par1=a_parameters[2*num_yields+12], pf_stdev_par0=a_parameters[2*num_yields+13], pf_stdev_par1=a_parameters[2*num_yields+14], pf_stdev_par2=a_parameters[2*num_yields+15], exciton_to_ion_par0_rv=a_parameters[2*num_yields+16], exciton_to_ion_par1_rv=a_parameters[2*num_yields+17], exciton_to_ion_par2_rv=a_parameters[2*num_yields+18], d_scale_pars=d_scale_pars, **kwargs)
+		#print '\nTime for total call: %.4f\n' % (time.time() - start_time_wrapper)
+		return likelihood
 	
 	
 	def wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(self, a_parameters, kwargs={}):
@@ -1073,13 +1098,16 @@ class fit_nr(object):
 		# scales are tricky since changes per dataset
 		# scales MUST be given (and interpreted) in order of cathode
 		# and then degree setting
+		d_scale_pars = {}
 		offset_for_scales = 2*num_yields+6
 		for cathode_setting in self.l_cathode_settings_in_use:
 			d_scale_pars[cathode_setting] = {}
 			for degree_setting in self.l_degree_settings_in_use:
+				#print degree_setting
 				d_scale_pars[cathode_setting][degree_setting] = a_parameters[offset_for_scales]
 				offset_for_scales += 1
 	
+		#print d_scale_pars
 	
 		# ln_likelihood_coincidence_matching(self, a_py, a_qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_scale_pars, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
@@ -1174,9 +1202,9 @@ class fit_nr(object):
 	
 
 
-	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01):
+	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, proposal_scale=2.0):
 	
-		num_dim = 3*len(self.a_spline_energies) + 19 # 36
+		num_dim = 3*len(self.a_spline_energies) - 2 + 19 # 41
 		print '\n\nFitting yields...\n\n'
 		
 		#l_guesses = [0. for j in xrange(num_dim)]
@@ -1227,11 +1255,11 @@ class fit_nr(object):
 		
 		if not loaded_prev_sampler:
 		
-			if num_dim == 43:
+			if num_dim == 41:
 				a_free_parameter_guesses = [1.27, 6.71, 8.19, 6.66, 8.45, 10.28, 10.69, 12.67,
 											9.20, 5.42, 6.65, 6.87, 5.65, 5.64, 5.04, 4.93,
 											0.20, 0.074, 6.56, 2.23, 370.24, 651.12,
-											4481, 1923, 1705, 694, 1728, 1901, 4900, 4148]
+											4481, 1923, 1705, 694, 1728, 1901]
 			else:
 				print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
 				sys.exit()
@@ -1260,7 +1288,7 @@ class fit_nr(object):
 
 		#print starting_pos
 
-		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_ln_likelihood_coincidence_matching, a=2., threads=num_threads)
+		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_ln_likelihood_coincidence_matching, a=proposal_scale, threads=num_threads)
 
 
 
@@ -1349,28 +1377,50 @@ if __name__ == '__main__':
 	d_scale_pars[0.345][5300] = 1200
 	d_scale_pars[0.345][6200] = 1200
 	
-	test = fit_nr(d_coincidence_data, num_mc_events=500000)
+	test = fit_nr(d_coincidence_data, num_mc_events=100000)
 
 
 	#test.ln_likelihood_coincidence_matching(a_py=[1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15], a_qy=[7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25], intrinsic_res_s1=0.04, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.474, s1_eff_par1=3.94, s2_eff_par0=358, s2_eff_par1=576, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14), (6, 14), (6, 14),
 						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8), (1.5, 8),
-						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
+						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
 
-	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=15, tol=0.01)
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][2300] = 1923
-	d_scale_pars[0.345][3000] = 1705
-	d_scale_pars[0.345][3500] = 694
-	d_scale_pars[0.345][4500] = 1901
-	d_scale_pars[0.345][5300] = 4899
-	d_scale_pars[0.345][6200] = 4147
+	d_scale_pars[0.345][2300] = 4480
+	d_scale_pars[0.345][3000] = 1923
+	d_scale_pars[0.345][3500] = 1705
+	d_scale_pars[0.345][4500] = 693
+	d_scale_pars[0.345][5300] = 1728
+	d_scale_pars[0.345][6200] = 1901
 	#test.ln_likelihood_coincidence_matching(a_py=[1.3, 6.7, 8.2, 6.7, 8.4, 10.3, 10.7, 12.7], a_qy=[9.2, 5.4, 6.6, 6.9, 5.6, 5.6, 5.0, 4.9], intrinsic_res_s1=0.20, intrinsic_res_s2=0.07, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.56, s1_eff_par1=2.23, s2_eff_par0=370, s2_eff_par1=651, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
-	test.run_mcmc(num_steps=10, num_walkers=128, num_threads=1, fractional_deviation_start_pos=0.01)
+	"""
+	test.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(np.array([  1.27290620e+00,   6.71207698e+00,   8.19298167e+00,
+
+         6.66084841e+00,   8.44818991e+00,   1.02776487e+01,
+
+         1.06877811e+01,   1.26692395e+01,   9.20009512e+00,
+
+         5.41908097e+00,   6.65437281e+00,   6.87179658e+00,
+
+         5.64982943e+00,   5.63923643e+00,   5.04561272e+00,
+
+         4.93656201e+00,   2.04212864e-01,   7.42218324e-02,
+
+         6.56276373e+00,   2.23638205e+00,   3.70238838e+02,
+
+         6.51125214e+02,   4.48067786e+03,   1.92318162e+03,
+
+         1.70534637e+03,   6.93589526e+02,   1.72821055e+03,
+
+         1.90168983e+03,   4.89954856e+03,   4.14771204e+03]))
+	"""
+
+	#test.run_mcmc(num_steps=10, num_walkers=128, num_threads=1, fractional_deviation_start_pos=0.01)
 
 
 	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]

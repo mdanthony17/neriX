@@ -57,10 +57,7 @@ c_acceptance.Update()
 raw_input('Press enter to continue...')
 
 plot_name = '%s_acceptance_fraction' % (dir_specifier_name)
-if not fit_efficiency:
-	plot_name = 'yields_fit_%s' % (plot_name)
-else:
-	plot_name = 'efficiency_fit_%.2f_deviation_%s' % (deviation_from_nest, plot_name)
+plot_name = 'yields_fit_%s' % (plot_name)
 
 neriX_analysis.save_plot(l_plots, c_acceptance, plot_name)
 
