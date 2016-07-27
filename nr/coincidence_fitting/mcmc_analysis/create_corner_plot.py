@@ -9,89 +9,45 @@ import numpy as np
 import corner
 import cPickle as pickle
 
-if len(sys.argv) != 6 and len(sys.argv) != 9 and len(sys.argv) != 7 and len(sys.argv) != 10:
-	print 'Use is python plot_free_parameters.py <degree> <cathode> <anode> <analysis type> <num walkers> [<use fake data>: t/f] [relative accidental rate] [num fake events] [name_notes]'
+if len(sys.argv) != 3:
+	print 'Use is python perform_full_matching.py <cathode setting> <num walkers>'
 	sys.exit()
 
-print '\n\nNEED TO ADJUST CODE FOR FAKE DATA ACCIDENTAL RATE AND NUM EVENTS!!!'
+print '\n\nBy default look for all energies - change source if anything else is needed.\n'
 
+cathode_setting = float(sys.argv[1])
+num_walkers = int(sys.argv[2])
 
-checkFakeData = False
-useNameNote = False
-if len(sys.argv) == 10:
-	checkFakeData = True
-	useNameNote = True
-elif len(sys.argv) == 9:
-	checkFakeData = True
-elif len(sys.argv) == 7:
-	useNameNote = True
+l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300, 6200]
+s_degree_settings = ''
+for degree_setting in l_degree_settings_in_use:
+	s_degree_settings += '%s,' % (degree_setting)
+s_degree_settings = s_degree_settings[:-1]
 
+nameOfResultsDirectory = neriX_simulation_config.results_directory_name
+l_plots = ['plots']
 
-degreeSetting = int(sys.argv[1])
-cathodeSetting = float(sys.argv[2])
-anodeSetting = float(sys.argv[3])
-sMeasurement = sys.argv[4]
-numWalkers = int(sys.argv[5])
+dir_specifier_name = '%.3f_kV_%s_deg' % (cathode_setting, s_degree_settings)
 
+nameOfResultsDirectory += '/yields_fit'
 
-# change to switch between real and fake data
-if checkFakeData:
-	if sys.argv[6] == 't':
-		useFakeData = True
-		relativeAccidentalRate = float(sys.argv[7])
-		numFakeEvents = int(sys.argv[8])
-		nameOfResultsDirectory = 'fake_data/results'
-		lPlots = ['plots', 'corner_plots', 'fake_data']
-		useFakeValueInPlots = True
-		sForNameInFake = '_fake'
-	else:
-		useFakeData = False
-		relativeAccidentalRate = False
-		numFakeEvents = -1
-		nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-		lPlots = ['plots', 'corner_plots', 'data']
-		useFakeValueInPlots = False
-else:
-	useFakeData = False
-	relativeAccidentalRate = False
-	numFakeEvents = -1
-	nameOfResultsDirectory = neriX_simulation_config.nameOfResultsDirectory
-	lPlots = ['plots', 'corner_plots', 'data']
-	useFakeValueInPlots = False
-
-
-
-if useNameNote:
-	if useFakeData:
-		name_notes = sys.argv[9]
-	else:
-		name_notes = sys.argv[6]
-
-sForNameInFake = ''
-
-
-dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (degreeSetting, cathodeSetting, anodeSetting)
-if useFakeData:
-	dir_specifier_name += '_%.2f_%d_events' % (relativeAccidentalRate, numFakeEvents)
-if useNameNote:
-	dir_specifier_name += '_' + name_notes
-
-sPathToFile = './%s/%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name, sMeasurement)
+sPathToFile = './%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name)
 
 if os.path.exists(sPathToFile):
 	dSampler = pickle.load(open(sPathToFile, 'r'))
-	aSampler = dSampler[numWalkers][-1]['_chain'] # look at last sampler only (can change)
+	aSampler = dSampler[num_walkers][-1]['_chain'] # look at last sampler only (can change)
 	print 'Successfully loaded sampler!'
 else:
 	print sPathToFile
 	print 'Could not find file!'
+	sys.exit()
 
 
 
 # need to figure this out
-numDim = 17
+numDim = 43
 
-lLabelsForCorner = ('photon_yield', 'charge_yield', 'res_s1', 'res_s2', 'n_g1', 'n_res_spe', 'n_par0_tac_eff', 'n_par0_pf_eff', 'n_par1_pf_eff', 'n_g2', 'n_gas_gain_mean', 'n_gas_gain_width', 'n_par0_trig_eff', 'n_par1_trig_eff', 'n_par0_e_to_i', 'n_par1_e_to_i', 'n_par2_e_to_i')
+lLabelsForCorner = ['py_0', 'py_1', 'py_2', 'py_3', 'py_4', 'py_5', 'py_6', 'py_7', 'qy_0', 'qy_1', 'qy_2', 'qy_3', 'qy_4', 'qy_5', 'qy_6', 'qy_7', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'scale_par_0', 'scale_par_1', 'scale_par_2', 'scale_par_3', 'scale_par_4', 'scale_par_5', 'scale_par_6', 'scale_par_7']
 
 samples = aSampler[:, -5:, :].reshape((-1, numDim))
 fig = corner.corner(samples, labels=lLabelsForCorner)

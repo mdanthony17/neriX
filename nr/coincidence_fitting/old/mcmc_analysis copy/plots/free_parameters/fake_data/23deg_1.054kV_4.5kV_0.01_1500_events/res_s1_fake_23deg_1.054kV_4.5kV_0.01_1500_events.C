@@ -1,0 +1,141 @@
+{
+//=========Macro generated from canvas: Canvas_eQjBgbrkgJW8U8Uv9jjh2A/
+//=========  (Mon Feb 29 14:02:09 2016) by ROOT version5.34/28
+   TCanvas *Canvas_eQjBgbrkgJW8U8Uv9jjh2A = new TCanvas("Canvas_eQjBgbrkgJW8U8Uv9jjh2A", "",0,0,700,500);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetHighLightColor(2);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->Range(-0.25,-126.1985,2.25,1135.786);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetFillColor(0);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetBorderMode(0);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetBorderSize(2);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetFrameBorderMode(0);
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetFrameBorderMode(0);
+   
+   TH1F *h_res_s1 = new TH1F("h_res_s1","res_s1",100,0,2);
+   h_res_s1->SetBinContent(1,76);
+   h_res_s1->SetBinContent(2,91);
+   h_res_s1->SetBinContent(3,149);
+   h_res_s1->SetBinContent(4,131);
+   h_res_s1->SetBinContent(5,147);
+   h_res_s1->SetBinContent(6,183);
+   h_res_s1->SetBinContent(7,241);
+   h_res_s1->SetBinContent(8,337);
+   h_res_s1->SetBinContent(9,455);
+   h_res_s1->SetBinContent(10,572);
+   h_res_s1->SetBinContent(11,637);
+   h_res_s1->SetBinContent(12,860);
+   h_res_s1->SetBinContent(13,931);
+   h_res_s1->SetBinContent(14,903);
+   h_res_s1->SetBinContent(15,838);
+   h_res_s1->SetBinContent(16,801);
+   h_res_s1->SetBinContent(17,610);
+   h_res_s1->SetBinContent(18,577);
+   h_res_s1->SetBinContent(19,487);
+   h_res_s1->SetBinContent(20,336);
+   h_res_s1->SetBinContent(21,296);
+   h_res_s1->SetBinContent(22,212);
+   h_res_s1->SetBinContent(23,167);
+   h_res_s1->SetBinContent(24,64);
+   h_res_s1->SetBinContent(25,46);
+   h_res_s1->SetBinContent(26,42);
+   h_res_s1->SetBinContent(27,10);
+   h_res_s1->SetBinContent(28,11);
+   h_res_s1->SetBinContent(29,10);
+   h_res_s1->SetBinContent(30,5);
+   h_res_s1->SetBinContent(33,5);
+   h_res_s1->SetBinContent(35,10);
+   h_res_s1->SetBinError(1,8.717798);
+   h_res_s1->SetBinError(2,9.539392);
+   h_res_s1->SetBinError(3,12.20656);
+   h_res_s1->SetBinError(4,11.44552);
+   h_res_s1->SetBinError(5,12.12436);
+   h_res_s1->SetBinError(6,13.52775);
+   h_res_s1->SetBinError(7,15.52417);
+   h_res_s1->SetBinError(8,18.35756);
+   h_res_s1->SetBinError(9,21.33073);
+   h_res_s1->SetBinError(10,23.91652);
+   h_res_s1->SetBinError(11,25.23886);
+   h_res_s1->SetBinError(12,29.32576);
+   h_res_s1->SetBinError(13,30.51229);
+   h_res_s1->SetBinError(14,30.04996);
+   h_res_s1->SetBinError(15,28.94823);
+   h_res_s1->SetBinError(16,28.30194);
+   h_res_s1->SetBinError(17,24.69818);
+   h_res_s1->SetBinError(18,24.02082);
+   h_res_s1->SetBinError(19,22.06808);
+   h_res_s1->SetBinError(20,18.3303);
+   h_res_s1->SetBinError(21,17.20465);
+   h_res_s1->SetBinError(22,14.56022);
+   h_res_s1->SetBinError(23,12.92285);
+   h_res_s1->SetBinError(24,8);
+   h_res_s1->SetBinError(25,6.78233);
+   h_res_s1->SetBinError(26,6.480741);
+   h_res_s1->SetBinError(27,3.162278);
+   h_res_s1->SetBinError(28,3.316625);
+   h_res_s1->SetBinError(29,3.162278);
+   h_res_s1->SetBinError(30,2.236068);
+   h_res_s1->SetBinError(33,2.236068);
+   h_res_s1->SetBinError(35,3.162278);
+   h_res_s1->SetEntries(10240);
+   h_res_s1->SetStats(0);
+   h_res_s1->SetFillColor(1);
+   h_res_s1->SetFillStyle(0);
+   h_res_s1->SetMarkerStyle(20);
+   h_res_s1->SetMarkerSize(0);
+   h_res_s1->GetXaxis()->SetLabelFont(42);
+   h_res_s1->GetXaxis()->SetLabelSize(0.035);
+   h_res_s1->GetXaxis()->SetTitleSize(0.035);
+   h_res_s1->GetXaxis()->SetTitleFont(42);
+   h_res_s1->GetYaxis()->SetLabelFont(42);
+   h_res_s1->GetYaxis()->SetLabelSize(0.035);
+   h_res_s1->GetYaxis()->SetTitleSize(0.035);
+   h_res_s1->GetYaxis()->SetTitleFont(42);
+   h_res_s1->GetZaxis()->SetLabelFont(42);
+   h_res_s1->GetZaxis()->SetLabelSize(0.035);
+   h_res_s1->GetZaxis()->SetTitleSize(0.035);
+   h_res_s1->GetZaxis()->SetTitleFont(42);
+   h_res_s1->Draw("");
+   
+   TPaveText *pt = new TPaveText(0.4342857,0.935,0.5657143,0.995,"blNDC");
+   pt->SetName("title");
+   pt->SetBorderSize(0);
+   pt->SetFillColor(0);
+   pt->SetFillStyle(0);
+   pt->SetTextFont(42);
+   TText *text = pt->AddText("res_s1");
+   pt->Draw();
+   TLine *line = new TLine(0.172007,0,0.172007,931);
+
+   Int_t ci;      // for color index setting
+   TColor *color; // for color definition with alpha
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(0.266866,0,0.266866,931);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(0.3629914,0,0.3629914,931);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(0.3,0,0.3,931);
+
+   ci = TColor::GetColor("#ff0000");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   
+   pt = new TPaveText(0.6,0.55,0.88,0.6,"blNDC");
+   pt->SetBorderSize(0);
+   pt->SetFillStyle(0);
+   text = pt->AddText("R_{S1} = 0.27^{-0.09}_{+0.10} ");
+   pt->Draw();
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->Modified();
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->cd();
+   Canvas_eQjBgbrkgJW8U8Uv9jjh2A->SetSelected(Canvas_eQjBgbrkgJW8U8Uv9jjh2A);
+}

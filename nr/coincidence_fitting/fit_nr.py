@@ -242,9 +242,9 @@ class fit_nr(object):
 										   6200:17.50} # actual energies that degree corresponds to
 
 		self.name_notes = name_notes
-		self.path_to_coincidence_data = '../analysis/full_angle_files/'
-		self.path_to_energy_spectra = './simulated_data/'
-		self.path_to_reduced_energy_spectra = './reduced_simulation_data/'
+		self.path_to_coincidence_data = '%s/../analysis/full_angle_files/' % (neriX_simulation_config.path_to_this_module)
+		self.path_to_energy_spectra = '%s/simulated_data/' % (neriX_simulation_config.path_to_this_module)
+		self.path_to_reduced_energy_spectra = '%s/reduced_simulation_data/' % (neriX_simulation_config.path_to_this_module)
 
 		self.l_energy_settings = [300, 0, 30]
 
@@ -911,6 +911,10 @@ class fit_nr(object):
 
 
 				if draw_fit:
+				
+					# normalizing distributions for drawing only
+					print '\nNormalizing spectra for drawing only.\n'
+					a_s1_s2_mc *= (np.sum(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1']) / float(np.sum(a_s1_s2_mc)))
 
 					f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
 					
@@ -920,6 +924,8 @@ class fit_nr(object):
 					
 					s1_s2_mc_plot = np.rot90(a_s1_s2_mc)
 					s1_s2_mc_plot = np.flipud(s1_s2_mc_plot)
+					
+					
 					ax2.pcolormesh(self.a_s1_bin_edges, self.a_log_bin_edges, s1_s2_mc_plot)
 					#plt.colorbar()
 					
@@ -1037,7 +1043,18 @@ class fit_nr(object):
 		
 	def wrapper_ln_likelihood_coincidence_matching(self, a_parameters, kwargs={}):
 		#print a_parameters
-		return self.likelihood_nr_band_no_nest(*a_parameters, **kwargs)
+		
+		num_yields = len(self.a_spline_energies)
+		
+		offset_for_scales = 2*num_yields+19
+		d_scale_pars = {}
+		for cathode_setting in self.l_cathode_settings_in_use:
+			d_scale_pars[cathode_setting] = {}
+			for degree_setting in self.l_degree_settings_in_use:
+				d_scale_pars[cathode_setting][degree_setting] = a_parameters[offset_for_scales]
+				offset_for_scales += 1
+		
+		return self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=a_parameters[2*num_yields+2], spe_res_rv=a_parameters[2*num_yields+3], g2_value=a_parameters[2*num_yields+4], gas_gain_rv=a_parameters[2*num_yields+5], gas_gain_width_rv=a_parameters[2*num_yields+6], pf_eff_par0=a_parameters[2*num_yields+7], pf_eff_par1=a_parameters[2*num_yields+8], s1_eff_par0=a_parameters[2*num_yields+9], s1_eff_par1=a_parameters[2*num_yields+10], s2_eff_par0=a_parameters[2*num_yields+11], s2_eff_par1=a_parameters[2*num_yields+12], pf_stdev_par0=a_parameters[2*num_yields+13], pf_stdev_par1=a_parameters[2*num_yields+14], pf_stdev_par2=a_parameters[2*num_yields+15], exciton_to_ion_par0_rv=a_parameters[2*num_yields+16], exciton_to_ion_par1_rv=a_parameters[2*num_yields+17], exciton_to_ion_par2_rv=a_parameters[2*num_yields+18], d_scale_pars=d_scale_pars, **kwargs)
 	
 	
 	def wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(self, a_parameters, kwargs={}):
@@ -1140,147 +1157,130 @@ class fit_nr(object):
 		l_parameters = []
 		
 		for par_name in l_par_names:
-			l_arrays_for_stacking.append(d_variable_arrays[par_name])
-			#print par_name
-			#print d_variable_arrays[par_name]
+			# check if item in list is iterable and if not
+			# just append it, otherwise append one value
+			# at a time
+			try:
+				for value in d_variable_arrays[par_name]:
+					l_parameters.append(value)
+			except:
+				l_parameters.append(d_variable_arrays[par_name])
 		
-		l_arrays_for_stacking = np.asarray(l_arrays_for_stacking)
-		#print l_arrays_for_stacking[5]
+		l_parameters = np.asarray(l_parameters)
+		#print l_parameters
 
-		return emcee.utils.sample_ball(l_arrays_for_stacking, l_arrays_for_stacking*percent_deviation, num_walkers)
+		return emcee.utils.sample_ball(l_parameters, l_parameters*percent_deviation, num_walkers)
 	
 	
 
 
-	def run_mcmc(self, sMeasurement, sParameters, numWalkers, numSteps, numThreads, fractionalDeviationStartPos = 1e-3, gpu_compute=False, d_gpu_scale={}, lowerQuantile=0., upperQuantile=1.):
-		if sMeasurement == 'photon_yield':
-			numDim = 8
-			assert len(sParameters) == numDim
-			func = self.mcmc_func_photon_yield_mc_matching
-		elif sMeasurement == 'charge_yield':
-			numDim = 8
-			assert len(sParameters) == numDim
-			func = self.mcmc_func_charge_yield_mc_matching
-		elif sMeasurement == 'full_matching':
-			numDim = 17
-			assert len(sParameters) == numDim
-			func = self.mcmc_func_full_matching
-		else:
-			print 'Currently not setup to handle the input measurement: %s' % sMeasurement
-			sys.exit()
+	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01):
 	
-		# ------------------------------------------------
-		# Setup save locations
-		# ------------------------------------------------
+		num_dim = 3*len(self.a_spline_energies) + 19 # 36
+		print '\n\nFitting yields...\n\n'
+		
+		#l_guesses = [0. for j in xrange(num_dim)]
+		#for i, name in enumerate(l_par_names):
+		#	l_guesses[i] = d_variable_guesses[name]
+		
+		# get string for cathode voltages in use
+		s_cathode_voltages = ''
+		for cathode_setting in self.l_cathode_settings_in_use:
+			s_cathode_voltages += '%s,' % (cathode_setting)
+		s_cathode_voltages = s_cathode_voltages[:-1]
+		
+		# get string for degree settings in use
+		s_degree_settings = ''
+		for degree_setting in self.l_degree_settings_in_use:
+			s_degree_settings += '%s,' % (degree_setting)
+		s_degree_settings = s_degree_settings[:-1]
+		
+		# before emcee, setup save locations
+		dir_specifier_name = '%s_kV_%s_deg' % (s_cathode_voltages, s_degree_settings)
+		self.results_directory_name = neriX_simulation_config.results_directory_name
+		self.path_for_save = '%s/yields_fit/%s/' % (self.results_directory_name, dir_specifier_name)
 		
 		
-		if not self.use_fake_data:
-			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV' % (self.degree_setting, self.cathode_setting, self.anode_setting)
-		else:
-			dir_specifier_name = '%ddeg_%.3fkV_%.1fkV_%.2f_%d_events' % (self.degree_setting, self.cathode_setting, self.anode_setting, self.assume_relative_accidental_rate, self.num_fake_events)
+		if not os.path.isdir(self.path_for_save):
+			os.makedirs(self.path_for_save)
 		
 		
-		if not self.name_notes == None:
-				dir_specifier_name += '_' + self.name_notes
-		
-		if not self.use_fake_data:
-			self.resultsDirectoryName = neriX_simulation_config.nameOfResultsDirectory
-			self.sPathForSave = '%s/%s/%s/' % (self.resultsDirectoryName, dir_specifier_name, sMeasurement)
-		
-		else:
-			self.resultsDirectoryName = neriX_simulation_datasets.pathToFakeData + 'results'
-			
- 			self.sPathForSave = '%s/%s/%s/' % (self.resultsDirectoryName, dir_specifier_name, sMeasurement)
-			# for fake data add events and relative rate to path after
-			# deg, cathode, and anode
-			# _%.2f_%d_events
-		
-		self.sPathForOldFiles = self.sPathForSave + 'previous_results/'
-		
-		if not os.path.isdir(self.sPathForSave):
-			os.makedirs(self.sPathForOldFiles)
-		else:
-			for file in os.listdir(self.sPathForSave):
-				if file == 'previous_results' or 'sampler_dictionary.p':
-					continue
-				call(['mv', self.sPathForSave + file, self.sPathForOldFiles + file])
-			
-		
-		
-		# ------------------------------------------------
-		# initialize walkers and corner plot
-		# ------------------------------------------------
-
-
-		initialParameters = np.zeros(numDim)
-		lLabelsForCorner = ['' for i in xrange(numDim)]
-		for i, set in enumerate(sParameters):
-			lLabelsForCorner[i] = '%s' % set[0]
-			initialParameters[i] = set[1]
-
-
 		# chain dictionary will have the following format
-		# dSampler[walkers] = [sampler_000, sampler_001, ...]
+		# d_sampler[walkers] = [sampler_000, sampler_001, ...]
 
-		loadedPreviousSampler = False
+		loaded_prev_sampler = False
 		try:
 			# two things will fail potentially
 			# 1. open if file doesn't exist
 			# 2. posWalkers load since initialized to None
-			with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
-				dSampler = pickle.load(fPrevSampler)
-				prevSampler = dSampler[numWalkers][-1]
+			with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
+				d_sampler = pickle.load(f_prev_sampler)
+				prevSampler = d_sampler[num_walkers][-1]
 				# need to load in weird way bc can't pickle
 				# ensembler object
-				posWalkers = prevSampler['_chain'][:,-1,:]
-				randomState = prevSampler['_random']
-			loadedPreviousSampler = True
+				starting_pos = prevSampler['_chain'][:,-1,:]
+				random_state = prevSampler['_random']
+			loaded_prev_sampler = True
 			print '\nSuccessfully loaded previous chain!\n'
 		except:
 			print '\nCould not load previous sampler or none existed - starting new sampler.\n'
-
-
-		if not loadedPreviousSampler:
-			posWalkers = [(np.random.randn(numDim)+initialParameters)*fractionalDeviationStartPos + initialParameters for i in xrange(numWalkers)]
-			randomState = None
+		
+		if not loaded_prev_sampler:
+		
+			if num_dim == 43:
+				a_free_parameter_guesses = [1.27, 6.71, 8.19, 6.66, 8.45, 10.28, 10.69, 12.67,
+											9.20, 5.42, 6.65, 6.87, 5.65, 5.64, 5.04, 4.93,
+											0.20, 0.074, 6.56, 2.23, 370.24, 651.12,
+											4481, 1923, 1705, 694, 1728, 1901, 4900, 4148]
+			else:
+				print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
+				sys.exit()
+		
+		
+			#starting_pos = self.initial_positions_nr_band_no_nest(num_walkers)
+			starting_pos = self.initial_positions_for_ensemble(a_free_parameter_guesses, num_walkers=num_walkers, percent_deviation=fractional_deviation_start_pos)
+			
+			random_state = None
 			
 			# create file if it doesn't exist
-			if not os.path.exists(self.sPathForSave + 'sampler_dictionary.p'):
-				with open(self.sPathForSave + 'sampler_dictionary.p', 'w') as fPrevSampler:
-					dSampler = {}
-					dSampler[numWalkers] = []
-					pickle.dump(dSampler, fPrevSampler)
+			if not os.path.exists(self.path_for_save + 'sampler_dictionary.p'):
+				with open(self.path_for_save + 'sampler_dictionary.p', 'w') as f_prev_sampler:
+					d_sampler = {}
+					d_sampler[num_walkers] = []
+					pickle.dump(d_sampler, f_prev_sampler)
 			else:
-				with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
-					dSampler = pickle.load(fPrevSampler)
-				with open(self.sPathForSave + 'sampler_dictionary.p', 'w') as fPrevSampler:
-					dSampler[numWalkers] = []
-					pickle.dump(dSampler, fPrevSampler)
+				with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
+					d_sampler = pickle.load(f_prev_sampler)
+				with open(self.path_for_save + 'sampler_dictionary.p', 'w') as f_prev_sampler:
+					d_sampler[num_walkers] = []
+					pickle.dump(d_sampler, f_prev_sampler)
+	
+	
+	
+
+		#print starting_pos
+
+		sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_ln_likelihood_coincidence_matching, a=2., threads=num_threads)
+
 
 
 		print '\n\nBeginning MCMC sampler\n\n'
-		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (numWalkers, numSteps, numWalkers*numSteps)
-		sampler = emcee.EnsembleSampler(numWalkers, numDim, func, threads=numThreads, kwargs={'d_gpu_scale':d_gpu_scale, 'gpu_compute':gpu_compute, 'lowerQuantile':lowerQuantile, 'upperQuantile':upperQuantile})
+		print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (num_walkers, num_steps, num_walkers*num_steps)
 		
-		# run mcmc sampler
-		
-		startTimeMCMC = time.time()
-		
-		currentStep = 1
-		with click.progressbar(sampler.sample(posWalkers, iterations=numSteps, rstate0=randomState), length=numSteps) as mcmc_sampler:
+		start_time_mcmc = time.time()
+
+		with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state), length=num_steps) as mcmc_sampler:
 			for pos, lnprob, state in mcmc_sampler:
-				#print '\nCompleted step %d of %d.\n' % (currentStep, numSteps)
-				currentStep += 1
-			
-		totalTimeMCMC = (time.time() - startTimeMCMC) / 3600.
-		print '\n\n%d function calls took %.2f hours.\n\n' % (numWalkers*numSteps, totalTimeMCMC)
+				pass
+				
+		total_time_mcmc = (time.time() - start_time_mcmc) / 3600.
+		print '\n\n%d function calls took %.2f hours.\n\n' % (num_walkers*num_steps, total_time_mcmc)
 
+		#samples = sampler.chain[:, 10:, :].reshape((-1, num_dim))
+		#print samples
 
-		"""
-		for pos, lnprob, state in sampler.sample(posWalkers, iterations=numSteps):
-			print '\nCompleted step %d of %d.\n' % (currentStep, numSteps)
-			currentStep += 1
-		"""
+		#fig = corner.corner(samples)
+		#fig.savefig(self.path_for_save + 'corner_plot.png')
 
 
 		# ------------------------------------------------
@@ -1294,32 +1294,23 @@ class fit_nr(object):
 		if 'pool' in dictionary_for_sampler:
 			del dictionary_for_sampler['pool']
 
-		with open(self.sPathForSave + 'sampler_dictionary.p', 'r') as fPrevSampler:
-			dSampler = pickle.load(fPrevSampler)
-		fPrevSampler.close()
+		with open(self.path_for_save + 'sampler_dictionary.p', 'r') as f_prev_sampler:
+			d_sampler = pickle.load(f_prev_sampler)
+		#f_prev_sampler.close()
 
-		fPrevSampler = open(self.sPathForSave + 'sampler_dictionary.p', 'w')
-		dSampler[numWalkers].append(sampler.__dict__)
-		pickle.dump(dSampler, fPrevSampler)
-		fPrevSampler.close()
+		f_prev_sampler = open(self.path_for_save + 'sampler_dictionary.p', 'w')
+		d_sampler[num_walkers].append(sampler.__dict__)
+		pickle.dump(d_sampler, f_prev_sampler)
+		f_prev_sampler.close()
 
 		
 
 		#sampler.run_mcmc(posWalkers, numSteps) # shortcut of above method
-		pickle.dump(sampler.acceptance_fraction, open(self.sPathForSave + 'sampler_acceptance_fraction.p', 'w'))
+		pickle.dump(sampler.acceptance_fraction, open(self.path_for_save + 'sampler_acceptance_fraction.p', 'w'))
 		try:
-			pickle.dump(sampler.acor, open(self.sPathForSave + 'sampler_acor.p', 'w'))
+			pickle.dump(sampler.acor, open(self.path_for_save + 'sampler_acor.p', 'w'))
 		except:
 			print '\n\nWARNING: Not enough sample points to estimate the autocorrelation time - this likely means that the fit is bad since the burn-in time was not reached.\n\n'
-		"""
-		try:
-			samples = sampler.chain[:, int(max(sampler.acor)):, :].reshape((-1, numDim))
-			fig = corner.corner(samples, labels=lLabelsForCorner)
-			fig.savefig(self.sPathForSave + 'corner_plot.png')
-		except AssertionError:
-			print 'Too few samples (number of samples fewer than number of dimensions) - cannot reasonably create correlation plots.'
-			sys.exit()
-		"""
 
 
 
@@ -1367,15 +1358,19 @@ if __name__ == '__main__':
 						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8), (1.5, 8),
 						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
 
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=15, tol=0.01)
+	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=15, tol=0.01)
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][3500] = 3160
-	d_scale_pars[0.345][4500] = 805
-	#test.ln_likelihood_coincidence_matching(a_py=[2.4, 7.6, 6.6, 11.2], a_qy=[5.2, 5.0, 4.9, 4.0], intrinsic_res_s1=0.18, intrinsic_res_s2=0.16, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=4.0, s1_eff_par1=1.3, s2_eff_par0=403, s2_eff_par1=612, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	d_scale_pars[0.345][2300] = 1923
+	d_scale_pars[0.345][3000] = 1705
+	d_scale_pars[0.345][3500] = 694
+	d_scale_pars[0.345][4500] = 1901
+	d_scale_pars[0.345][5300] = 4899
+	d_scale_pars[0.345][6200] = 4147
+	#test.ln_likelihood_coincidence_matching(a_py=[1.3, 6.7, 8.2, 6.7, 8.4, 10.3, 10.7, 12.7], a_qy=[9.2, 5.4, 6.6, 6.9, 5.6, 5.6, 5.0, 4.9], intrinsic_res_s1=0.20, intrinsic_res_s2=0.07, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.56, s1_eff_par1=2.23, s2_eff_par0=370, s2_eff_par1=651, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
-	#test.initial_positions_for_ensemble(
+	test.run_mcmc(num_steps=10, num_walkers=128, num_threads=1, fractional_deviation_start_pos=0.01)
 
 
 	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]

@@ -1,0 +1,148 @@
+{
+//=========Macro generated from canvas: 09745d344af646c3aa6ef86c5f09f0e3/
+//=========  (Fri Feb 12 14:32:43 2016) by ROOT version5.34/26
+   TCanvas *09745d344af646c3aa6ef86c5f09f0e3 = new TCanvas("09745d344af646c3aa6ef86c5f09f0e3", "",821,185,704,527);
+   09745d344af646c3aa6ef86c5f09f0e3->SetHighLightColor(2);
+   09745d344af646c3aa6ef86c5f09f0e3->Range(2.125,-128.4661,10.875,1156.195);
+   09745d344af646c3aa6ef86c5f09f0e3->SetFillColor(0);
+   09745d344af646c3aa6ef86c5f09f0e3->SetBorderMode(0);
+   09745d344af646c3aa6ef86c5f09f0e3->SetBorderSize(2);
+   09745d344af646c3aa6ef86c5f09f0e3->SetFrameBorderMode(0);
+   09745d344af646c3aa6ef86c5f09f0e3->SetFrameBorderMode(0);
+   
+   TH1F *h_charge_yield = new TH1F("h_charge_yield","charge_yield",100,3,10);
+   h_charge_yield->SetBinContent(20,5);
+   h_charge_yield->SetBinContent(21,8);
+   h_charge_yield->SetBinContent(23,41);
+   h_charge_yield->SetBinContent(24,78);
+   h_charge_yield->SetBinContent(25,126);
+   h_charge_yield->SetBinContent(26,167);
+   h_charge_yield->SetBinContent(27,259);
+   h_charge_yield->SetBinContent(28,330);
+   h_charge_yield->SetBinContent(29,579);
+   h_charge_yield->SetBinContent(30,578);
+   h_charge_yield->SetBinContent(31,756);
+   h_charge_yield->SetBinContent(32,919);
+   h_charge_yield->SetBinContent(33,948);
+   h_charge_yield->SetBinContent(34,917);
+   h_charge_yield->SetBinContent(35,740);
+   h_charge_yield->SetBinContent(36,749);
+   h_charge_yield->SetBinContent(37,636);
+   h_charge_yield->SetBinContent(38,519);
+   h_charge_yield->SetBinContent(39,459);
+   h_charge_yield->SetBinContent(40,315);
+   h_charge_yield->SetBinContent(41,308);
+   h_charge_yield->SetBinContent(42,229);
+   h_charge_yield->SetBinContent(43,151);
+   h_charge_yield->SetBinContent(44,130);
+   h_charge_yield->SetBinContent(45,78);
+   h_charge_yield->SetBinContent(46,55);
+   h_charge_yield->SetBinContent(47,51);
+   h_charge_yield->SetBinContent(48,30);
+   h_charge_yield->SetBinContent(49,40);
+   h_charge_yield->SetBinContent(50,9);
+   h_charge_yield->SetBinContent(51,5);
+   h_charge_yield->SetBinContent(54,5);
+   h_charge_yield->SetBinContent(56,5);
+   h_charge_yield->SetBinContent(65,5);
+   h_charge_yield->SetBinContent(68,5);
+   h_charge_yield->SetBinContent(90,5);
+   h_charge_yield->SetBinError(20,2.236068);
+   h_charge_yield->SetBinError(21,2.828427);
+   h_charge_yield->SetBinError(23,6.403124);
+   h_charge_yield->SetBinError(24,8.831761);
+   h_charge_yield->SetBinError(25,11.22497);
+   h_charge_yield->SetBinError(26,12.92285);
+   h_charge_yield->SetBinError(27,16.09348);
+   h_charge_yield->SetBinError(28,18.1659);
+   h_charge_yield->SetBinError(29,24.06242);
+   h_charge_yield->SetBinError(30,24.04163);
+   h_charge_yield->SetBinError(31,27.49545);
+   h_charge_yield->SetBinError(32,30.31501);
+   h_charge_yield->SetBinError(33,30.78961);
+   h_charge_yield->SetBinError(34,30.28201);
+   h_charge_yield->SetBinError(35,27.20294);
+   h_charge_yield->SetBinError(36,27.36786);
+   h_charge_yield->SetBinError(37,25.21904);
+   h_charge_yield->SetBinError(38,22.78157);
+   h_charge_yield->SetBinError(39,21.42429);
+   h_charge_yield->SetBinError(40,17.74824);
+   h_charge_yield->SetBinError(41,17.54993);
+   h_charge_yield->SetBinError(42,15.13275);
+   h_charge_yield->SetBinError(43,12.28821);
+   h_charge_yield->SetBinError(44,11.40175);
+   h_charge_yield->SetBinError(45,8.831761);
+   h_charge_yield->SetBinError(46,7.416198);
+   h_charge_yield->SetBinError(47,7.141428);
+   h_charge_yield->SetBinError(48,5.477226);
+   h_charge_yield->SetBinError(49,6.324555);
+   h_charge_yield->SetBinError(50,3);
+   h_charge_yield->SetBinError(51,2.236068);
+   h_charge_yield->SetBinError(54,2.236068);
+   h_charge_yield->SetBinError(56,2.236068);
+   h_charge_yield->SetBinError(65,2.236068);
+   h_charge_yield->SetBinError(68,2.236068);
+   h_charge_yield->SetBinError(90,2.236068);
+   h_charge_yield->SetEntries(10240);
+   h_charge_yield->SetStats(0);
+   h_charge_yield->SetFillStyle(0);
+   h_charge_yield->SetMarkerStyle(20);
+   h_charge_yield->SetMarkerSize(0);
+   h_charge_yield->GetXaxis()->SetLabelFont(42);
+   h_charge_yield->GetXaxis()->SetLabelSize(0.035);
+   h_charge_yield->GetXaxis()->SetTitleSize(0.035);
+   h_charge_yield->GetXaxis()->SetTitleFont(42);
+   h_charge_yield->GetYaxis()->SetLabelFont(42);
+   h_charge_yield->GetYaxis()->SetLabelSize(0.035);
+   h_charge_yield->GetYaxis()->SetTitleSize(0.035);
+   h_charge_yield->GetYaxis()->SetTitleFont(42);
+   h_charge_yield->GetZaxis()->SetLabelFont(42);
+   h_charge_yield->GetZaxis()->SetLabelSize(0.035);
+   h_charge_yield->GetZaxis()->SetTitleSize(0.035);
+   h_charge_yield->GetZaxis()->SetTitleFont(42);
+   h_charge_yield->Draw("");
+   
+   TPaveText *pt = new TPaveText(0.3814286,0.9374,0.6185714,0.995,"blNDC");
+   pt->SetName("title");
+   pt->SetBorderSize(0);
+   pt->SetFillColor(0);
+   pt->SetFillStyle(0);
+   pt->SetTextFont(42);
+   TText *text = pt->AddText("charge_yield");
+   pt->Draw();
+   TLine *line = new TLine(5.034258,0,5.034258,948);
+
+   Int_t ci;      // for color index setting
+   TColor *color; // for color definition with alpha
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(5.334885,0,5.334885,948);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(5.699169,0,5.699169,948);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(5.3,0,5.3,948);
+
+   ci = TColor::GetColor("#ff0000");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   
+   pt = new TPaveText(0.6,0.55,0.88,0.6,"blNDC");
+   pt->SetBorderSize(0);
+   pt->SetFillStyle(0);
+   text = pt->AddText("Q_{y} = 5.33^{-0.30}_{+0.36} #frac{electrons}{keV}");
+   pt->Draw();
+   09745d344af646c3aa6ef86c5f09f0e3->Modified();
+   09745d344af646c3aa6ef86c5f09f0e3->cd();
+   09745d344af646c3aa6ef86c5f09f0e3->SetSelected(09745d344af646c3aa6ef86c5f09f0e3);
+}
