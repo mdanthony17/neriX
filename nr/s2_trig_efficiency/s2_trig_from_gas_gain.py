@@ -122,7 +122,7 @@ for i in tqdm(xrange(num_events)):
 			continue
 
 		#if (peak_location-l_s2_peak[0])/100. < lb_s2_time_diff_cut or (peak_location-l_s2_peak[0])/100. > ub_s2_time_diff_cut:
-		if (peak_location-l_s2_peak[0]) < 2000:
+		if (peak_location-l_s2_peak[0]) < 1400:
 			continue
 
 		h_s2_spec_no_trig_cut.Fill(l_s2_tot_bottom[peak_num])
@@ -140,7 +140,7 @@ for i in tqdm(xrange(num_events)):
 			#print trigger
 			#print peak_location
 			if (trigger - peak_location) > -50 and (trigger - peak_location) < 50:
-				#print l_s2_tot_bottom[peak_num]
+				print l_s2_tot_bottom[peak_num]
 				h_s2_spec_with_trig_cut.Fill(l_s2_tot_bottom[peak_num])
 
 

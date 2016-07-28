@@ -9,8 +9,8 @@ import numpy as np
 from tqdm import tqdm
 
 
-l_filenames = ['nerix_160715_1527']
-#l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438']
+#l_filenames = ['nerix_160715_1527']
+l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438']
 
 
 current_analysis = neriX_analysis.neriX_analysis(l_filenames, -50, 1.054, 4.5)
@@ -43,7 +43,7 @@ trig_lb = 40
 trig_ub = 100
 
 trial_width = 0.5
-cut_width = 2.0
+cut_width = 3.0
 
 
 #--------------- End Parameters to Change ----------------
@@ -101,17 +101,19 @@ c2.Update()
 
 s_na22_height_cut = '%s > %f && %s < %f' % (na_height_branch, f_na22_height.GetParameter(1) - cut_width*f_na22_height.GetParameter(2), na_height_branch, f_na22_height.GetParameter(1) + cut_width*f_na22_height.GetParameter(2))
 s_mod_dt_cut = '%s > %f && %s < %f' % (mod_dt_branch, dt_lb-mean_offset, mod_dt_branch, dt_ub-mean_offset)
+s_no_large_s1 = 'S1sPeak[0] < 82 || S1sPeak[0] > 192'
 
 current_analysis.add_cut(s_na22_height_cut)
-#current_analysis.add_cut(s_mod_dt_cut)
-current_analysis.add_z_cut()
+current_analysis.add_cut(s_mod_dt_cut)
+current_analysis.add_cut(s_no_large_s1)
+#current_analysis.add_z_cut()
 current_analysis.add_cut('%s > 0' % (s2_branch))
 current_analysis.add_cut('%s < %f' % (s2_branch, l_s2_settings[2]))
 
 current_analysis.multithread_set_event_list(7)
 
 
-current_analysis.get_T1().Scan('EventId:S1sPeak[0]:S2sPeak[0]:NaiPeak[0]:%s:TrigLeftEdge' % s2_branch, '%s < 300' % s2_branch)
+#current_analysis.get_T1().Scan('EventId:S1sPeak[0]:S2sPeak[0]:NaiPeak[0]:%s:TrigLeftEdge' % s2_branch, '%s < 300' % s2_branch)
 
 
 c4 = Canvas()

@@ -63,11 +63,11 @@ optionSame = 'SAME'
 
 
 #choose cuts for run 1
-run1.add_z_cut()
+#run1.add_z_cut()
 run1.add_radius_cut(0, 0.85)
-run1.add_xs1asym_cut()
-run1.add_xs2asym_cut()
-run1.add_single_scatter_cut()
+#run1.add_xs1asym_cut()
+#run1.add_xs2asym_cut()
+#run1.add_single_scatter_cut()
 #run1.add_cut('TMath::Log10(S2sTotBottom[0]/S1sTotBottom[0]) < 3 && S1sTotBottom[0] < 35')
 
 #print 'Livetime: ' + str(run1.get_livetime())

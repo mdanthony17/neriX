@@ -57,7 +57,7 @@ print 'Corner plot took %.3f minutes.\n\n' % ((time.time()-start_time)/60.)
 
 # path for save
 sPathForSave = './'
-for directory in lPlots:
+for directory in l_plots:
 	sPathForSave += directory + '/'
 
 if not os.path.exists(sPathForSave):
