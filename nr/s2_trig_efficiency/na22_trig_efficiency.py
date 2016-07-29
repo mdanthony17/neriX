@@ -10,8 +10,8 @@ from tqdm import tqdm
 import root_numpy
 from math import exp
 
-#l_filenames = ['nerix_160715_1527']
-l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438', 'nerix_160722_1759']
+l_filenames = ['nerix_160715_1527']
+#l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438', 'nerix_160722_1759']
 
 
 current_analysis = neriX_analysis.neriX_analysis(l_filenames, -50, 1.054, 4.5)
@@ -134,9 +134,14 @@ h_s2_spectrum_na22_cut.GetYaxis().SetTitle('Counts')
 current_analysis.Draw(s2_branch, hist=h_s2_spectrum)
 current_analysis.Draw(s2_branch, hist=h_s2_spectrum_na22_cut, selection='%s && %s && %s' % (s_na22_height_cut, s_no_large_s1, s_mod_dt_cut))
 
+leg_s2_spectrum = Legend(2, leftmargin=0.3, textsize=0.02)
+leg_s2_spectrum.AddEntry(h_s2_spectrum, label='Raw S2 Spectrum', style='LEP')
+leg_s2_spectrum.AddEntry(h_s2_spectrum_na22_cut, label='S2 Spectrum after NaI coincidence cuts', style='LEP')
+
 
 h_s2_spectrum.Draw()
 h_s2_spectrum_na22_cut.Draw('same')
+leg_s2_spectrum.Draw('same')
 c_s2_spectrum.Update()
 
 

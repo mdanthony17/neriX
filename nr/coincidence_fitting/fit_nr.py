@@ -1140,10 +1140,12 @@ class fit_nr(object):
 		for par_name in l_par_names:
 			# handle photon and charge yield initial positions
 			if par_name == 'a_py':
-				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[:num_yields], 0.3*a_free_parameters[:num_yields], size=num_walkers)
+				d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields)])
 			
 			elif par_name == 'a_qy':
-				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[num_yields:2*num_yields], 0.3*a_free_parameters[num_yields:2*num_yields], size=num_walkers)
+				d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields, 2*num_yields)])
+				#d_variable_arrays[par_name] = np.random.normal(a_free_parameters[num_yields:2*num_yields], 0.3*np.asarray(a_free_parameters[num_yields:2*num_yields]), size=num_walkers)
+			
 
 			elif par_name == 'intrinsic_res_s1':
 				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+0], .04, size=num_walkers)
@@ -1163,7 +1165,8 @@ class fit_nr(object):
 				
 			
 			elif par_name == 's1_eff_par0':
-				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+2:2*num_yields+4], 0.3*a_free_parameters[2*num_yields+2:2*num_yields+4], size=num_walkers)
+				d_variable_arrays['s1_eff_par0'], d_variable_arrays['s1_eff_par1'] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(2*num_yields+2, 2*num_yields+4)])
+				#d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+2:2*num_yields+4], 0.3*np.asarray(a_free_parameters[2*num_yields+2:2*num_yields+4]), size=num_walkers)
 			
 
 			elif par_name == 's2_eff_par0':
@@ -1175,7 +1178,8 @@ class fit_nr(object):
 
 				
 			elif par_name == 'd_scale_pars':
-				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+4:], 0.3*a_free_parameters[2*num_yields+6:], size=num_walkers)
+				d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(2*num_yields+4, 2*num_yields+10)])
+				#d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+4:], 0.3*np.asarray(a_free_parameters[2*num_yields+6:]), size=num_walkers)
 
 			
 			# catch all normally distributed RVs
@@ -1188,12 +1192,15 @@ class fit_nr(object):
 		l_parameters = []
 		
 		for par_name in l_par_names:
-			l_arrays_for_stacking.append(d_variable_arrays[par_name])
+			if d_variable_arrays[par_name].shape[0] != num_walkers:
+				for array in d_variable_arrays[par_name]:
+					l_parameters.append(array)
+			else:
+				l_parameters.append(d_variable_arrays[par_name])
 		
-		l_arrays_for_stacking = np.asarray(l_arrays_for_stacking).T
-		#print l_parameters
+		l_parameters = np.asarray(l_parameters).T
 
-		return l_arrays_for_stacking
+		return l_parameters
 	
 	
 
@@ -1252,10 +1259,10 @@ class fit_nr(object):
 		if not loaded_prev_sampler:
 		
 			if num_dim == 41:
-				a_free_parameter_guesses = [1.27, 6.71, 8.19, 6.66, 8.45, 10.28, 10.69, 12.67,
-											9.20, 5.42, 6.65, 6.87, 5.65, 5.64, 5.04, 4.93,
-											0.20, 0.074, 6.56, 2.23,
-											4481, 1923, 1705, 694, 1728, 1901]
+				a_free_parameter_guesses = [1.95, 8.11, 4.77, 5.08, 7.14, 9.47, 11.9, 12.8,
+											5.08, 7.59, 7.99, 5.69, 5.71, 5.52, 5.42, 4.75,
+											0.25, 0.05, 6.72, 1.66,
+											4628, 1960, 2044, 598, 1975, 2055]
 			else:
 				print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
 				sys.exit()
@@ -1382,17 +1389,17 @@ if __name__ == '__main__':
 						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8), (1.5, 8),
 						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
 
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
+	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][2300] = 4887
-	d_scale_pars[0.345][3000] = 1593
-	d_scale_pars[0.345][3500] = 1479
-	d_scale_pars[0.345][4500] = 554
-	d_scale_pars[0.345][5300] = 1565
-	d_scale_pars[0.345][6200] = 1756
-	#test.ln_likelihood_coincidence_matching(a_py=[1.95, 8.21, 7.86, 7.58, 8.12, 10.82, 10.83, 12.1], a_qy=[5.51, 5.88, 7.70, 6.19, 5.86, 5.52, 5.16, 5.38], intrinsic_res_s1=0.23, intrinsic_res_s2=0.045, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.48, s1_eff_par1=1.92, s2_eff_par0=107, s2_eff_par1=321, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	d_scale_pars[0.345][2300] = 4628
+	d_scale_pars[0.345][3000] = 1960
+	d_scale_pars[0.345][3500] = 2044
+	d_scale_pars[0.345][4500] = 597
+	d_scale_pars[0.345][5300] = 1976
+	d_scale_pars[0.345][6200] = 2055
+	test.ln_likelihood_coincidence_matching(a_py=[1.95, 8.11, 4.77, 5.08, 7.14, 9.47, 11.9, 12.8], a_qy=[5.08, 7.59, 7.99, 5.69, 5.71, 5.52, 5.42, 4.75], intrinsic_res_s1=0.25, intrinsic_res_s2=0.05, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.72, s1_eff_par1=1.66, s2_eff_par0=107, s2_eff_par1=321, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	"""
 	test.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(np.array([  1.27290620e+00,   6.71207698e+00,   8.19298167e+00,
