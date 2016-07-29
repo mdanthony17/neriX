@@ -378,8 +378,8 @@ class fit_nr(object):
 		
 		# only for producing initial distribution
 		# NOT FOR LIKELIHOOD
-		self.l_means_s2_eff_pars = [150, 60]
-		self.l_cov_matrix_s2_eff_pars = [[ 80**2, 0], [0, 20**2]]
+		self.l_means_s2_eff_pars = [107.2, 321.1]
+		self.l_cov_matrix_s2_eff_pars = [[ 1274.4, -733.1], [-733.1, 991.2]]
 		
 		
 		
@@ -803,13 +803,13 @@ class fit_nr(object):
 		current_likelihood, pf_eff_par0, pf_eff_par1 = self.get_pf_eff_default(pf_eff_par0, pf_eff_par1)
 		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 		
-		#current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
-		#prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
+		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 		
 		
 		prior_ln_likelihood += self.get_log_likelihood_s1_eff([s1_eff_par0, s1_eff_par1])
 		
-		prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
+		#prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
 		
 		current_likelihood, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.get_pf_stdev_default(pf_stdev_par0, pf_stdev_par1, pf_stdev_par2)
 		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
@@ -1090,6 +1090,7 @@ class fit_nr(object):
 		gas_gain_width_rv = 0
 		spe_res_rv = 0
 		pf_eff_par0, pf_eff_par1 = self.l_means_pf_eff_pars
+		s2_eff_par0, s2_eff_par1 = self.l_means_s2_eff_pars
 		pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.l_means_pf_stdev_pars
 		exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv = 0, 0, 0
 		
@@ -1099,7 +1100,7 @@ class fit_nr(object):
 		# scales MUST be given (and interpreted) in order of cathode
 		# and then degree setting
 		d_scale_pars = {}
-		offset_for_scales = 2*num_yields+6
+		offset_for_scales = 2*num_yields+4
 		for cathode_setting in self.l_cathode_settings_in_use:
 			d_scale_pars[cathode_setting] = {}
 			for degree_setting in self.l_degree_settings_in_use:
@@ -1112,7 +1113,7 @@ class fit_nr(object):
 		# ln_likelihood_coincidence_matching(self, a_py, a_qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_scale_pars, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	
-		return self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=g1_value, spe_res_rv=spe_res_rv, g2_value=g2_value, gas_gain_rv=gas_gain_rv, gas_gain_width_rv=gas_gain_width_rv, pf_eff_par0=pf_eff_par0, pf_eff_par1=pf_eff_par1, s1_eff_par0=a_parameters[2*num_yields+2], s1_eff_par1=a_parameters[2*num_yields+3], s2_eff_par0=a_parameters[2*num_yields+4], s2_eff_par1=a_parameters[2*num_yields+5], pf_stdev_par0=pf_stdev_par0, pf_stdev_par1=pf_stdev_par1, pf_stdev_par2=pf_stdev_par2, exciton_to_ion_par0_rv=exciton_to_ion_par0_rv, exciton_to_ion_par1_rv=exciton_to_ion_par1_rv, exciton_to_ion_par2_rv=exciton_to_ion_par2_rv, d_scale_pars=d_scale_pars, **kwargs)
+		return self.ln_likelihood_coincidence_matching(a_py=a_parameters[:num_yields], a_qy=a_parameters[num_yields:num_yields*2], intrinsic_res_s1=a_parameters[2*num_yields+0], intrinsic_res_s2=a_parameters[2*num_yields+1], g1_value=g1_value, spe_res_rv=spe_res_rv, g2_value=g2_value, gas_gain_rv=gas_gain_rv, gas_gain_width_rv=gas_gain_width_rv, pf_eff_par0=pf_eff_par0, pf_eff_par1=pf_eff_par1, s1_eff_par0=a_parameters[2*num_yields+2], s1_eff_par1=a_parameters[2*num_yields+3], s2_eff_par0=s2_eff_par0, s2_eff_par1=s2_eff_par0, pf_stdev_par0=pf_stdev_par0, pf_stdev_par1=pf_stdev_par1, pf_stdev_par2=pf_stdev_par2, exciton_to_ion_par0_rv=exciton_to_ion_par0_rv, exciton_to_ion_par1_rv=exciton_to_ion_par1_rv, exciton_to_ion_par2_rv=exciton_to_ion_par2_rv, d_scale_pars=d_scale_pars, **kwargs)
 		
 		
 		
@@ -1139,85 +1140,60 @@ class fit_nr(object):
 		for par_name in l_par_names:
 			# handle photon and charge yield initial positions
 			if par_name == 'a_py':
-				d_variable_arrays[par_name] = a_free_parameters[:num_yields]
-				d_stdevs[par_name] = np.asarray(d_variable_arrays[par_name])*0.3
+				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[:num_yields], 0.3*a_free_parameters[:num_yields], size=num_walkers)
 			
 			elif par_name == 'a_qy':
-				d_variable_arrays[par_name] = a_free_parameters[num_yields:2*num_yields]
-				d_stdevs[par_name] = np.asarray(d_variable_arrays[par_name])*0.3
+				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[num_yields:2*num_yields], 0.3*a_free_parameters[num_yields:2*num_yields], size=num_walkers)
 
 			elif par_name == 'intrinsic_res_s1':
-				d_variable_arrays[par_name] = a_free_parameters[2*num_yields+0]
-				d_stdevs[par_name] = d_variable_arrays[par_name]*0.3
-				
+				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+0], .04, size=num_walkers)
+			
 			elif par_name == 'intrinsic_res_s2':
-				d_variable_arrays[par_name] = a_free_parameters[2*num_yields+1]
-				d_stdevs[par_name] = d_variable_arrays[par_name]*0.3
+				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+1], .04, size=num_walkers)
+			
 			
 			# handle g1 and g2 with g1 only
 			elif par_name == 'g1_value':
-				d_variable_arrays['g1_value'], d_variable_arrays['g2_value'] = self.l_means_g1_g2
-				d_stdevs['g1_value'], d_stdevs['g2_value'] = (d_variable_arrays['g1_value']*0.02, d_variable_arrays['g2_value']*0.02)
+				d_variable_arrays['g1_value'], d_variable_arrays['g2_value'] = np.random.multivariate_normal(self.l_means_g1_g2, self.l_cov_matrix_g1_g2, size=num_walkers).T
 
 
 			# catch both parameters of s1 efficiency prior
 			elif par_name == 'pf_eff_par0':
-				d_variable_arrays['pf_eff_par0'], d_variable_arrays['pf_eff_par1'] = self.l_means_pf_eff_pars
-				d_stdevs['pf_eff_par0'], d_stdevs['pf_eff_par1'] = (d_variable_arrays['pf_eff_par0']*0.02, d_variable_arrays['pf_eff_par1']*0.02)
+				d_variable_arrays['pf_eff_par0'], d_variable_arrays['pf_eff_par1'] = np.random.multivariate_normal(self.l_means_pf_eff_pars, self.l_cov_matrix_pf_eff_pars, size=num_walkers).T
 				
 			
 			elif par_name == 's1_eff_par0':
-				d_variable_arrays['s1_eff_par0'], d_variable_arrays['s1_eff_par1'] = a_free_parameters[2*num_yields+2], a_free_parameters[2*num_yields+3]
-				d_stdevs['s1_eff_par0'], d_stdevs['s1_eff_par1'] = (d_variable_arrays['s1_eff_par0']*0.3, d_variable_arrays['s1_eff_par1']*0.3)
+				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+2:2*num_yields+4], 0.3*a_free_parameters[2*num_yields+2:2*num_yields+4], size=num_walkers)
 			
 
 			elif par_name == 's2_eff_par0':
-				d_variable_arrays['s2_eff_par0'], d_variable_arrays['s2_eff_par1'] = a_free_parameters[2*num_yields+4], a_free_parameters[2*num_yields+5]
-				d_stdevs['s2_eff_par0'], d_stdevs['s2_eff_par1'] = (d_variable_arrays['s2_eff_par0']*0.3, d_variable_arrays['s2_eff_par1']*0.3)
+				d_variable_arrays['s2_eff_par0'], d_variable_arrays['s2_eff_par1'] = np.random.multivariate_normal(self.l_means_s2_eff_pars, self.l_cov_matrix_s2_eff_pars, size=num_walkers).T
 				
 				
 			elif par_name == 'pf_stdev_par0':
-				d_variable_arrays['pf_stdev_par0'], d_variable_arrays['pf_stdev_par1'], d_variable_arrays['pf_stdev_par2'] = self.l_means_pf_stdev_pars
-				d_stdevs['pf_stdev_par0'], d_stdevs['pf_stdev_par1'], d_stdevs['pf_stdev_par2'] = (d_variable_arrays['pf_stdev_par0']*0.02, d_variable_arrays['pf_stdev_par1']*0.02, d_variable_arrays['pf_stdev_par2']*0.02)
+				d_variable_arrays['pf_stdev_par0'], d_variable_arrays['pf_stdev_par1'], d_variable_arrays['pf_stdev_par2'] = np.random.multivariate_normal(self.l_means_pf_stdev_pars, self.l_cov_matrix_pf_stdev_pars, size=num_walkers).T
 
 				
 			elif par_name == 'd_scale_pars':
-				d_variable_arrays[par_name] = a_free_parameters[2*num_yields+6:]
-				d_stdevs[par_name] = np.asarray(a_free_parameters[2*num_yields+6:])*0.3
-			
+				d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+4:], 0.3*a_free_parameters[2*num_yields+6:], size=num_walkers)
+
 			
 			# catch all normally distributed RVs
 			else:
 				if par_name == 'g2_value' or par_name == 'pf_eff_par1' or par_name == 's1_eff_par1' or par_name == 's2_eff_par1'  or par_name == 'pf_stdev_par1' or par_name == 'pf_stdev_par2':
 					continue
-				d_variable_arrays[par_name] = np.random.randn()
-				d_stdevs[par_name] = 0.3
+				d_variable_arrays[par_name] = np.random.randn(num_walkers)
 				
 				
 		l_parameters = []
-		l_stdevs = []
 		
 		for par_name in l_par_names:
-			# check if item in list is iterable and if not
-			# just append it, otherwise append one value
-			# at a time
-			try:
-				for value in d_variable_arrays[par_name]:
-					l_parameters.append(value)
-			except:
-				l_parameters.append(d_variable_arrays[par_name])
-
-			try:
-				for value in d_stdevs[par_name]:
-					l_stdevs.append(value)
-			except:
-				l_stdevs.append(d_stdevs[par_name])
+			l_arrays_for_stacking.append(d_variable_arrays[par_name])
 		
-		l_parameters = np.asarray(l_parameters)
-		l_stdevs = np.asarray(l_stdevs)
+		l_arrays_for_stacking = np.asarray(l_arrays_for_stacking).T
 		#print l_parameters
 
-		return emcee.utils.sample_ball(l_parameters, l_stdevs, num_walkers)
+		return l_arrays_for_stacking
 	
 	
 
@@ -1278,7 +1254,7 @@ class fit_nr(object):
 			if num_dim == 41:
 				a_free_parameter_guesses = [1.27, 6.71, 8.19, 6.66, 8.45, 10.28, 10.69, 12.67,
 											9.20, 5.42, 6.65, 6.87, 5.65, 5.64, 5.04, 4.93,
-											0.20, 0.074, 6.56, 2.23, 370.24, 651.12,
+											0.20, 0.074, 6.56, 2.23,
 											4481, 1923, 1705, 694, 1728, 1901]
 			else:
 				print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
@@ -1404,9 +1380,9 @@ if __name__ == '__main__':
 
 	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14), (6, 14), (6, 14),
 						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8), (1.5, 8),
-						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (150, 500), (10, 700), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
+						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000), (100, 5000)]
 
-	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
@@ -1416,7 +1392,7 @@ if __name__ == '__main__':
 	d_scale_pars[0.345][4500] = 554
 	d_scale_pars[0.345][5300] = 1565
 	d_scale_pars[0.345][6200] = 1756
-	test.ln_likelihood_coincidence_matching(a_py=[1.95, 8.21, 7.86, 7.58, 8.12, 10.82, 10.83, 12.1], a_qy=[5.51, 5.88, 7.70, 6.19, 5.86, 5.52, 5.16, 5.38], intrinsic_res_s1=0.23, intrinsic_res_s2=0.045, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.48, s1_eff_par1=1.92, s2_eff_par0=255, s2_eff_par1=559, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.ln_likelihood_coincidence_matching(a_py=[1.95, 8.21, 7.86, 7.58, 8.12, 10.82, 10.83, 12.1], a_qy=[5.51, 5.88, 7.70, 6.19, 5.86, 5.52, 5.16, 5.38], intrinsic_res_s1=0.23, intrinsic_res_s2=0.045, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.48, s1_eff_par1=1.92, s2_eff_par0=107, s2_eff_par1=321, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	"""
 	test.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(np.array([  1.27290620e+00,   6.71207698e+00,   8.19298167e+00,

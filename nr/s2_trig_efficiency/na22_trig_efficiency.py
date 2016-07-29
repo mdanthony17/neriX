@@ -7,10 +7,11 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 from rootpy.io import root_open, File
 import numpy as np
 from tqdm import tqdm
-
+import root_numpy
+from math import exp
 
 #l_filenames = ['nerix_160715_1527']
-l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438']
+l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438', 'nerix_160722_1759']
 
 
 current_analysis = neriX_analysis.neriX_analysis(l_filenames, -50, 1.054, 4.5)
@@ -35,7 +36,7 @@ l_mod_dt_offset_settings = [15, 180, 195]
 
 neriX_analysis.warning_message('Hard-coded gain correction')
 s2_branch = 'S2sTotBottom[0]*1.48e6/9e5'
-l_s2_settings = [50, 0, 1000]
+l_s2_settings = [20, 0, 2000]
 
 trig_branch = 'TrigLeftEdge-S2sLeftEdge[0]'
 l_trig_settings = [50, 0, 150]
@@ -45,6 +46,7 @@ trig_ub = 100
 trial_width = 0.5
 cut_width = 3.0
 
+s1_branch = 'S1sTotBottom[0]*1.48e6/9e5'
 
 #--------------- End Parameters to Change ----------------
 
@@ -74,6 +76,11 @@ h_na22_height.Draw()
 c1.Update()
 
 
+
+
+
+
+
 # modified dt cut
 
 c2 = Canvas()
@@ -96,24 +103,61 @@ c2.Update()
 
 
 
-
-
-
 s_na22_height_cut = '%s > %f && %s < %f' % (na_height_branch, f_na22_height.GetParameter(1) - cut_width*f_na22_height.GetParameter(2), na_height_branch, f_na22_height.GetParameter(1) + cut_width*f_na22_height.GetParameter(2))
-s_mod_dt_cut = '%s > %f && %s < %f' % (mod_dt_branch, dt_lb-mean_offset, mod_dt_branch, dt_ub-mean_offset)
 s_no_large_s1 = 'S1sPeak[0] < 82 || S1sPeak[0] > 192'
+s_mod_dt_cut = '%s > %f && %s < %f' % (mod_dt_branch, dt_lb-mean_offset, mod_dt_branch, dt_ub-mean_offset)
 
-current_analysis.add_cut(s_na22_height_cut)
-current_analysis.add_cut(s_mod_dt_cut)
-current_analysis.add_cut(s_no_large_s1)
+
+
+# draw S2 spectrum
+
+
+c_s2_spectrum = Canvas()
+c_s2_spectrum.SetGridx()
+c_s2_spectrum.SetGridy()
+c_s2_spectrum.SetLogy()
+
+
+h_s2_spectrum = Hist(*l_s2_settings, name='h_s2_spectrum', title='Low Energy S2 Spectrum')
+h_s2_spectrum.SetMarkerSize(0)
+h_s2_spectrum.SetStats(0)
+h_s2_spectrum.GetXaxis().SetTitle('S2 [PE]')
+h_s2_spectrum.GetYaxis().SetTitle('Counts')
+
+h_s2_spectrum_na22_cut = Hist(*l_s2_settings, name='h_s2_spectrum_na22_cut', title='Low Energy S2 Spectrum')
+h_s2_spectrum_na22_cut.SetColor(root.kRed)
+h_s2_spectrum_na22_cut.SetMarkerSize(0)
+h_s2_spectrum_na22_cut.SetStats(0)
+h_s2_spectrum_na22_cut.GetXaxis().SetTitle('S2 [PE]')
+h_s2_spectrum_na22_cut.GetYaxis().SetTitle('Counts')
+
+current_analysis.Draw(s2_branch, hist=h_s2_spectrum)
+current_analysis.Draw(s2_branch, hist=h_s2_spectrum_na22_cut, selection='%s && %s && %s' % (s_na22_height_cut, s_no_large_s1, s_mod_dt_cut))
+
+
+h_s2_spectrum.Draw()
+h_s2_spectrum_na22_cut.Draw('same')
+c_s2_spectrum.Update()
+
+
+
+
+
+
+#current_analysis.add_cut(s_na22_height_cut)
+#current_analysis.add_cut(s_mod_dt_cut)
+#current_analysis.add_cut(s_no_large_s1)
 #current_analysis.add_z_cut()
 current_analysis.add_cut('%s > 0' % (s2_branch))
 current_analysis.add_cut('%s < %f' % (s2_branch, l_s2_settings[2]))
+current_analysis.add_cut('(%s < %f)' % (s1_branch, 20))
+#current_analysis.add_cut('(%s < %f) || (%s < %f && (%s) > %f)' % (s1_branch, 20, s1_branch, 100, 'S2sPeak[0]-S1sPeak[0]', 250))
+current_analysis.add_cut('S2sPeak[0] > 200 && S2sPeak[0] < 1800')
 
 current_analysis.multithread_set_event_list(7)
 
 
-#current_analysis.get_T1().Scan('EventId:S1sPeak[0]:S2sPeak[0]:NaiPeak[0]:%s:TrigLeftEdge' % s2_branch, '%s < 300' % s2_branch)
+#current_analysis.get_T1().Scan('EventId:S1sPeak[0]:S2sPeak[0]:NaiPeak[0]:%s:TrigLeftEdge' % s2_branch, current_analysis.get_cuts())
 
 
 c4 = Canvas()
@@ -150,16 +194,50 @@ h_eff = root.TEfficiency(h_with_cut, h_no_cut)
 h_eff.SetTitle('S2 Trigger Efficiency from Gas Gain Calibration; S2 Size [PE]; Percentage Causing Trigger');
 
 g_eff = h_eff.CreateGraph()
+#g_eff = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_eff)
 g_eff.GetXaxis().SetRangeUser(l_s2_settings[1], l_s2_settings[2])
 g_eff.Draw('AP')
 
-
+"""
 f_eff = root.TF1('f_eff', 'exp(-[0]*exp(-x*[1]))', l_s2_settings[1], l_s2_settings[2])
-f_eff.SetParameters(10., 1./100.)
-f_eff.SetParLimits(0, 0, 300)
-f_eff.SetParLimits(1, 0, 1)
-frp_eff = g_eff.Fit('f_eff', 'SNRLL')
+f_eff.SetParameters(7., 0.0168)
+f_eff.SetParLimits(0, 0, 10)
+f_eff.SetParLimits(1, 1e-3, 1e-1)
+"""
+
+"""
+f_eff = root.TF1('f_eff', '1. / (1. + exp(-(x-[0])/[1]))', l_s2_settings[1], l_s2_settings[2])
+f_eff.SetParameters(300., 300.)
+f_eff.SetParLimits(0, 1e2, 1e3)
+f_eff.SetParLimits(1, 1e2, 1e3)
+"""
+
+f_eff = root.TF1('f_eff', '(1. - exp(-(x-[0])/[1])) * (x > [0] ? 1. : 0.)', l_s2_settings[1], l_s2_settings[2])
+f_eff.SetParameters(100., 300.)
+f_eff.SetParLimits(0, 50, 500)
+f_eff.SetParLimits(1, 10, 1000)
+
+
+frp_eff = g_eff.Fit('f_eff', 'SNRMELL')
 f_eff.Draw('same')
+
+
+a_fit_pars = np.asarray([f_eff.GetParameter(0), f_eff.GetParameter(1)])
+a_cov_matrix = np.asarray(root_numpy.matrix(frp_eff.GetCovarianceMatrix()))
+print a_fit_pars
+print a_cov_matrix
+
+
+
+def pyfunc_eff(x, center, shape):
+	if x < center:
+		return 0
+	else:
+		return 1. - exp(-(x-center)/shape)
+
+
+g_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, l_s2_settings[1], l_s2_settings[2])
+g_conf_band.Draw('3 same')
 
 
 
@@ -168,126 +246,7 @@ c3.Update()
 
 raw_input('Press enter to continue...')
 
-"""
-
-hNoCut = Hist(nBinsS1, lowerBoundS2, upperBoundS2, name='s2_spec_no_trig_cut', title='s1_spec_no_trig_cut', drawstyle='hist')
-
-hWithCut = Hist(nBinsS1, lowerBoundS2, upperBoundS2, name='s2_spec_with_trig_cut', title='s1_spec_with_trig_cut', drawstyle='hist')
-
-
-#choose cuts
-#current_analysis.add_z_cut()
-#current_analysis.add_radius_cut(0., 0.85)
-
-
-
-current_analysis.add_cut('abs(S2sPeak[S2Order[0]]-S1sPeak[S1Order[0]])>400')
-current_analysis.add_cut('(S2sPeak[S2Order[0]]-S1sPeak[0])>300')
-current_analysis.add_cut('(Alt$(S2sPeak[S2Order[1]],1e5)-S2sPeak[S2Order[0]])>400')
-current_analysis.add_cut('(S2sRightEdge[S2Order[0]]-S2sLeftEdge[S2Order[0]])<400')
-
-current_analysis.set_event_list()
-
-current_analysis.Draw('S2sTotBottom[S2Order[0]]', hist=hNoCut)
-current_analysis.Draw('S2sTotBottom[S2Order[0]]', hist=hWithCut, selection='(-S2sPeak[S2Order[0]] + TrigLeftEdge) > 50 && (-S2sPeak[S2Order[0]] + TrigLeftEdge) < 100')
-
-
-print '\n\nNumber of events with trigger: %d' % hWithCut.Integral()
-print 'Number of events: %d\n\n' % hNoCut.Integral()
-
-#hNoCut.Draw()
-#hWithCut.SetLineColor(root.kRed)
-#hWithCut.Draw('same')
-
-hEff = root.TEfficiency(hWithCut, hNoCut)
-hEff.SetTitle('S2 Trigger Efficiency from Gas Gain Calibration; S2 Size [PE]; Percentage Causing Trigger');
-
-gEff = hEff.CreateGraph()
-gEff.GetXaxis().SetRangeUser(lowerBoundS2, upperBoundS2)
-gEff.Draw('AP')
-c1.Update()
 
 
 
 
-hEffForFitting = hWithCut.Clone()
-hEffForFitting.Divide(hNoCut)
-
-
-
-#fSigmoid = root.TF1('fSigmoid', '-1 + (2. / (1 + exp([1]*([0]-x))))', lowerBoundS2, upperBoundS2)
-fSigmoid = root.TF1('fSigmoid', '(1. / (1 + exp([1]*([0]-x))))', lowerBoundS2, upperBoundS2)
-fSigmoid.SetParameters(0., 800, 0.006)
-#fSigmoid.FixParameter(0, 0)
-fSigmoid.SetParLimits(0, 0, 2500)
-fSigmoid.SetParLimits(1, 0.0005, 0.01)
-#fSigmoid.SetParLimits(2, 0.1, 100)
-#fSigmoid.SetParLimits(3, 0.01, 0.5)
-#fSigmoid.FixParameter(0, 800)
-#fSigmoid.FixParameter(1, 0.006)
-#fSigmoid.FixParameter(3, .1)
-fSigmoid.SetLineStyle(9)
-fSigmoid.SetLineWidth(1)
-fSigmoid.SetLineColor(root.kBlue)
-
-c1.cd()
-#hEffForFitting.Fit(fSigmoid, 'NL')
-gEff.Fit(fSigmoid, 'NL')
-
-fSigmoid.Draw('same')
-
-gConfInterval = root.TGraphAsymmErrors(*neriX_analysis.create_graph_with_confidence_interval_for_fit(gEff, root.TVirtualFitter.GetFitter()))
-gConfInterval.SetLineColor(root.kBlue)
-gConfInterval.SetFillColor(root.kBlue)
-gConfInterval.SetFillStyle(3005)
-gConfInterval.Draw('3 same')
-
-sFitInfo1 = '#epsilon_{trig} = #frac{1}{1 + e^{#alpha (#beta-x)}}'
-pt1 = root.TPaveText(.5,.35,.8,.45,'blNDC')
-text1 = pt1.AddText(sFitInfo1)
-pt1.SetTextColor(root.kBlack)
-pt1.SetFillStyle(0)
-pt1.SetBorderSize(0)
-pt1.Draw('same')
-
-sFitInfo2 = '#alpha = %.4f #pm %.4f' % (fSigmoid.GetParameter(1), fSigmoid.GetParError(1))
-pt2 = root.TPaveText(.5,.25,.8,.35,'blNDC')
-text2 = pt2.AddText(sFitInfo2)
-pt2.SetTextColor(root.kBlack)
-pt2.SetFillStyle(0)
-pt2.SetBorderSize(0)
-pt2.Draw('same')
-
-sFitInfo3 = '#beta = %.4f #pm %.4f' % (fSigmoid.GetParameter(0), fSigmoid.GetParError(0))
-pt3 = root.TPaveText(.5,.15,.8,.25,'blNDC')
-text3 = pt3.AddText(sFitInfo3)
-pt3.SetTextColor(root.kBlack)
-pt3.SetFillStyle(0)
-pt3.SetBorderSize(0)
-pt3.Draw('same')
-
-thresholdX = fSigmoid.GetX(0.5, lowerBoundS2, upperBoundS2)
-lThreshold = root.TLine()
-lThreshold.SetLineColor(root.kOrange + 1)
-lThreshold.SetLineStyle(7)
-lThreshold.DrawLine(thresholdX, gEff.GetYaxis().GetXmin(), thresholdX, gEff.GetYaxis().GetXmax())
-
-
-c1.Update()
-
-
-
-raw_input('Enter to continue...')
-
-response = raw_input('Would you like to save the histograms used for TEfficiency for later analysis?  Press "y" to proceed, otherwise press anything: ')
-
-if response == 'y':
-	outputFile = root_open('../leff_minimizer/efficiency_files/s2_trig_efficiency.root', 'recreate')
-	
-	hWithCut.Write()
-	hNoCut.Write()
-	fSigmoid.Write()
-
-	#sCuts = root.TObjString('cuts_used')
-	#sCuts.Write(current_analysis.get_cuts(), root.TObject.kOverwrite)
-"""

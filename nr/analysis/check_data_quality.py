@@ -106,9 +106,9 @@ ha4.GetXaxis().SetTitle('R^2 [mm^2]')
 ha4.GetYaxis().SetTitle('dt [#mus]')
 ha4.SetStats(0)
 
-ha5 = Hist2D(s2WidthNumBins, s2WidthMin, s2WidthMax, dtNumBins, dtMin, dtMax, name='ha5', title='S2sLowWidth vs dt')
-run1.Draw('S2sLowWidth[0]:-dt', hist=ha5)
-ha5.SetTitle('S2sLowWidth[0] [10 ns]')
+ha5 = Hist2D(s2WidthNumBins, s2WidthMin, s2WidthMax, dtNumBins, dtMin, dtMax, name='ha5', title='S2sWidth vs dt')
+run1.Draw('S2sWidth[0]:-dt', hist=ha5)
+ha5.SetTitle('S2sWidth[0] [10 ns]')
 ha5.GetYaxis().SetTitle('dt [#mus]')
 ha5.SetStats(0)
 """

@@ -21,15 +21,16 @@ current_analysis = neriX_analysis.neriX_analysis(filename)
 
 #--------------- Start Parameters to Change ----------------
 
-l_s2_settings = [50, 0, 2000]
+l_s2_settings = [20, 0, 2000]
 
 l_s2_time_diff = [100, 0.5, 20] # us
-s2_time_diff_branch = '(S2sPeak[] - S2sPeak[0])/100.'
+s2_time_diff_branch = '(S2sLeftEdge[] - S1sPeak[0])/100.'
 
 l_s2_width_settings = [50, 0, 400]
 s2_width_branch = 'S2sLowWidth[]'
 
-l_s2_trig_time_diff = [100, -500, 2000]
+l_s2_trig_time_diff = [100, 0, 300]
+l_s2_trig_time_diff_branch = 'S2sRightEdge[0] - TrigLeftEdge[]'
 
 
 #--------------- End Parameters to Change ----------------
@@ -44,8 +45,10 @@ c_s2_time_diff.SetGridy()
 #current_analysis.add_cut('(S2sTot[1]/S2sTot[0])<0.02')
 #current_analysis.add_cut('S2sPeak[] != S2sPeak[0]')
 
-h_s2_time_diff = Hist(*l_s2_time_diff, name='h_s2_time_diff')
+h_s2_time_diff = Hist(*l_s2_time_diff, name='h_s2_time_diff', title='S2 Time Differences')
 current_analysis.Draw(s2_time_diff_branch, hist=h_s2_time_diff, selection=current_analysis.get_cuts())
+h_s2_time_diff.GetXaxis().SetTitle('Time between main S2 and subsequent S2 [us]')
+h_s2_time_diff.GetYaxis().SetTitle('Counts')
 h_s2_time_diff.SetStats(0)
 h_s2_time_diff.SetMarkerSize(0)
 h_s2_time_diff.Draw()
@@ -56,16 +59,18 @@ c_s2_time_diff.Update()
 lb_s2_time_diff_cut = 15#float(raw_input('\nPlease enter the lower bound of the cathode cut: '))
 ub_s2_time_diff_cut = 17#float(raw_input('\nPlease enter the upper bound of the cathode cut: '))
 
-#s_s2_time_diff_cut = '(%s > %f && %s < %f)' % (s2_time_diff_branch, lb_s2_time_diff_cut, s2_time_diff_branch, ub_s2_time_diff_cut)
+s_s2_time_diff_cut = '(%s > %f && %s < %f)' % (s2_time_diff_branch, lb_s2_time_diff_cut, s2_time_diff_branch, ub_s2_time_diff_cut)
 
-#current_analysis.add_cut(s_s2_time_diff_cut)
+current_analysis.add_cut(s_s2_time_diff_cut)
 current_analysis.set_event_list()
 
 
 c_s2_width = Canvas()
 
-h_s2_width = Hist(*l_s2_width_settings, name='h_s2_width')
+h_s2_width = Hist(*l_s2_width_settings, name='h_s2_width', title='S2 Width')
 current_analysis.Draw(s2_width_branch, hist=h_s2_width, selection=current_analysis.get_cuts())
+h_s2_width.GetXaxis().SetTitle('S2 Width [samples]')
+h_s2_width.GetYaxis().SetTitle('Counts')
 h_s2_width.SetStats(0)
 h_s2_width.SetMarkerSize(0)
 
@@ -74,8 +79,10 @@ h_s2_width.Draw()
 
 c_s2_tot_bottom = Canvas()
 
-h_s2_tot_bottom = Hist(*l_s2_settings, name='h_s2_tot_bottom')
+h_s2_tot_bottom = Hist(*l_s2_settings, name='h_s2_tot_bottom', title='S2 Spectrum')
 current_analysis.Draw('S2sTotBottom[0]', hist=h_s2_tot_bottom, selection=current_analysis.get_cuts())
+h_s2_tot_bottom.GetXaxis().SetTitle('S2 [PE]')
+h_s2_tot_bottom.GetYaxis().SetTitle('Counts')
 h_s2_tot_bottom.SetStats(0)
 h_s2_tot_bottom.SetMarkerSize(0)
 
@@ -84,7 +91,14 @@ h_s2_tot_bottom.Draw()
 
 c_s2_tot_bottom.Update()
 
-current_analysis.get_T1().Scan('EventId:S2sTotBottom[0]', 'S2sTotBottom[0] < 200')
+
+
+
+
+
+
+
+#current_analysis.get_T1().Scan('EventId:S2sTotBottom[0]', 'S2sTotBottom[0] < 200')
 
 
 h_s2_spec_no_trig_cut = Hist(*l_s2_settings, name='h_s2_spec_no_trig_cut')
@@ -97,51 +111,150 @@ h_s2_spec_with_trig_cut.SetStats(0)
 h_s2_spec_with_trig_cut.SetColor(root.kRed)
 h_s2_spec_with_trig_cut.SetMarkerSize(0)
 
-h_s2_trig_time_diff = Hist(*l_s2_trig_time_diff, name='h_s2_trig_time_diff')
+h_s2_trig_time_diff = Hist(*l_s2_trig_time_diff, name='h_s2_trig_time_diff', title='Time difference between S2 and Trigger')
 h_s2_trig_time_diff.SetStats(0)
 h_s2_trig_time_diff.SetColor(root.kBlue)
 h_s2_trig_time_diff.SetMarkerSize(0)
 
 
-#num_events = current_analysis.get_num_events_before_cuts()
-num_events = 10000
+num_events = current_analysis.get_num_events_before_cuts()
+#num_events = 20000
 for i in tqdm(xrange(num_events)):
 
 	current_analysis.get_T1().GetEntry(i)
 	current_analysis.get_T2().GetEntry(i)
 
+	l_s1_peak = list(current_analysis.get_T1().S1sPeak)
 	l_s2_peak = list(current_analysis.get_T1().S2sPeak)
+	l_s2_coin = list(current_analysis.get_T2().S2sCoin)
+	l_s2_right_edge = list(current_analysis.get_T1().S2sRightEdge)
+	l_s2_order = list(current_analysis.get_T1().S2Order)
 	l_s2_tot_bottom = list(current_analysis.get_T2().S2sTotBottom)
+	l_s2_width = list(current_analysis.get_T1().S2sWidth)
 	l_trig_left_edge = list(current_analysis.get_T1().TrigLeftEdge)
 
 	if len(l_s2_peak) < 2:
 		continue
 
-	for peak_num, peak_location in enumerate(l_s2_peak):
+	num_peaks = len(l_s2_peak)
+
+	for order_num, peak_num in enumerate(l_s2_order):
 		if peak_num == 0:
 			continue
+		peak_location = l_s2_peak[peak_num]
 
-		#if (peak_location-l_s2_peak[0])/100. < lb_s2_time_diff_cut or (peak_location-l_s2_peak[0])/100. > ub_s2_time_diff_cut:
-		if (peak_location-l_s2_peak[0]) < 1400:
+
+		# below is for arbitrary S2
+		"""
+		# make sure that trigger is in S2 range of interest
+		if l_s2_tot_bottom[peak_num] < 200 or l_s2_tot_bottom[peak_num] > 2000:
+			continue
+			
+		# do width cut to make sure it is in typical range of (600, 1400) ns
+		if l_s2_width[peak_num] < 70 or l_s2_width[peak_num] > 140:
 			continue
 
-		h_s2_spec_no_trig_cut.Fill(l_s2_tot_bottom[peak_num])
-		#print i
+		# check for double scatters that could throw off distance
+		# from largest S2 cut
+		if l_s2_tot_bottom[1] > 0.1*l_s2_tot_bottom[0]:
+			continue
+			
+		#if l_s2_coin[1] < 3:
+		#	continue
+	
+		#if (peak_location-l_s2_peak[0])/100. < lb_s2_time_diff_cut or (peak_location-l_s2_peak[0])/100. > ub_s2_time_diff_cut:
+		if (peak_location-l_s2_peak[0]) < 500 or peak_location > 16000:
+		#if (peak_location-l_s2_peak[0]) < 1500 or (peak_location-l_s2_peak[0]) > 1700:
+			continue
+
+		# check if previous peak was within 1 us
+		#print peak_location, l_s2_peak[l_s2_order[order_num-1]]
+		if (peak_location - l_s2_peak[l_s2_order[order_num-1]]) < 200:
+			continue
+
+		# check that pulse is either the last one or that the next
+		# peak is more than 1 us away
+		#print order_num, num_peaks
+		if order_num != (num_peaks-1) and (l_s2_peak[l_s2_order[order_num+1]] - peak_location) < 200:
+			#print 'failed next peak'
+			#print l_s2_peak[l_s2_order[order_num+1]], peak_location
+			continue
+
 
 		# short cut to check if there is a trigger late in the waveform
-		if len(l_trig_left_edge) == 1:
+		#if len(l_trig_left_edge) == 1:
+		#	continue
+		"""
+		
+		# below is for FIRST S2 (gate photoionization)
+		
+		if order_num != 0:
+			continue
+		
+		if len(l_s1_peak) == 0:
+			continue
+		
+		peak_location = l_s2_peak[peak_num]
+
+		# make sure that trigger is in S2 range of interest
+		if l_s2_tot_bottom[peak_num] < 200 or l_s2_tot_bottom[peak_num] > 2000:
+			continue
+			
+		# do width cut to make sure it is in typical range of (600, 1400) ns
+		if l_s2_width[peak_num] < 30 or l_s2_width[peak_num] > 90:
 			continue
 
-		for trigger in l_trig_left_edge:
+
+		if l_s2_coin[peak_num] < 5:
+			continue
+
+
+		# check for double scatters that could throw off distance
+		# from largest S2 cut
+		if l_s2_tot_bottom[1] > 0.05*l_s2_tot_bottom[0]:
+			continue
+
+		#print peak_location, l_s1_peak[0], peak_location-l_s1_peak[0]
+		if (peak_location-l_s1_peak[0]) < 50 or (peak_location-l_s1_peak[0]) > 200:
+			continue
+
+		# check that pulse is either the last one or that the next
+		# peak is more than 1 us away
+		#print l_s2_peak
+		if (l_s2_peak[l_s2_order[order_num+1]] - peak_location) < 400:
+			continue
+
+
+
+		h_s2_spec_no_trig_cut.Fill(l_s2_tot_bottom[peak_num])
 		
-			h_s2_trig_time_diff.Fill(trigger - peak_location)
+
+		trigger_seen = False
+
+		for trigger in l_trig_left_edge:
+			if trigger_seen:
+				break
+		
+			h_s2_trig_time_diff.Fill(l_s2_right_edge[peak_num] - trigger)
 			
 			#print len(l_trig_left_edge)
 			#print trigger
 			#print peak_location
 			if (trigger - peak_location) > -50 and (trigger - peak_location) < 50:
-				print l_s2_tot_bottom[peak_num]
+			#if (l_s2_right_edge[peak_num] - trigger) > 100 and (l_s2_right_edge[peak_num] - trigger) < 300:
 				h_s2_spec_with_trig_cut.Fill(l_s2_tot_bottom[peak_num])
+				trigger_seen = True
+
+
+		if trigger_seen:
+			print '\nTrigger Seen :)!'
+			print 'Event: %d, S2: %f, Width: %d, Location: %d, Trigger Location: %d' % (i, l_s2_tot_bottom[peak_num], l_s2_width[peak_num], peak_location, trigger)
+		else:
+			print '\nNo Trigger Seen :('
+			print 'Event: %d, S2: %f, Width: %d, Location: %d' % (i, l_s2_tot_bottom[peak_num], l_s2_width[peak_num], peak_location)
+
+
+
 
 
 
