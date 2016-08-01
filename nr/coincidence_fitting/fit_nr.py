@@ -1547,7 +1547,7 @@ class fit_nr(object):
 
 				
 			elif par_name == 'd_scale_pars':
-				d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(2*num_yields+4, 2*num_yields+10)])
+				d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(2*num_yields+4, 2*num_yields+9)])
 				#d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+4:], 0.3*np.asarray(a_free_parameters[2*num_yields+6:]), size=num_walkers)
 
 			
@@ -1675,6 +1675,11 @@ class fit_nr(object):
 											7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25,
 											0.25, 0.05, 6.72, 1.66,
 											4628, 1960, 2044, 598, 1975, 2055]
+			elif num_dim == 38:
+				a_free_parameter_guesses = [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 10.15,
+											7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.25,
+											0.25, 0.05, 6.72, 1.66,
+											4628, 1960, 2044, 598, 1975]
 			else:
 				print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
 				sys.exit()

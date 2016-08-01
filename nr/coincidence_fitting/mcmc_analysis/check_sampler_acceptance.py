@@ -19,7 +19,7 @@ print '\n\nBy default look for all energies - change source if anything else is 
 cathode_setting = float(sys.argv[1])
 num_walkers = int(sys.argv[2])
 
-l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300, 6200]
+l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300]
 s_degree_settings = ''
 for degree_setting in l_degree_settings_in_use:
 	s_degree_settings += '%s,' % (degree_setting)
@@ -32,8 +32,8 @@ dir_specifier_name = '%.3f_kV_%s_deg' % (cathode_setting, s_degree_settings)
 
 nameOfResultsDirectory += '/yields_fit'
 
-sPathToFile = '%s/%s/sampler_acceptance_fraction.p' % (nameOfResultsDirectory, dir_specifier_name)
-sPathToFile_autocorrelation = '%s/%s/sampler_acor.p' % (nameOfResultsDirectory, dir_specifier_name)
+sPathToFile = '%s/%s/acceptance_fraction.p' % (nameOfResultsDirectory, dir_specifier_name)
+sPathToFile_autocorrelation = '%s/%s/autocorrelation.p' % (nameOfResultsDirectory, dir_specifier_name)
 
 if os.path.exists(sPathToFile):
 	a_acceptance_fraction = pickle.load(open(sPathToFile, 'r'))

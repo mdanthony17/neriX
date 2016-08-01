@@ -18,13 +18,15 @@ print '\n\nBy default look for all energies - change source if anything else is 
 
 if len(sys.argv) == 4:
 	use_pt_sampler = True
+else:
+	use_pt_sampler = False
 
 cathode_setting = float(sys.argv[1])
 num_walkers = int(sys.argv[2])
 if use_pt_sampler:
 	num_temps = int(sys.argv[3])
 
-l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300, 6200]
+l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300]
 s_degree_settings = ''
 for degree_setting in l_degree_settings_in_use:
 	s_degree_settings += '%s,' % (degree_setting)
@@ -59,9 +61,9 @@ else:
 
 
 # need to figure this out
-numDim = 41
+numDim = 38
 
-lLabelsForCorner = ['py_0', 'py_1', 'py_2', 'py_3', 'py_4', 'py_5', 'py_6', 'py_7', 'qy_0', 'qy_1', 'qy_2', 'qy_3', 'qy_4', 'qy_5', 'qy_6', 'qy_7', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'scale_par_0', 'scale_par_1', 'scale_par_2', 'scale_par_3', 'scale_par_4', 'scale_par_5']
+lLabelsForCorner = ['py_0', 'py_1', 'py_2', 'py_3', 'py_4', 'py_5', 'py_6', 'qy_0', 'qy_1', 'qy_2', 'qy_3', 'qy_4', 'qy_5', 'qy_6', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's1_eff_par0', 's1_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'scale_par_0', 'scale_par_1', 'scale_par_2', 'scale_par_3', 'scale_par_4']
 
 if use_pt_sampler:
 	num_steps = 50

@@ -20,7 +20,7 @@ num_walkers = int(sys.argv[2])
 num_steps = int(sys.argv[3])
 
 d_coincidence_data = {}
-d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300, 6200]
+d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300]
 d_coincidence_data['cathode_settings'] = [0.345]
 
 
