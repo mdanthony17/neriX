@@ -637,7 +637,7 @@ class fit_nr(object):
 
 
 	def get_prior_log_likelihood_nuissance(self, likelihoodNuissance):
-		if likelihoodNuissance > 1e-65:
+		if likelihoodNuissance > 1e-550:
 			return np.log(likelihoodNuissance)
 		else:
 			return -np.inf
@@ -1052,7 +1052,7 @@ class fit_nr(object):
 
 				#print '\nTime for post MC loop %d deg: %.4f\n' % (degree_setting, time.time() - start_time_post_mc)
 
-				#print total_ln_likelihood
+				print log_likelihood_matching
 				if np.isnan(total_ln_likelihood):
 					return -np.inf
 
@@ -1408,6 +1408,7 @@ class fit_nr(object):
 		# -----------------------------------------------
 		# -----------------------------------------------
 		
+		prior_ln_likelihood = 0
 		
 		# priors of yields
 		# can do them all together since uniform within
@@ -1837,13 +1838,19 @@ if __name__ == '__main__':
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][2300] = 4628
-	d_scale_pars[0.345][3000] = 1960
-	d_scale_pars[0.345][3500] = 2044
-	d_scale_pars[0.345][4500] = 597
-	d_scale_pars[0.345][5300] = 1976
-	d_scale_pars[0.345][6200] = 2055
-	#test.ln_likelihood_coincidence_matching(a_py=[1.95, 8.11, 4.77, 5.08, 7.14, 9.47, 11.9, 12.8], a_qy=[5.08, 7.59, 7.99, 5.69, 5.71, 5.52, 5.42, 4.75], intrinsic_res_s1=0.25, intrinsic_res_s2=0.05, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=6.72, s1_eff_par1=1.66, s2_eff_par0=107, s2_eff_par1=321, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	d_scale_pars[0.345][2300] = 4951
+	d_scale_pars[0.345][3000] = 1700
+	d_scale_pars[0.345][3500] = 1600
+	d_scale_pars[0.345][4500] = 500
+	d_scale_pars[0.345][5300] = 1200
+	d_scale_pars[0.345][6200] = 1300
+	
+	# 1865, 1995: inf
+	
+	# best fit likelihoods: 472, 392, 465, 349, 744, 775
+	# changed py3 likelihoods: 474, 389, 471, 347, 748, 794
+	
+	test.ln_likelihood_coincidence_matching(a_py=[1.35, 6.49, 6.50, 6.80, 7.86, 9.14, 10.62, 12.09], a_qy=[7.76, 5.68, 7.09, 6.25, 5.60, 5.43, 5.08, 4.85], intrinsic_res_s1=0.1, intrinsic_res_s2=0.08, g1_value=0.13, spe_res_rv=0.0, g2_value=20.89, gas_gain_rv=0.55, gas_gain_width_rv=-0.66, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=7.17, s1_eff_par1=2.06, s2_eff_par0=66.74, s2_eff_par1=330.02, pf_stdev_par0=0.01, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=1.48, exciton_to_ion_par1_rv=-0.04, exciton_to_ion_par2_rv=0.31, d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	"""
 	test.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(np.array([  1.27290620e+00,   6.71207698e+00,   8.19298167e+00,
@@ -1873,7 +1880,7 @@ if __name__ == '__main__':
 
 
 	# pt sampler
-	test.run_mcmc(num_steps=1, num_walkers=128, num_threads=1, fractional_deviation_start_pos=0.01, d_pt_sampler={'num_temps':2})
+	#test.run_mcmc(num_steps=1, num_walkers=128, num_threads=1, fractional_deviation_start_pos=0.01, d_pt_sampler={'num_temps':2})
 
 
 

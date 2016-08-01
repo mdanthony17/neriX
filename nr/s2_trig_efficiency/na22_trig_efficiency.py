@@ -10,8 +10,8 @@ from tqdm import tqdm
 import root_numpy
 from math import exp
 
-l_filenames = ['nerix_160715_1527']
-#l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438', 'nerix_160722_1759']
+#l_filenames = ['nerix_160715_1527']
+l_filenames = ['nerix_160715_1527', 'nerix_160716_1245', 'nerix_160717_1438', 'nerix_160722_1759']
 
 
 current_analysis = neriX_analysis.neriX_analysis(l_filenames, -50, 1.054, 4.5)
@@ -246,7 +246,24 @@ g_conf_band.Draw('3 same')
 
 
 
+tpt_trig_efficiency = root.TPaveText(.45,.1,.85,.45,'blNDC')
+#tpt_trig_efficiency.AddText('#varepsilon_{S1 PF} = e^{-#alpha e^{-#beta S1}}')
+tpt_trig_efficiency.AddText('#varepsilon_{S2 Trig} = 1 - e^{#frac{-(S1-#alpha)}{#beta}}')
+tpt_trig_efficiency.AddText('#alpha = %.2e +/- %.2e [PE]' % (f_eff.GetParameter(0), f_eff.GetParError(0)))
+tpt_trig_efficiency.AddText('#beta = %.2e +/- %.2e [PE]' % (f_eff.GetParameter(1), f_eff.GetParError(1)))
+tpt_trig_efficiency.SetTextColor(root.kBlack)
+tpt_trig_efficiency.SetFillStyle(0)
+tpt_trig_efficiency.SetBorderSize(0)
+tpt_trig_efficiency.Draw('same')
+
 c3.Update()
+
+
+
+neriX_analysis.save_plot(['results'], c_s2_spectrum, 's2_rate_comparison')
+neriX_analysis.save_plot(['results'], c3, 's2_trig_efficiency')
+
+
 
 
 raw_input('Press enter to continue...')
