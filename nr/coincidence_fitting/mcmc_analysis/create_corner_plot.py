@@ -9,14 +9,20 @@ import numpy as np
 import corner, time
 import cPickle as pickle
 
-if len(sys.argv) != 3:
-	print 'Use is python perform_full_matching.py <cathode setting> <num walkers>'
+if len(sys.argv) != 3 and len(sys.argv) != 4:
+	print 'Use is python perform_full_matching.py <cathode setting> <num walkers> [<num temps>]'
 	sys.exit()
 
 print '\n\nBy default look for all energies - change source if anything else is needed.\n'
 
+
+if len(sys.argv) == 4:
+	use_pt_sampler = True
+
 cathode_setting = float(sys.argv[1])
 num_walkers = int(sys.argv[2])
+if use_pt_sampler:
+	num_temps = int(sys.argv[3])
 
 l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300, 6200]
 s_degree_settings = ''
@@ -31,11 +37,19 @@ dir_specifier_name = '%.3f_kV_%s_deg' % (cathode_setting, s_degree_settings)
 
 nameOfResultsDirectory += '/yields_fit'
 
-sPathToFile = './%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name)
+if use_pt_sampler:
+	sPathToFile = './%s/%s/pt_sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name)
+else:
+	sPathToFile = './%s/%s/sampler_dictionary.p' % (nameOfResultsDirectory, dir_specifier_name)
 
 if os.path.exists(sPathToFile):
 	dSampler = pickle.load(open(sPathToFile, 'r'))
-	aSampler = dSampler[num_walkers][-1]['_chain'] # look at last sampler only (can change)
+	
+	if use_pt_sampler:
+		aSampler = dSampler[(num_temps, num_walkers)][-1]['_chain'][0,:,:,:] # look at last sampler only (can change)
+	else:
+		aSampler = dSampler[num_walkers][-1]['_chain'] # look at last sampler only (can change)
+	
 	print 'Successfully loaded sampler!'
 else:
 	print sPathToFile
