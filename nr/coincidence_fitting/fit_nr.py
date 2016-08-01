@@ -373,7 +373,7 @@ class fit_nr(object):
 		
 		# only for producing initial distribution
 		# NOT FOR LIKELIHOOD
-		self.l_means_s1_eff_pars = [3, 1.2] #[7.95634366, 0.59582331]
+		self.l_means_s1_eff_pars = [0.1, 0.1] #[7.95634366, 0.59582331]
 		self.l_cov_matrix_s1_eff_pars = [[.3**2, 0], [0, .1**2]]
 		
 		self.l_means_s2_eff_pars = [107.2, 321.1]
@@ -1673,13 +1673,13 @@ class fit_nr(object):
 			if num_dim == 41:
 				a_free_parameter_guesses = [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15,
 											7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25,
-											0.25, 0.05, 6.72, 1.66,
+											0.25, 0.05, 0.1, 0.1,
 											4628, 1960, 2044, 598, 1975, 2055]
 			elif num_dim == 38:
 				a_free_parameter_guesses = [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 10.15,
 											7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.25,
-											0.25, 0.05, 6.72, 1.66,
-											4628, 1960, 2044, 598, 1975]
+											0.25, 0.05, 0.1, 0.1,
+											3298, 1519, 2145, 1125, 4658]
 			else:
 				print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
 				sys.exit()
