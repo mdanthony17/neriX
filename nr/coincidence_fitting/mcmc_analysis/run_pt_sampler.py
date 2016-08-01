@@ -39,7 +39,6 @@ current_matching = fit_nr.fit_nr(d_coincidence_data, num_mc_events=100000)
 
 d_pt_sampler = {'num_temps':num_temps}
 
-print num_steps, num_walkers, d_pt_sampler
 
 current_matching.run_mcmc(num_steps=num_steps, num_walkers=num_walkers, num_threads=1, fractional_deviation_start_pos=0.1, proposal_scale=2., d_pt_sampler=d_pt_sampler)
 
