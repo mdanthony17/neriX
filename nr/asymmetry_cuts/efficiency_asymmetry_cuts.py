@@ -32,11 +32,22 @@ log_num_bins = 200
 log_low = 1
 log_high = 4.5
 
+z_num_bins = 40
+z_low = -26
+z_high = 0
+
+width_num_bins = 40
+width_low = 10
+width_high = 150
 
 s1Branch = 'cpS1sTotBottom[0]'
 s2Branch = 'cpS2sTotBottom[0]'
 s1_asym_branch = 's1asym' #'(%s - S1sTotTop[0])/(%s + S1sTotTop[0])' % (s1Branch, s1Branch)
 s2_asym_branch = 's2asym' #'(%s - S2sTotTop[0])/(%s + S2sTotTop[0])' % (s2Branch, s2Branch)
+
+z_branch = 'Z_any_peak'
+width_branch = 'S2sWidth[0]'
+
 
 
 #--------------- End Parameters to Change ----------------
@@ -58,6 +69,7 @@ optionSame = 'SAME'
 
 #choose cuts for run 1
 current_analysis.add_z_cut()
+#current_analysis.add_z_cut(any_peak=True)
 current_analysis.add_radius_cut(0, 0.85)
 #current_analysis.add_cut('S1sCoin[0] > 1')
 current_analysis.add_cut('log10((S1Tot + S2Tot)/(AreaTot - S1Tot - S2Tot)) > 0.')
@@ -68,15 +80,17 @@ current_analysis.add_cut('%s < %f && %s < %f' % (s1Branch, s1Max, s2Branch, s2Ma
 # cuts to test
 current_analysis.add_single_scatter_cut()
 current_analysis.add_xs1asym_cut()
+#current_analysis.add_xs1asym_cut(any_peak=True)
 current_analysis.add_xs2asym_cut()
 
-current_analysis.add_cut('%s < %f*exp(-%s/%f)+%f' % (s2_asym_branch, -0.5, s2Branch, 400, 0.4))
-
+#current_analysis.add_cut('%s < %f*exp(-%s/%f)+%f' % (s2_asym_branch, -0.5, s2Branch, 400, 0.4))
+#current_analysis.add_cut('%s > 40 && %s < 50' % (width_branch, width_branch))
+current_analysis.add_cut('NbS1Peaks == 1')
 
 current_analysis.set_event_list()
 
 
-#current_analysis.get_T1().Scan('EventId:S1sPeak[0]:%s:S2sPeak[0]:%s' % (s1Branch, s2Branch), '%s < 4 && %s > 1250 && %s < 1500' % (s1Branch, s2Branch, s2Branch))
+#current_analysis.get_T1().Scan('EventId:S1sPeak[]:%s:S2sPeak[0]:%s' % (s1Branch, s2Branch), '%s < 4 && %s > 1250 && %s < 1500' % (s1Branch, s2Branch, s2Branch))
 
 # create functions for cuts
 
@@ -126,6 +140,25 @@ c2.SetGridx()
 c2.SetGridy()
 c2.Update()
 
+
+
+
+c_z_width = Canvas(name='c_z_width', title='c_z_width', width=600, height=500)
+
+#create histograms for current_analysis
+
+h_z_width = Hist2D(width_num_bins, width_low, width_high, z_num_bins, z_low, z_high, name='h_z_width', title='Z vs S2 Width - ' + file1)
+current_analysis.Draw('%s:%s' % (width_branch, z_branch), hist=h_z_width, selection=current_analysis.get_cuts())
+h_z_width.GetXaxis().SetTitle('%s [Samples]' % (width_branch))
+h_z_width.GetYaxis().SetTitle('%s [mm]' % (z_branch))
+h_z_width.SetStats(0)
+h_z_width.Draw('colz')
+
+
+c_z_width.SetLogz()
+c_z_width.SetGridx()
+c_z_width.SetGridy()
+c_z_width.Update()
 
 
 

@@ -190,14 +190,16 @@ class nr_band_fitter(object):
 
 		current_analysis = neriX_analysis.neriX_analysis(l_files, degree_setting, cathodeVoltage, anodeVoltage)
 
-		current_analysis.add_z_cut()
+		#current_analysis.add_z_cut()
 		current_analysis.add_radius_cut(0, 0.85)
 		current_analysis.add_single_scatter_cut()
 		current_analysis.add_xs1asym_cut()
+		#current_analysis.add_xs1asym_cut(any_peak=True)
 		current_analysis.add_xs2asym_cut()
 		current_analysis.add_cut('%s < %f' % (s1_branch, self.s1_settings[2]))
 		current_analysis.add_cut('%s < %f' % (s2_branch, self.s2_settings[2]))
 		current_analysis.add_cut('log10((S1Tot + S2Tot)/(AreaTot - S1Tot - S2Tot)) > 0.')
+		current_analysis.add_cut('NbS1Peaks == 1')
 
 		current_analysis.set_event_list()
 
@@ -609,7 +611,7 @@ class nr_band_fitter(object):
 		self.a_s1_s2 = neriX_analysis.convert_2D_hist_to_matrix(h_s1_s2_band_cut, dtype=np.float32)
 		self.num_data_points = np.sum(self.a_s1_s2)
 		
-		#raw_input('Press enter line 600')
+		#raw_input('Press enter line 612')
 		
 		c_nr_band.Clear()
 		c_nr_band.Close()
@@ -1613,7 +1615,7 @@ if __name__ == '__main__':
 	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]
 	# py_nest: [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15]
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
-	#test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, pf_eff_par0=1.961, pf_eff_par1=0.46, s1_eff_par0=2.5, s1_eff_par1=2.75, s2_eff_par0=300, s2_eff_par1=75, pf_stdev_par0=0.0146, pf_stdev_par1=0.528, pf_stdev_par2=4.32, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, scale_par=test.num_mc_events/test.num_data_points/2.5, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	test.likelihood_nr_band_no_nest(py_0=1.03, py_1=4.41, py_2=5.80, py_3=6.60, py_4=7.64, py_5=8.57, py_6=9.19, py_7=10.15, qy_0=7.69, qy_1=6.67, qy_2=6.06, qy_3=5.72, qy_4=5.30, qy_5=4.93, qy_6=4.68, qy_7=4.25, intrinsic_res_s1=0.1, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0, g2_value=20.9, gas_gain_rv=0, gas_gain_width_rv=0, pf_eff_par0=1.961, pf_eff_par1=0.46, s1_eff_par0=1.1, s1_eff_par1=2.5, s2_eff_par0=66.74, s2_eff_par1=330.02, pf_stdev_par0=0.0146, pf_stdev_par1=0.528, pf_stdev_par2=4.32, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, scale_par=test.num_mc_events/test.num_data_points/2.5, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=0.99, py_1=5.51, py_2=6.25, py_3=6.53, py_4=8.36, py_5=9.36, py_6=10.82, py_7=10.21, qy_0=6.76, qy_1=4.53, qy_2=6.43, qy_3=5.19, qy_4=5.90, qy_5=5.40, qy_6=5.74, qy_7=4.41, intrinsic_res_s1=0.14, intrinsic_res_s2=0.32, g1_value=0.13, spe_res_rv=0.87, g2_value=20.89, gas_gain_rv=0.80, gas_gain_width_rv=0.13, pf_eff_par0=8.07, pf_eff_par1=0.95, s2_eff_par0=234.62, s2_eff_par1=85.79, exciton_to_ion_par0_rv=0.40, exciton_to_ion_par1_rv=0.30, exciton_to_ion_par2_rv=-0.52, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(*a_free_par_guesses, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=80, num_threads=1)

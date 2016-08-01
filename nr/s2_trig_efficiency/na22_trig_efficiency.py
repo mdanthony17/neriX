@@ -262,6 +262,7 @@ c3.Update()
 
 neriX_analysis.save_plot(['results'], c_s2_spectrum, 's2_rate_comparison')
 neriX_analysis.save_plot(['results'], c3, 's2_trig_efficiency')
+neriX_analysis.save_plot(['results'], c4, 's2_trig_time')
 
 
 

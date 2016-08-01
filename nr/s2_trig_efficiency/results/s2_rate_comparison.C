@@ -1,17 +1,17 @@
 {
-//=========Macro generated from canvas: df20cd1f4d0c48ce81cd2085a23aa191/
-//=========  (Mon Aug  1 09:54:27 2016) by ROOT version5.34/26
-   TCanvas *df20cd1f4d0c48ce81cd2085a23aa191 = new TCanvas("df20cd1f4d0c48ce81cd2085a23aa191", "",10,45,704,527);
-   df20cd1f4d0c48ce81cd2085a23aa191->SetHighLightColor(2);
-   df20cd1f4d0c48ce81cd2085a23aa191->Range(-250,-1.010365,2250,3.760377);
-   df20cd1f4d0c48ce81cd2085a23aa191->SetFillColor(0);
-   df20cd1f4d0c48ce81cd2085a23aa191->SetBorderMode(0);
-   df20cd1f4d0c48ce81cd2085a23aa191->SetBorderSize(2);
-   df20cd1f4d0c48ce81cd2085a23aa191->SetLogy();
-   df20cd1f4d0c48ce81cd2085a23aa191->SetGridx();
-   df20cd1f4d0c48ce81cd2085a23aa191->SetGridy();
-   df20cd1f4d0c48ce81cd2085a23aa191->SetFrameBorderMode(0);
-   df20cd1f4d0c48ce81cd2085a23aa191->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 638a5455080446ab832267ad20944b93/
+//=========  (Mon Aug  1 11:21:17 2016) by ROOT version5.34/26
+   TCanvas *638a5455080446ab832267ad20944b93 = new TCanvas("638a5455080446ab832267ad20944b93", "",10,45,704,527);
+   638a5455080446ab832267ad20944b93->SetHighLightColor(2);
+   638a5455080446ab832267ad20944b93->Range(-250,-1.010365,2250,3.760377);
+   638a5455080446ab832267ad20944b93->SetFillColor(0);
+   638a5455080446ab832267ad20944b93->SetBorderMode(0);
+   638a5455080446ab832267ad20944b93->SetBorderSize(2);
+   638a5455080446ab832267ad20944b93->SetLogy();
+   638a5455080446ab832267ad20944b93->SetGridx();
+   638a5455080446ab832267ad20944b93->SetGridy();
+   638a5455080446ab832267ad20944b93->SetFrameBorderMode(0);
+   638a5455080446ab832267ad20944b93->SetFrameBorderMode(0);
    
    TH1F *h_s2_spectrum = new TH1F("h_s2_spectrum","Low Energy S2 Spectrum",20,0,2000);
    h_s2_spectrum->SetBinContent(1,2);
@@ -174,7 +174,7 @@
    entry->SetMarkerStyle(20);
    entry->SetTextFont(42);
    leg->Draw();
-   df20cd1f4d0c48ce81cd2085a23aa191->Modified();
-   df20cd1f4d0c48ce81cd2085a23aa191->cd();
-   df20cd1f4d0c48ce81cd2085a23aa191->SetSelected(df20cd1f4d0c48ce81cd2085a23aa191);
+   638a5455080446ab832267ad20944b93->Modified();
+   638a5455080446ab832267ad20944b93->cd();
+   638a5455080446ab832267ad20944b93->SetSelected(638a5455080446ab832267ad20944b93);
 }
