@@ -209,8 +209,8 @@ for i in xrange(len(a_spline_energies)):
 
 
 
-#f_mc_nr_band = File('../coincidence_fitting/simulated_data/nerixsim-pure_nr_spec.root')
-f_mc_nr_band = File('../coincidence_fitting/simulated_data/nerixsim-20keV.root')
+f_mc_nr_band = File('../coincidence_fitting/simulated_data/nerixsim-pure_nr_spec.root')
+#f_mc_nr_band = File('../coincidence_fitting/simulated_data/nerixsim-20keV.root')
 t_mc = f_mc_nr_band.t2
 print '\nGeant4 output loaded!\n'
 
@@ -224,8 +224,8 @@ xLXeEnergy = '(ed_nr_target[0] > 0.)'
 xLiqSciHeight = '(etotliqsci>700)'
 xTOF = '(timeliqsci-tpos[0]> 10 && timeliqsci-tpos[0] < 41)'
 
-#xAll = '%s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy, xSingleScatter_2)
-xAll = '%s && %s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy, xSingleScatter_2, xLiqSciHeight, xTOF)
+xAll = '%s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy, xSingleScatter_2)
+#xAll = '%s && %s && %s && %s && %s && %s && %s' % (xRadius, xZ, xSingleScatter, xLXeEnergy, xSingleScatter_2, xLiqSciHeight, xTOF)
 
 l_energy_settings_large_window = [1000, 0, 100]
 l_energy_settings_small_window = [1000, 0, 30]
