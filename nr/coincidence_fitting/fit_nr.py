@@ -44,7 +44,6 @@ from numpy.random import normal, binomial, seed, poisson
 from rootpy.plotting import root2matplotlib as rplt
 
 path_to_this_module = neriX_simulation_config.path_to_this_module
-print path_to_this_module
 C.register_file('../../../python_modules/mc_code/c_log_likelihood.C', ['smart_log_likelihood'])
 c_log_likelihood = C.smart_log_likelihood
 
@@ -125,6 +124,7 @@ def smart_log_likelihood(aData, aMC, num_mc_events, confidenceIntervalLimit=0.95
 			probabiltyOfSuccess = 1. - (1.-confidenceIntervalLimit)**(1./num_mc_events)
 			#totalLogLikelihood += smart_log(smart_binomial(data, num_mc_events, probabiltyOfSuccess))
 			totalLogLikelihood += binom.logpmf(data, num_mc_events, probabiltyOfSuccess)
+			#print binom.logpmf(data, num_mc_events, probabiltyOfSuccess)
 		else:
 			#totalLogLikelihood += data*smart_log(mc) - mc - smart_stirling(data)
 			totalLogLikelihood += data*np.log(mc) - mc - lgamma(data+1)
@@ -1047,6 +1047,17 @@ class fit_nr(object):
 					flatS1S2MC = a_s1_s2_mc.flatten()
 					#log_likelihood_matching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
 					log_likelihood_matching = c_log_likelihood(flatS1S2Data, flatS1S2MC, len(flatS1S2Data), self.num_mc_events, 0.95)
+					#print log_likelihood_matching
+					
+					"""
+					print '\nLine 1051 likelihood test:'
+					a_1 = np.asarray([1900, 2, 1], dtype=np.float32)
+					a_2 = np.asarray([2000, 1000, 0], dtype=np.float32)
+					ll_python = smart_log_likelihood(a_1, a_2, self.num_mc_events)
+					ll_c = c_log_likelihood(a_1, a_2, len(a_1), self.num_mc_events, 0.95)
+					print 'll_python: %f' % ll_python
+					print 'll_c: %f' % ll_c
+					"""
 
 				total_ln_likelihood += log_likelihood_matching
 
@@ -1347,6 +1358,9 @@ class fit_nr(object):
 					flatS1S2MC = a_s1_s2_mc.flatten()
 					#log_likelihood_matching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
 					log_likelihood_matching = c_log_likelihood(flatS1S2Data, flatS1S2MC, len(flatS1S2Data), self.num_mc_events, 0.95)
+				
+				
+				
 
 				total_ln_likelihood += log_likelihood_matching
 
@@ -1574,7 +1588,7 @@ class fit_nr(object):
 	
 
 
-	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, proposal_scale=2.0, thin=thin, d_pt_sampler=None):
+	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, proposal_scale=2.0, thin=1, d_pt_sampler=None):
 	
 		if d_pt_sampler != None:
 		
