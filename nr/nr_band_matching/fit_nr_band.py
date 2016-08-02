@@ -184,7 +184,7 @@ class nr_band_fitter(object):
 		
 		self.s1_settings = (40, 0, 30)
 		self.s2_settings = (40, 0, 3000)
-		self.log_settings = (40, 1, 3.5)
+		self.log_settings = (40, 1.4, 3.5)
 
 		# -----------------------------------------------
 		# -----------------------------------------------
@@ -460,6 +460,7 @@ class nr_band_fitter(object):
 		# since otherwise will miss the interesting behavior
 		self.a_lower_bound_pars_nr_band = np.asarray([f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1)], dtype=np.float32)
 		s_lower_bound_nr_cut = '(log10(%s/%s) > (%f + %f*%s))' % (s2_branch, s1_branch, f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1), s1_branch)
+		#print s_lower_bound_nr_cut
 		
 		# save fit values to an array
 		self.a_upper_bound_pars_nr_band = np.asarray([f_upper_bound.GetParameter(0), f_upper_bound.GetParameter(1), f_upper_bound.GetParameter(2)], dtype=np.float32)
@@ -608,9 +609,11 @@ class nr_band_fitter(object):
 		
 		#print current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)
 		h_s1_s2_band_cut = Hist2D(*(self.s1_settings+self.log_settings))
-		current_analysis.Draw('%s:log10(%s/%s)' % (s1_branch, s2_branch, s1_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts()))
-		#current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)))
-		#current_analysis.Draw('%s:%s' % (s1_branch, s2_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s' % (s_upper_bound_nr_cut)))
+		#current_analysis.Draw('%s:log10(%s/%s)' % (s1_branch, s2_branch, s1_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts()))
+		#current_analysis.Draw('%s:log10(%s/%s)' % (s1_branch, s2_branch, s1_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s' % (s_lower_bound_nr_cut)))
+		current_analysis.Draw('%s:log10(%s/%s)' % (s1_branch, s2_branch, s1_branch), hist=h_s1_s2_band_cut, selection=(current_analysis.get_cuts() + '&& %s && %s' % (s_lower_bound_nr_cut, s_upper_bound_nr_cut)))
+		
+		self.l_lower_bound_curve = [f_lower_bound.GetParameter(0), f_lower_bound.GetParameter(1)]
 		
 		self.a_s1_s2 = neriX_analysis.convert_2D_hist_to_matrix(h_s1_s2_band_cut, dtype=np.float32)
 		self.num_data_points = np.sum(self.a_s1_s2)
@@ -898,7 +901,9 @@ class nr_band_fitter(object):
 		
 		a_pf_stdev = np.asarray([pf_stdev_par0, pf_stdev_par1, pf_stdev_par2], dtype=np.float32)
 		
-		a_band_cut = np.asarray([-5, 0, 0, 1, 10], dtype=np.float32)
+		a_band_cut = np.asarray(self.l_lower_bound_curve + self.l_upper_bound_curve, dtype=np.float32)
+		#a_band_cut = np.asarray([-5, 0, 0, 1, 10], dtype=np.float32)
+		#print a_band_cut
 		
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
@@ -1619,10 +1624,10 @@ if __name__ == '__main__':
 	a_free_par_bounds = [(0.5, 2.), (2.5, 6.5), (4.5, 9), (5, 10), (5.5, 12), (5.5, 13), (5.5, 13), (6, 14),
 						(4, 11), (3.5, 10.5), (3, 10), (2.5, 9.5), (2.5, 9.5), (2, 9), (2, 9), (1.5, 8),
 						(0.01, 0.5), (0.01, 0.5), (-5, 5), (0.1, 10), (1, 10)]
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=50, tol=0.01)
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=150, tol=0.01)
 	
 	# py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par
-	#test.likelihood_nr_band_no_nest(py_0=1.88, py_1=6.57, py_2=6.01, py_3=5.06, py_4=6.49, py_5=6.43, py_6=12.17, py_7=12.39, qy_0=6.88, qy_1=5.20, qy_2=4.79, qy_3=4.64, qy_4=4.77, qy_5=4.90, qy_6=5.09, qy_7=4.93, intrinsic_res_s1=0.46, intrinsic_res_s2=0.02, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.46, s1_eff_par1=5.4, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.75, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=0.57, py_1=4.78, py_2=7.21, py_3=7.02, py_4=7.30, py_5=8.21, py_6=11.32, py_7=13.34, qy_0=5.68, qy_1=4.31, qy_2=5.73, qy_3=5.57, qy_4=5.23, qy_5=4.81, qy_6=5.39, qy_7=4.49, intrinsic_res_s1=0.25, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=2.79, s1_eff_par1=5.46, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.32, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=1.56, py_1=5.50, py_2=7.22, py_3=7.40, py_4=6.56, py_5=8.40, py_6=9.02, py_7=11.7, qy_0=7.46, qy_1=4.27, qy_2=9.166, qy_3=2.54, qy_4=5.35, qy_5=4.45, qy_6=5.25, qy_7=4.16, intrinsic_res_s1=0.22, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.46, s1_eff_par1=7.4, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 3., draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	
 
