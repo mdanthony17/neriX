@@ -948,7 +948,7 @@ class nr_band_fitter(object):
 		#	return -np.inf
 
 		#a_s1_s2_mc = np.multiply(a_s1_s2_mc, np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc)
-		a_s1_s2_mc = np.multiply(a_s1_s2_mc, 1./float(scale_par))
+		a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.num_data_points/float(self.num_mc_events))
 
 		if draw_fit:
 
@@ -1276,7 +1276,8 @@ class nr_band_fitter(object):
 			s1_scale_factor = h_s1_data.Integral() / float(hS1MC.Integral())
 			
 			g_s1_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s1_data)
-			g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=s1_scale_factor)
+			#g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=s1_scale_factor)
+			g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=1.)
 			
 			g_s1_mc.SetFillColor(root.kBlue)
 			g_s1_mc.SetMarkerColor(root.kBlue)
@@ -1307,7 +1308,8 @@ class nr_band_fitter(object):
 			s2_scale_factor = h_s2_data.Integral() / float(h_s2_mc.Integral())
 			
 			g_s2_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_data)
-			g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=s2_scale_factor)
+			#g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=s2_scale_factor)
+			g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=1.)
 			
 			g_s2_mc.SetFillColor(root.kBlue)
 			g_s2_mc.SetMarkerColor(root.kBlue)
@@ -1603,13 +1605,13 @@ if __name__ == '__main__':
 	#test.minimize_nll_free_pars(a_free_par_guesses)
 	
 	# test differential evolution minimizer
-	a_free_par_bounds = [(0.5, 2.5), (4, 7), (4.5, 10), (5, 10), (4.5, 12), (5, 13), (5, 13), (6, 14),
+	a_free_par_bounds = [(0.5, 2.5), (4, 7), (4.5, 10), (5, 10), (5.5, 12), (5.5, 13), (5.5, 13), (6, 14),
 						(4, 11), (3.5, 10.5), (3, 10), (2.5, 9.5), (2.5, 9.5), (2, 9), (2, 9), (1.5, 8),
-						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (1, test.num_mc_events/test.num_data_points)]
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
+						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (1, 10)]
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=50, tol=0.01)
 	
 	# py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par
-	#test.likelihood_nr_band_no_nest(py_0=7.63182923e-01, py_1=2.65986687e+00, py_2=7.72158501e+00, py_3=5.01563959e+00, py_4=4.62842815e+00, py_5=6.30664394e+00, py_6=7.04430147e+00, py_7=1.29541819e+01, qy_0=7.53188973e+00, qy_1=5.10606011e+00, qy_2=4.18353541e+00, qy_3=8.89547491e+00, qy_4=3.21801243e+00, qy_5=4.18163619e+00, qy_6=4.15276040e+00, qy_7=4.18529611e+00, intrinsic_res_s1=4.02175445e-02, intrinsic_res_s2=3.15311310e-01, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=4.74152101e-01, s1_eff_par1=3.93896389e+00, s2_eff_par0=3.57666722e+02, s2_eff_par1=5.76763370e+02, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 2.77249913e+01, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=1.56, py_1=5.50, py_2=7.22, py_3=7.40, py_4=6.56, py_5=8.40, py_6=9.02, py_7=11.7, qy_0=7.46, qy_1=6.27, qy_2=6.166, qy_3=6., qy_4=5.35, qy_5=4.45, qy_6=5.25, qy_7=4.16, intrinsic_res_s1=0.22, intrinsic_res_s2=0.25, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.46, s1_eff_par1=5.4, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3., draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	
 
 	#test.likelihood_nr_band_nest(intrinsic_res_s1=0.9, intrinsic_res_s2=2.0, g1_rv=0, spe_res_rv=0, g2_rv=0, gas_gain_rv=0, gas_gain_width_rv=0, s1_eff_par0=1.1, s1_eff_par1=3.2, s2_eff_par0=0, s2_eff_par1=75, exciton_to_ion_par0_rv=0, exciton_to_ion_par1_rv=0, exciton_to_ion_par2_rv=0, draw_fit=True)
