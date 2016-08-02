@@ -1574,7 +1574,7 @@ class fit_nr(object):
 	
 
 
-	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, proposal_scale=2.0, d_pt_sampler=None):
+	def run_mcmc(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, proposal_scale=2.0, thin=thin, d_pt_sampler=None):
 	
 		if d_pt_sampler != None:
 		
@@ -1738,11 +1738,11 @@ class fit_nr(object):
 		start_time_mcmc = time.time()
 
 		if use_pt_sampler:
-			with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps), length=num_steps) as mcmc_sampler:
+			with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps), length=num_steps, thin=thin) as mcmc_sampler:
 				for pos, lnprob, state in mcmc_sampler:
 					pass
 		else:
-			with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state), length=num_steps) as mcmc_sampler:
+			with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state, thin=thin), length=num_steps) as mcmc_sampler:
 				for pos, lnprob, state in mcmc_sampler:
 					pass
 				
@@ -1819,7 +1819,7 @@ if __name__ == '__main__':
 	# d_coincidence_data['cathode_settings'] = [4.5]
 
 	d_coincidence_data = {}
-	d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300, 6200]
+	d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300]
 	d_coincidence_data['cathode_settings'] = [0.345]
 	
 	d_scale_pars = {}
@@ -1829,7 +1829,7 @@ if __name__ == '__main__':
 	d_scale_pars[0.345][3500] = 1018
 	d_scale_pars[0.345][4500] = 390
 	d_scale_pars[0.345][5300] = 1200
-	d_scale_pars[0.345][6200] = 1200
+	#d_scale_pars[0.345][6200] = 1200
 	
 	test = fit_nr(d_coincidence_data, num_mc_events=100000)
 
@@ -1844,19 +1844,19 @@ if __name__ == '__main__':
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
-	d_scale_pars[0.345][2300] = 1700
-	d_scale_pars[0.345][3000] = 1000
-	d_scale_pars[0.345][3500] = 1800
-	d_scale_pars[0.345][4500] = 1000
-	d_scale_pars[0.345][5300] = 3700
-	d_scale_pars[0.345][6200] = 6000
+	d_scale_pars[0.345][2300] = 3474
+	d_scale_pars[0.345][3000] = 1279
+	d_scale_pars[0.345][3500] = 1991
+	d_scale_pars[0.345][4500] = 995
+	d_scale_pars[0.345][5300] = 4471
+	#d_scale_pars[0.345][6200] = 6000
 	
 	# 1865, 1995: inf
 	
 	# best fit likelihoods: 472, 392, 465, 349, 744, 775
 	# changed py3 likelihoods: 474, 389, 471, 347, 748, 794
 	
-	test.ln_likelihood_coincidence_matching(a_py=[1.75, 5.86, 4.76, 9.19, 5.50, 8.25, 8.64, 12.44], a_qy=[6.60, 4.56, 6.16, 4.97, 5.11, 4.63, 4.78, 4.39], intrinsic_res_s1=0.1, intrinsic_res_s2=0.08, g1_value=0.13, spe_res_rv=0.0, g2_value=20.89, gas_gain_rv=0.55, gas_gain_width_rv=-0.66, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0, s1_eff_par1=0.001, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=0.01, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=1.48, exciton_to_ion_par1_rv=-0.04, exciton_to_ion_par2_rv=0.31, d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	test.ln_likelihood_coincidence_matching(a_py=[0.98, 2.46, 7.61, 8.00, 7.65, 9.47, 10.74], a_qy=[8.76, 6.26, 4.48, 5.59, 5.12, 5.34, 4.48], intrinsic_res_s1=0.1, intrinsic_res_s2=0.08, g1_value=0.13, spe_res_rv=0.0, g2_value=20.89, gas_gain_rv=0.55, gas_gain_width_rv=-0.66, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0, s1_eff_par1=0.001, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=0.01, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=1.48, exciton_to_ion_par1_rv=-0.04, exciton_to_ion_par2_rv=0.31, d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	"""
 	test.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(np.array([  1.27290620e+00,   6.71207698e+00,   8.19298167e+00,

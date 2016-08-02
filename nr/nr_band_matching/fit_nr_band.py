@@ -190,7 +190,7 @@ class nr_band_fitter(object):
 
 		current_analysis = neriX_analysis.neriX_analysis(l_files, degree_setting, cathodeVoltage, anodeVoltage)
 
-		#current_analysis.add_z_cut()
+		current_analysis.add_z_cut()
 		current_analysis.add_radius_cut(0, 0.85)
 		current_analysis.add_single_scatter_cut()
 		current_analysis.add_xs1asym_cut()
