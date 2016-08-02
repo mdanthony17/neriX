@@ -264,8 +264,8 @@ class nr_band_fitter(object):
 		
 		# only for producing initial distribution
 		# NOT FOR LIKELIHOOD
-		self.l_means_s1_eff_pars = [3, 1.2] #[7.95634366, 0.59582331]
-		self.l_cov_matrix_s1_eff_pars = [[.3**2, 0], [0, .1**2]]
+		self.l_means_s1_eff_pars = [3.13, 4.73] #[7.95634366, 0.59582331]
+		self.l_cov_matrix_s1_eff_pars = [[.4**2, 0], [0, .4**2]]
 		
 		#self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
 		#self.l_cov_matrix_s2_eff_pars = [[ 274.4, -82.64], [-82.64, 218.2]]
@@ -1385,6 +1385,7 @@ class nr_band_fitter(object):
 			# handle photon and charge yield initial positions
 			if (par_name[0] == 'p' or par_name[0] == 'q') and par_name[1] == 'y':
 				spline_number = int(par_name[-1])
+				"""
 				l_yields = nest_nr_mean_yields(self.a_spline_energies[spline_number], self.mean_field)
 				if par_name[0] == 'p':
 					yields_index = 0
@@ -1392,12 +1393,20 @@ class nr_band_fitter(object):
 					yields_index = 1
 				
 				d_variable_arrays[par_name] = np.random.normal(l_yields[yields_index], 0.2*l_yields[yields_index], size=num_walkers)
+				"""
+				
+				if par_name[0] == 'p':
+					l_yields = self.l_ly_guesses
+				else:
+					l_yields = self.l_qy_guesses
+				
+				d_variable_arrays[par_name] = np.random.normal(l_yields[spline_number], 0.2*l_yields[spline_number], size=num_walkers)
 
 			elif par_name == 'intrinsic_res_s1':
-				d_variable_arrays[par_name] = np.random.normal(.10, .04, size=num_walkers)
+				d_variable_arrays[par_name] = np.random.normal(.14, .04, size=num_walkers)
 				
 			elif par_name == 'intrinsic_res_s2':
-				d_variable_arrays[par_name] = np.random.normal(.34, .04, size=num_walkers)
+				d_variable_arrays[par_name] = np.random.normal(.19, .04, size=num_walkers)
 			
 			# handle g1 and g2 with g1 only
 			elif par_name == 'g1_value':
@@ -1425,7 +1434,7 @@ class nr_band_fitter(object):
 				
 				
 			elif par_name == 'scale_par':
-				d_variable_arrays[par_name] = np.random.normal(self.num_mc_events/self.num_data_points/2.5, self.num_mc_events/self.num_data_points/2.5*0.1, size=num_walkers)
+				d_variable_arrays[par_name] = np.random.normal(3.20, 0.4, size=num_walkers)
 			
 			
 			# catch all normally distributed RVs
@@ -1451,7 +1460,7 @@ class nr_band_fitter(object):
 
 
 	# default is to do a yields fit
-	def fit_nr_band_no_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, efficiency_fit=False, deviation_from_nest=None):
+	def fit_nr_band_no_nest(self, num_steps=200, num_walkers=1000, num_threads=1, fractional_deviation_start_pos=0.01, thin=1, efficiency_fit=False, deviation_from_nest=None):
 	
 		if efficiency_fit:
 			assert deviation_from_nest != None, '\nMust give deviation from NEST values!\n'
@@ -1459,6 +1468,8 @@ class nr_band_fitter(object):
 		if not efficiency_fit:
 			num_dim = 36
 			print '\n\nFitting yields...\n\n'
+			self.l_ly_guesses = [0.57, 5.82, 7.5, 7.5, 7.96, 8.14, 11.13, 13.14]
+			self.l_qy_guesses = [9.33, 5.40, 5.47, 5.49, 5.23, 5.01, 5.10, 5.25]
 		else:
 			num_dim = 3
 			print '\n\nFitting trigger efficiency...\n\n'
@@ -1528,7 +1539,7 @@ class nr_band_fitter(object):
 
 		#print starting_pos
 		if not efficiency_fit:
-			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_no_nest, a=1.15, threads=num_threads, kwargs={})
+			sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.wrapper_nr_band_no_nest, a=2., threads=num_threads, kwargs={})
 		else:
 			"""
 			a_forced_light_yields = self.a_nest_photon_yields*(1.+deviation_from_nest)
@@ -1546,7 +1557,7 @@ class nr_band_fitter(object):
 		
 		start_time_mcmc = time.time()
 
-		with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state), length=num_steps) as mcmc_sampler:
+		with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state, thin=thin), length=num_steps) as mcmc_sampler:
 			for pos, lnprob, state in mcmc_sampler:
 				pass
 				
@@ -1624,10 +1635,12 @@ if __name__ == '__main__':
 	a_free_par_bounds = [(0.5, 2.), (2.5, 6.5), (4.5, 9), (5, 10), (5.5, 12), (5.5, 13), (5.5, 13), (6, 14),
 						(4, 11), (3.5, 10.5), (3, 10), (2.5, 9.5), (2.5, 9.5), (2, 9), (2, 9), (1.5, 8),
 						(0.01, 0.5), (0.01, 0.5), (-5, 5), (0.1, 10), (1, 10)]
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=150, tol=0.01)
+	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=150, tol=0.01)
+
+	test.fit_nr_band_no_nest(num_steps=5, num_walkers=128)
 	
 	# py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par
-	#test.likelihood_nr_band_no_nest(py_0=0.57, py_1=4.78, py_2=7.21, py_3=7.02, py_4=7.30, py_5=8.21, py_6=11.32, py_7=13.34, qy_0=5.68, qy_1=4.31, qy_2=5.73, qy_3=5.57, qy_4=5.23, qy_5=4.81, qy_6=5.39, qy_7=4.49, intrinsic_res_s1=0.25, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=2.79, s1_eff_par1=5.46, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.32, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=0.58, py_1=5.82, py_2=7.5, py_3=7.5, py_4=7.96, py_5=8.13, py_6=11.13, py_7=13.13, qy_0=9.33, qy_1=5.39, qy_2=5.47, qy_3=5.49, qy_4=5.23, qy_5=5.01, qy_6=5.10, qy_7=5.25, intrinsic_res_s1=0.14, intrinsic_res_s2=0.18, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.13, s1_eff_par1=4.73, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.12, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=1.56, py_1=5.50, py_2=7.22, py_3=7.40, py_4=6.56, py_5=8.40, py_6=9.02, py_7=11.7, qy_0=7.46, qy_1=4.27, qy_2=9.166, qy_3=2.54, qy_4=5.35, qy_5=4.45, qy_6=5.25, qy_7=4.16, intrinsic_res_s1=0.22, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.46, s1_eff_par1=7.4, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 3., draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	
 
