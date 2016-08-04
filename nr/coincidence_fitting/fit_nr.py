@@ -772,6 +772,7 @@ class fit_nr(object):
 		prior_ln_likelihood += self.get_prior_log_likelihood_yields(a_py + a_qy)
 		
 		
+		
 		# priors of resolutions
 		prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s1)
 		prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s2)
@@ -900,6 +901,7 @@ class fit_nr(object):
 					# for histogram
 					tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.d_coincidence_data_information[cathode_setting][degree_setting]['gpu_a_energy'], drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
 					
+					
 					gpu_observables_func(*tArgs, **d_gpu_scale)
 					#print a_hist_2d[:4]
 
@@ -997,8 +999,8 @@ class fit_nr(object):
 					g_s2_mc.SetLineColor(root.kBlue)
 					g_s2_mc.SetFillStyle(3005)
 					
-					g_s2_data.SetTitle('S2 Comparison')
-					g_s2_data.GetXaxis().SetTitle('S2 [PE]')
+					g_s2_data.SetTitle('Log10(S2/S1) Comparison')
+					g_s2_data.GetXaxis().SetTitle('Log(S2/S1)')
 					g_s2_data.GetYaxis().SetTitle('Counts')
 					
 					g_s2_data.SetLineColor(root.kRed)
@@ -1046,9 +1048,9 @@ class fit_nr(object):
 					flatS1S2Data = self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'].flatten()
 					flatS1S2MC = a_s1_s2_mc.flatten()
 					#log_likelihood_matching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
-					log_likelihood_matching = c_log_likelihood(flatS1S2Data, flatS1S2MC, len(flatS1S2Data), self.num_mc_events, 0.95)
+					log_likelihood_matching = c_log_likelihood(flatS1S2Data, flatS1S2MC, len(flatS1S2Data), self.num_mc_events, d_scale_pars[cathode_setting][degree_setting], 0.95)
 					#print log_likelihood_matching
-					
+					#print flatS1S2MC
 					"""
 					print '\nLine 1051 likelihood test:'
 					a_1 = np.asarray([1900, 2, 1], dtype=np.float32)
@@ -1850,11 +1852,11 @@ if __name__ == '__main__':
 
 	#test.ln_likelihood_coincidence_matching(a_py=[1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15], a_qy=[7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25], intrinsic_res_s1=0.04, intrinsic_res_s2=0.3, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.474, s1_eff_par1=3.94, s2_eff_par0=358, s2_eff_par1=576, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
-	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14), (6, 14), (6, 14),
-						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8), (1.5, 8),
-						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (500, 8000), (500, 8000), (500, 8000), (500, 8000), (500, 8000), (500, 8000)]
+	a_free_par_bounds = [(0.5, 2.5), (3.5, 9), (4, 9), (5, 10), (4.5, 12), (6, 14), (6, 14),
+						(4, 11), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (2.5, 9.5), (1.5, 8), (1.5, 8),
+						(0.01, 0.5), (0.01, 0.5), (-5, 7), (0.1, 8), (500, 8000), (500, 8000), (500, 8000), (500, 8000), (500, 8000)]
 
-	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
+	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=30, tol=0.01)
 
 	d_scale_pars = {}
 	d_scale_pars[0.345] = {}
@@ -1862,7 +1864,7 @@ if __name__ == '__main__':
 	d_scale_pars[0.345][3000] = 1279
 	d_scale_pars[0.345][3500] = 1991
 	d_scale_pars[0.345][4500] = 995
-	d_scale_pars[0.345][5300] = 4471
+	d_scale_pars[0.345][5300] = 4071
 	#d_scale_pars[0.345][6200] = 6000
 	
 	# 1865, 1995: inf
@@ -1870,7 +1872,7 @@ if __name__ == '__main__':
 	# best fit likelihoods: 472, 392, 465, 349, 744, 775
 	# changed py3 likelihoods: 474, 389, 471, 347, 748, 794
 	
-	test.ln_likelihood_coincidence_matching(a_py=[0.98, 2.46, 7.61, 8.00, 7.65, 9.47, 10.74], a_qy=[8.76, 6.26, 4.48, 5.59, 5.12, 5.34, 4.48], intrinsic_res_s1=0.1, intrinsic_res_s2=0.08, g1_value=0.13, spe_res_rv=0.0, g2_value=20.89, gas_gain_rv=0.55, gas_gain_width_rv=-0.66, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0, s1_eff_par1=0.001, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=0.01, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=1.48, exciton_to_ion_par1_rv=-0.04, exciton_to_ion_par2_rv=0.31, d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.ln_likelihood_coincidence_matching(a_py=[0.98, 2.46, 7.61, 8.00, 7.65, 9.47, 10.74], a_qy=[8.76, 6.26, 4.48, 5.59, 5.12, 5.34, 4.48], intrinsic_res_s1=0.1, intrinsic_res_s2=0.08, g1_value=0.13, spe_res_rv=0.0, g2_value=20.89, gas_gain_rv=0.55, gas_gain_width_rv=-0.66, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0, s1_eff_par1=0.001, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=0.01, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=1.48, exciton_to_ion_par1_rv=-0.04, exciton_to_ion_par2_rv=0.31, d_scale_pars=d_scale_pars , draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	"""
 	test.wrapper_ln_likelihood_coincidence_matching_fixed_nuissance(np.array([  1.27290620e+00,   6.71207698e+00,   8.19298167e+00,

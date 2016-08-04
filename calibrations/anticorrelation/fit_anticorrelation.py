@@ -82,7 +82,7 @@ def fit_anticorrelation(d_files, batch_mode=False):
 			print 'File of type %s not supported yet!' % (source)
 			sys.exit()
 
-	hard_coded_correction_factor = 1.48e6 / 1.18e4 * (530./800.)**11.41
+	hard_coded_correction_factor = 1. # 1.48e6 / 1.18e4 * (530./800.)**11.41
 	neriX_analysis.warning_message('Using hard coded correction: %.2e' % hard_coded_correction_factor)
 
 	s1_par = 'cpS1sTotBottom[0]/%f' % hard_coded_correction_factor
@@ -171,6 +171,7 @@ def fit_anticorrelation(d_files, batch_mode=False):
 			current_analysis.add_z_cut()
 			current_analysis.add_single_scatter_cut()
 			current_analysis.add_radius_cut(0, 0.85)
+			current_analysis.add_cut('(s1asym > 0)')
 			
 			run_number = current_analysis.get_run()
 			
@@ -255,17 +256,13 @@ def fit_anticorrelation(d_files, batch_mode=False):
 			d_energy_information[source]['func'].SetParLimits(3, 1, 50)
 		
 		elif source == 'co57':
-			print 'Not ready!!'
-			sys.exit()
-			"""
-			d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2]) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )', d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-			fGausCES.SetParameters(1000, 0.5, 100, 500, 511, 50)
-			fGausCES.SetParLimits(0, 1, 1e8)
-			fGausCES.SetParLimits(1, 0, 1)
-			fGausCES.SetParLimits(2, 10, 500)
-			fGausCES.SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-			fGausCES.SetParLimits(4, 10, 100)
-			"""
+		
+			d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1] + (1.-[1])/(2*3.141592)^0.5/[3]*exp(-0.5*pow((x-[2])/[3], 2)) )', d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
+			d_energy_information[source]['func'].SetParameters(1000, 0.5, 164, 50)
+			d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
+			d_energy_information[source]['func'].SetParLimits(1, 0, 1)
+			d_energy_information[source]['func'].SetParLimits(2, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
+			d_energy_information[source]['func'].SetParLimits(3, 1, 50)
 
 
 		
@@ -674,7 +671,8 @@ if __name__ == '__main__':
 
 
 	d_files['cs137'] = []
-	d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
+	#d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
+	d_files['cs137'].append(['nerix_160801_1145', 'nerix_160801_1300', 'nerix_160801_1328', 'nerix_160801_1356', 'nerix_160801_1424'])
 	
 	"""
 	lFiles.append(['nerix_160411_0612', 'nerix_160411_0644', 'nerix_160411_0712', 'nerix_160411_0739', 'nerix_160411_0925'])
@@ -695,12 +693,14 @@ if __name__ == '__main__':
 	
 	"""
 	
-	d_files['na22'] = []
-	d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
+	#d_files['na22'] = []
+	#d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
 	
 	#d_files['bkg'] = []
 	#d_files['bkg'].append(['nerix_160404_1802', 'nerix_160405_0034', 'nerix_160405_0625', 'nerix_160405_0737', 'nerix_160405_0915'])
 	
+	#d_files['co57'] = []
+	#d_files['co57'].append(['nerix_160802_0944', 'nerix_160802_1015', 'nerix_160802_1048', 'nerix_160802_1135', 'nerix_160802_1206'])
 	
 	
 	fit_anticorrelation(d_files)
