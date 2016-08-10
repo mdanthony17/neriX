@@ -182,9 +182,9 @@ class nr_band_fitter(object):
 		s1_branch = 'cpS1sTotBottom[0]'
 		s2_branch = 'cpS2sTotBottom[0]'
 		
-		self.s1_settings = (40, 0, 30)
+		self.s1_settings = (25, 0, 25)
 		self.s2_settings = (40, 0, 3000)
-		self.log_settings = (40, 1.4, 3.5)
+		self.log_settings = (25, 1.4, 3.5)
 
 		# -----------------------------------------------
 		# -----------------------------------------------
@@ -289,6 +289,7 @@ class nr_band_fitter(object):
 		for i in xrange(self.num_mc_events):
 			self.a_energy[i] = h_mc.GetRandom()
 
+		print self.a_energy
 
 		
 		# -----------------------------------------------
@@ -297,7 +298,7 @@ class nr_band_fitter(object):
 		# -----------------------------------------------
 		# -----------------------------------------------
 		
-		self.a_spline_energies = np.asarray([0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25], dtype=np.float32)
+		self.a_spline_energies = np.asarray([0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 40], dtype=np.float32)
 		
 		print '\n\nEnergy Spline Points:\n'
 		pprint(list(self.a_spline_energies))
@@ -908,8 +909,8 @@ class nr_band_fitter(object):
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
 		gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.a_s1_bin_edges)
-		num_bins_s2 = np.asarray(self.s2_settings[0], dtype=np.int32)
-		gpu_bin_edges_s2 = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
+		num_bins_log = np.asarray(self.log_settings[0], dtype=np.int32)
+		gpu_bin_edges_log = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
 		a_hist_2d = np.zeros(self.s1_settings[0]*self.log_settings[0], dtype=np.int32)
 		
 		#print a_spline_photon_yields
@@ -928,12 +929,16 @@ class nr_band_fitter(object):
 			
 			
 			# for histogram
-			tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
+			tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_log), gpu_bin_edges_log, drv.InOut(a_hist_2d))
 			
 			gpu_observables_func(*tArgs, **d_gpu_scale)
 			#print a_hist_2d[:4]
 
 			a_s1_s2_mc = np.reshape(a_hist_2d, (self.s1_settings[0], self.log_settings[0])).T
+			
+			#print self.a_s1_bin_edges
+			#print self.a_log_bin_edges
+			#print a_s1_s2_mc.shape
 			
 		
 		else:
@@ -1007,10 +1012,10 @@ class nr_band_fitter(object):
 			g_s1_mc_band = g_s1_mc.Clone()
 			g_s1_mc_band.Draw('3 same')
 			
-			h_s2_data = Hist(*self.s2_settings, name='h_s2_draw_data')
+			h_s2_data = Hist(*self.log_settings, name='h_s2_draw_data')
 			root_numpy.array2hist(self.a_s1_s2.sum(axis=0), h_s2_data)
 			
-			h_s2_mc = Hist(*self.s2_settings, name='h_s2_draw_mc')
+			h_s2_mc = Hist(*self.log_settings, name='h_s2_draw_mc')
 			root_numpy.array2hist(a_s1_s2_mc.sum(axis=0), h_s2_mc)
 			
 			s2_scale_factor = h_s2_data.Integral() / float(h_s2_mc.Integral())
@@ -1219,8 +1224,8 @@ class nr_band_fitter(object):
 		# for histogram binning
 		num_bins_s1 = np.asarray(self.s1_settings[0], dtype=np.int32)
 		gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.a_s1_bin_edges)
-		num_bins_s2 = np.asarray(self.s2_settings[0], dtype=np.int32)
-		gpu_bin_edges_s2 = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
+		num_bins_log = np.asarray(self.log_settings[0], dtype=np.int32)
+		gpu_bin_edges_log = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
 		a_hist_2d = np.zeros(self.s1_settings[0]*self.log_settings[0], dtype=np.int32)
 		
 		#print a_spline_photon_yields
@@ -1238,7 +1243,7 @@ class nr_band_fitter(object):
 		
 		
 		# for histogram
-		tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_s2), gpu_bin_edges_s2, drv.InOut(a_hist_2d))
+		tArgs = (drv.In(seed), drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_log), gpu_bin_edges_log, drv.InOut(a_hist_2d))
 		
 		gpu_observables_func(*tArgs, **d_gpu_scale)
 		#print a_hist_2d[:4]
@@ -1621,7 +1626,7 @@ class nr_band_fitter(object):
 
 
 if __name__ == '__main__':
-	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(5e6))
+	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(10e6))
 
 	a_free_par_guesses = [0.95, 5.49, 7.73, 8.21, 9.08, 10.04, 10.81, 10.54, 11.37, 7.31, 5.99, 6.31, 5.88, 5.46, 5.71, 4.51, 0.04, 0.33, 0.13, -1.84, 20.80, 0.08, -0.15, 1.96, 0.46, 200, 200, 0.09, -0.20, -0.22]
 	#print len(a_free_par_guesses)
