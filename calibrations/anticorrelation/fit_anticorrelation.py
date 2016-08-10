@@ -82,7 +82,7 @@ def fit_anticorrelation(d_files, batch_mode=False):
 			print 'File of type %s not supported yet!' % (source)
 			sys.exit()
 
-	hard_coded_correction_factor = 1. # 1.48e6 / 1.18e4 * (530./800.)**11.41
+	hard_coded_correction_factor = 1.0 # 1.48e6 / 1.18e4 * (530./800.)**11.41
 	neriX_analysis.warning_message('Using hard coded correction: %.2e' % hard_coded_correction_factor)
 
 	s1_par = 'cpS1sTotBottom[0]/%f' % hard_coded_correction_factor
@@ -672,7 +672,13 @@ if __name__ == '__main__':
 
 	d_files['cs137'] = []
 	#d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
-	d_files['cs137'].append(['nerix_160801_1145', 'nerix_160801_1300', 'nerix_160801_1328', 'nerix_160801_1356', 'nerix_160801_1424'])
+	#d_files['cs137'].append(['nerix_160801_1145', 'nerix_160801_1300', 'nerix_160801_1328', 'nerix_160801_1356', 'nerix_160801_1424'])
+	
+	#d_files['cs137'].append(['nerix_160803_1453', 'nerix_160803_1715', 'nerix_160803_1813', 'nerix_160804_0659', 'nerix_160804_0722'])
+	#d_files['cs137'].append(['nerix_160804_0949', 'nerix_160804_1035', 'nerix_160804_1125', 'nerix_160804_1205', 'nerix_160804_1248'])
+	#d_files['cs137'].append(['nerix_160804_1355', 'nerix_160804_1419', 'nerix_160804_1440', 'nerix_160804_1457'])
+	#d_files['cs137'].append(['nerix_160808_0625', 'nerix_160808_0701', 'nerix_160808_0712', 'nerix_160808_0724', 'nerix_160808_0736'])
+	d_files['cs137'].append(['nerix_160808_0921', 'nerix_160808_0932', 'nerix_160808_0943', 'nerix_160808_0953', 'nerix_160808_1004'])
 	
 	"""
 	lFiles.append(['nerix_160411_0612', 'nerix_160411_0644', 'nerix_160411_0712', 'nerix_160411_0739', 'nerix_160411_0925'])
