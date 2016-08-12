@@ -45,7 +45,10 @@ import pycuda.gpuarray
 #drv.init()
 #dev = drv.Device(0)
 #ctx = dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
+
+start_time_context_creation = time.time()
 import pycuda.autoinit
+print 'Context creation time: %.3e s' % (time.time() - start_time_context_creation)
 
 #gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production')
 gpu_observables_func = SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production_with_log_hist_spline')
@@ -264,7 +267,7 @@ class nr_band_fitter(object):
 		
 		# only for producing initial distribution
 		# NOT FOR LIKELIHOOD
-		self.l_means_s1_eff_pars = [1,58, 5.46] #[7.95634366, 0.59582331]
+		self.l_means_s1_eff_pars = [1.58, 5.46] #[7.95634366, 0.59582331]
 		self.l_cov_matrix_s1_eff_pars = [[.4**2, 0], [0, .4**2]]
 		
 		#self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
@@ -674,7 +677,7 @@ class nr_band_fitter(object):
 	
 	
 	def get_pf_stdev_default(self, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2):
-		return multivariate_normal.pdf([pf_stdev_par0, pf_stdev_par1, pf_stdev_par2], self.l_means_pf_stdev_pars, self.l_cov_matrix_pf_stdev_pars), pf_stdev_par0, pf_stdev_par1, pf_stdev_par2
+		return multivariate_normal.logpdf([pf_stdev_par0, pf_stdev_par1, pf_stdev_par2], self.l_means_pf_stdev_pars, self.l_cov_matrix_pf_stdev_pars), pf_stdev_par0, pf_stdev_par1, pf_stdev_par2
 	
 
 
@@ -724,7 +727,7 @@ class nr_band_fitter(object):
 
 
 	def get_prior_log_likelihood_nuissance(self, likelihoodNuissance):
-		if likelihoodNuissance > 1e-65:
+		if likelihoodNuissance > 1e-500:
 			return np.log(likelihoodNuissance)
 		else:
 			return -np.inf
@@ -787,10 +790,11 @@ class nr_band_fitter(object):
 			# originally perscribed bc energies already
 			# produced
 			d_gpu_scale = {}
-			d_gpu_scale['block'] = (1024,1,1)
-			numBlocks = floor(self.num_mc_events / 1024.)
+			block_dim = 1024
+			d_gpu_scale['block'] = (block_dim,1,1)
+			numBlocks = floor(self.num_mc_events / float(block_dim))
 			d_gpu_scale['grid'] = (int(numBlocks), 1)
-			num_mc_events = int(numBlocks*1024)
+			num_mc_events = int(numBlocks*block_dim)
 
 
 		# -----------------------------------------------
@@ -846,13 +850,14 @@ class nr_band_fitter(object):
 		
 		prior_ln_likelihood += self.get_log_likelihood_s2_eff([s2_eff_par0, s2_eff_par1])
 		
-		current_likelihood, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.get_pf_stdev_default(pf_stdev_par0, pf_stdev_par1, pf_stdev_par2)
-		prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+		current_ln_likelihood, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.get_pf_stdev_default(pf_stdev_par0, pf_stdev_par1, pf_stdev_par2)
+		prior_ln_likelihood += current_ln_likelihood
 
 		extraction_efficiency = g2_value / float(gas_gain_value)
 
 
 		# if prior is -inf then don't bother with MC
+		#print 'removed prior infinity catch temporarily'
 		if not np.isfinite(prior_ln_likelihood) and not draw_fit:
 			return -np.inf
 
@@ -920,6 +925,8 @@ class nr_band_fitter(object):
 		
 		#print s2_eff_par0, s2_eff_par1
 		
+		#start_time_gpu = time.time()
+		
 		if gpu_compute:
 		
 			try:
@@ -948,7 +955,7 @@ class nr_band_fitter(object):
 			a_s1_s2_mc, xEdges, yEdges = np.histogram2d(aS1, aS2, bins=[self.a_s1_bin_edges, self.a_s2_bin_edges])
 
 
-
+		#print 'GPU time: %.3e s' % (time.time() - start_time_gpu)
 
 		# -----------------------------------------------
 		# -----------------------------------------------
@@ -1079,7 +1086,9 @@ class nr_band_fitter(object):
 			flatS1S2Data = np.asarray(self.a_s1_s2.flatten(), dtype=np.float32)
 			flatS1S2MC = np.asarray(a_s1_s2_mc.flatten(), dtype=np.float32)
 			#logLikelihoodMatching = smart_log_likelihood(flatS1S2Data, flatS1S2MC, self.num_mc_events)
+			#start_time_ll = time.time()
 			logLikelihoodMatching = c_log_likelihood(flatS1S2Data, flatS1S2MC, len(flatS1S2Data), int(self.num_mc_events), scale_par, int(self.num_data_points), 0.95)
+			#print 'Ln Likelihood time: %f' % (time.time() - start_time_ll)
 			#print logLikelihoodMatching
 
 		total_ln_likelihood = logLikelihoodMatching + prior_ln_likelihood
@@ -1649,10 +1658,11 @@ if __name__ == '__main__':
 	# py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par
 	
 	#for i in xrange(10):
-	#	test.likelihood_nr_band_no_nest(py_0=0.81, py_1=4.11, py_2=7.74, py_3=6.47, py_4=9.83, py_5=11.12, py_6=12.49, py_7=13.44, qy_0=6.49, qy_1=5.74, qy_2=5.41, qy_3=5.85, qy_4=5.98, qy_5=5.47, qy_6=8.34, qy_7=1.70, intrinsic_res_s1=0.04, intrinsic_res_s2=0.26, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.38, s1_eff_par1=2.2, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.23*6300, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#	test.likelihood_nr_band_no_nest(py_0=0.89, py_1=9.48, py_2=7.60, py_3=6.74, py_4=8.30, py_5=7.30, py_6=9.02, py_7=8.44, qy_0=10.72, qy_1=5.51, qy_2=6.85, qy_3=5.05, qy_4=5.57, qy_5=4.64, qy_6=4.43, qy_7=3.87, intrinsic_res_s1=0.10, intrinsic_res_s2=0.13, g1_value=0.13, spe_res_rv=0.45, g2_value=20.79, gas_gain_rv=0, gas_gain_width_rv=0.17, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0.66, s1_eff_par1=3.81, s2_eff_par0=120.4, s2_eff_par1=220.1, pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=2.6, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
-	test.likelihood_nr_band_no_nest(py_0=0.99, py_1=6.31, py_2=8.43, py_3=6.62, py_4=8.56, py_5=8.83, py_6=12.07, py_7=11.92, qy_0=6.55, qy_1=5.53, qy_2=5.59, qy_3=5.28, qy_4=5.35, qy_5=5.21, qy_6=5.17, qy_7=6.96, intrinsic_res_s1=0.23, intrinsic_res_s2=0.05, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=1.58, s1_eff_par1=5.46, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.23, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
-	test.likelihood_nr_band_no_nest(py_0=1.56, py_1=5.50, py_2=7.22, py_3=7.40, py_4=6.56, py_5=8.40, py_6=9.02, py_7=11.7, qy_0=7.46, qy_1=4.27, qy_2=9.166, qy_3=2.54, qy_4=5.35, qy_5=4.45, qy_6=5.25, qy_7=4.16, intrinsic_res_s1=0.22, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.38, s1_eff_par1=2.2, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 3., draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=0.89, py_1=9.48, py_2=7.60, py_3=6.74, py_4=8.30, py_5=7.30, py_6=9.02, py_7=8.44, qy_0=10.72, qy_1=5.51, qy_2=6.85, qy_3=5.05, qy_4=5.57, qy_5=4.64, qy_6=4.43, qy_7=3.87, intrinsic_res_s1=0.10, intrinsic_res_s2=0.13, g1_value=0.13, spe_res_rv=0.45, g2_value=20.79, gas_gain_rv=0, gas_gain_width_rv=0.17, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0.66, s1_eff_par1=3.81, s2_eff_par0=120.4, s2_eff_par1=220.1, pf_stdev_par0=0.1, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=2.6, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=0.99, py_1=6.31, py_2=8.43, py_3=6.62, py_4=8.56, py_5=8.83, py_6=12.07, py_7=11.92, qy_0=6.55, qy_1=5.53, qy_2=5.59, qy_3=5.28, qy_4=5.35, qy_5=5.21, qy_6=5.17, qy_7=6.96, intrinsic_res_s1=0.23, intrinsic_res_s2=0.05, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=1.58, s1_eff_par1=5.46, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.23, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	#test.likelihood_nr_band_no_nest(py_0=1.56, py_1=5.50, py_2=7.22, py_3=7.40, py_4=6.56, py_5=8.40, py_6=9.02, py_7=11.7, qy_0=7.46, qy_1=4.27, qy_2=9.166, qy_3=2.54, qy_4=5.35, qy_5=4.45, qy_6=5.25, qy_7=4.16, intrinsic_res_s1=0.22, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=3.38, s1_eff_par1=2.2, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 3., draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	
 
 	# enerigies: [0.5, 2.96, 4.93, 6.61, 9.76, 13.88, 17.5, 25]
