@@ -270,8 +270,8 @@ class nr_band_fitter(object):
 		
 		# only for producing initial distribution
 		# NOT FOR LIKELIHOOD
-		self.l_means_s1_eff_pars = [1.58, 5.46] #[7.95634366, 0.59582331]
-		self.l_cov_matrix_s1_eff_pars = [[.4**2, 0], [0, .4**2]]
+		self.l_means_s1_eff_pars = [0.085, 2.077] #[7.95634366, 0.59582331]
+		self.l_cov_matrix_s1_eff_pars = [[.4**2, 0], [0, .6**2]]
 		
 		#self.l_means_s2_eff_pars = [2.58150e+02, 5.93622e+01] #[7.95634366, 0.59582331]
 		#self.l_cov_matrix_s2_eff_pars = [[ 274.4, -82.64], [-82.64, 218.2]]
@@ -1498,7 +1498,7 @@ class nr_band_fitter(object):
 				
 				
 			elif par_name == 'scale_par':
-				d_variable_arrays[par_name] = np.random.normal(3.32, 0.4, size=num_walkers)
+				d_variable_arrays[par_name] = np.random.normal(2.00, 0.7, size=num_walkers)
 			
 			
 			# catch all normally distributed RVs
@@ -1532,9 +1532,11 @@ class nr_band_fitter(object):
 		if not efficiency_fit:
 			num_dim = 36
 			print '\n\nFitting yields...\n\n'
-			self.l_ly_guesses = [0.99, 6.31, 8.43, 6.62, 8.55, 8.83, 12.07, 11.92]
+			self.l_ly_guesses = [1.65, 5.24, 8.80, 7.58, 9.24, 10.10, 11.28, 12.87]
+			#self.l_ly_guesses = [0.99, 6.31, 8.43, 6.62, 8.55, 8.83, 12.07, 11.92]
 			#self.l_ly_guesses = [0.81, 4.11, 7.74, 6.47, 9.83, 11.12, 12.49, 13.44]
-			self.l_qy_guesses = [6.55, 5.54, 5.59, 5.28, 5.35, 5.21, 5.17, 6.97]
+			self.l_qy_guesses = [6.38, 4.83, 5.91, 5.67, 5.93, 5.33, 5.24, 7.10]
+			#self.l_qy_guesses = [6.55, 5.54, 5.59, 5.28, 5.35, 5.21, 5.17, 6.97]
 			#self.l_qy_guesses = [6.49, 5.74, 5.42, 5.85, 5.98, 5.47, 8.34, 1.70]
 		else:
 			num_dim = 3
@@ -1722,15 +1724,15 @@ if __name__ == '__main__':
 	# test differential evolution minimizer
 	a_free_par_bounds = [(0.5, 2.), (2.5, 6.5), (4.5, 9), (5, 10), (5.5, 12), (5.5, 13), (5.5, 13), (6, 14),
 						(4, 11), (3.5, 10.5), (3, 10), (2.5, 9.5), (2.5, 9.5), (2, 9), (2, 9), (1.5, 8),
-						(0.01, 0.5), (0.01, 0.5), (-5, 5), (0.1, 10), (5000, 60000)]
-	test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=500, popsize=150, tol=0.01)
+						(0.01, 0.5), (0.01, 0.5), (-5, 5), (0.1, 10), (0.5, 6)]
+	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=500, popsize=150, tol=0.01)
 
 	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=128)
 	
 	# py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par
 	
-	#for i in xrange(10):
-	#	test.likelihood_nr_band_no_nest(py_0=1.56, py_1=5.50, py_2=7.22, py_3=7.40, py_4=6.56, py_5=8.40, py_6=9.02, py_7=11.7, qy_0=7.46, qy_1=4.27, qy_2=9.166, qy_3=2.54, qy_4=5.35, qy_5=4.45, qy_6=5.25, qy_7=4.16, intrinsic_res_s1=0.22, intrinsic_res_s2=0.15, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=1.58, s1_eff_par1=5.46, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 2.3, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
+	for i in xrange(10):
+		test.likelihood_nr_band_no_nest(py_0=1.65, py_1=5.24, py_2=8.80, py_3=7.57, py_4=9.24, py_5=10.1, py_6=11.28, py_7=12.87, qy_0=6.38, qy_1=4.83, qy_2=5.91, qy_3=5.67, qy_4=5.92, qy_5=5.33, qy_6=5.24, qy_7=7.10, intrinsic_res_s1=0.066, intrinsic_res_s2=0.179, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=0.08, s1_eff_par1=2.07, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par= 2.0, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 
 	#test.likelihood_nr_band_no_nest(py_0=0.89, py_1=9.48, py_2=7.60, py_3=6.74, py_4=8.30, py_5=7.30, py_6=9.02, py_7=8.44, qy_0=10.72, qy_1=5.51, qy_2=6.85, qy_3=5.05, qy_4=5.57, qy_5=4.64, qy_6=4.43, qy_7=3.87, intrinsic_res_s1=0.10, intrinsic_res_s2=0.13, g1_value=0.13, spe_res_rv=0.45, g2_value=20.79, gas_gain_rv=0, gas_gain_width_rv=0.17, pf_eff_par0=1.96, pf_eff_par1=0.47, s1_eff_par0=0.66, s1_eff_par1=3.81, s2_eff_par0=120.4, s2_eff_par1=220.1, pf_stdev_par0=0.1, pf_stdev_par1=0.53, pf_stdev_par2=4.33, exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=2.6, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
 	#test.likelihood_nr_band_no_nest(py_0=0.99, py_1=6.31, py_2=8.43, py_3=6.62, py_4=8.56, py_5=8.83, py_6=12.07, py_7=11.92, qy_0=6.55, qy_1=5.53, qy_2=5.59, qy_3=5.28, qy_4=5.35, qy_5=5.21, qy_6=5.17, qy_7=6.96, intrinsic_res_s1=0.23, intrinsic_res_s2=0.05, g1_value=0.13, spe_res_rv=0., g2_value=20.89, gas_gain_rv=0, gas_gain_width_rv=0., pf_eff_par0=test.l_means_pf_eff_pars[0], pf_eff_par1=test.l_means_pf_eff_pars[1], s1_eff_par0=1.58, s1_eff_par1=5.46, s2_eff_par0=test.l_means_s2_eff_pars[0], s2_eff_par1=test.l_means_s2_eff_pars[1], pf_stdev_par0=test.l_means_pf_stdev_pars[0], pf_stdev_par1=test.l_means_pf_stdev_pars[1], pf_stdev_par2=test.l_means_pf_stdev_pars[2], exciton_to_ion_par0_rv=0., exciton_to_ion_par1_rv=0., exciton_to_ion_par2_rv=0., scale_par=3.23, draw_fit=True, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True)
