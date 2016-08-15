@@ -485,7 +485,7 @@ def fit_anticorrelation(d_files, batch_mode=False):
 	samples = sampler.chain[:, -10:, :].reshape((-1, num_dim))
 
 	#print samples
-	fig = corner.corner(samples, labels=par_names)
+	fig = corner.corner(samples, labels=par_names, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_kwargs={"fontsize": 12})
 	a_means_g1_g2 = np.mean(samples, axis=0)[:2]
 	a_cov_matrix_g1_g2 = np.cov(samples.T)[:2,:2]
 

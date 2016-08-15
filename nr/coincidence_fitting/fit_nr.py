@@ -255,7 +255,7 @@ class fit_nr(object):
 		self.path_to_energy_spectra = '%s/simulated_data/' % (neriX_simulation_config.path_to_this_module)
 		self.path_to_reduced_energy_spectra = '%s/reduced_simulation_data/' % (neriX_simulation_config.path_to_this_module)
 
-		self.l_energy_settings = [300, 0, 30]
+		self.l_energy_settings = [300, 2, 30]
 
 
 		# ------------------------------------------------

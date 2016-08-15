@@ -923,7 +923,7 @@ class neriX_simulation_analysis(object):
 
 			# create and fill histogram
 			tMC = fSimulation.t2
-			hMC = Hist(energyNumBins*5, energyMin, energyMax, name='hMC', title='Simulated Spectrum', drawstyle='hist')
+			hMC = Hist(energyNumBins*5, energyMin, energyMax, name='h_mc', title='Simulated Spectrum', drawstyle='hist')
 			#tMC.Draw('etot_target', hist=hMC, selection=xAll)
 			tMC.Draw('ed_nr_target[0]', hist=hMC, selection=xAll)
 			hMC.Sumw2()
@@ -938,7 +938,7 @@ class neriX_simulation_analysis(object):
 		
 
 		self.fReduced = File(pathToReducedSimulationFiles, 'read')
-		hMC = self.fReduced.hMC
+		hMC = self.fReduced.h_mc
 		gMC = convert_hist_to_graph_with_poisson_errors(hMC)
 		return easy_graph(gMC), hMC
 
