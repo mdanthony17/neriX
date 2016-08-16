@@ -1,36 +1,32 @@
 {
-//=========Macro generated from canvas: Canvas_XbG23VkkvfqUXWZeomRBpZ/
-//=========  (Wed Aug 10 22:40:12 2016) by ROOT version5.34/26
-   TCanvas *Canvas_XbG23VkkvfqUXWZeomRBpZ = new TCanvas("Canvas_XbG23VkkvfqUXWZeomRBpZ", "",10,32,704,528);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetHighLightColor(2);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->Range(-0.125,-0.03705059,1.125,0.3334553);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetFillColor(0);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetBorderMode(0);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetBorderSize(2);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetFrameBorderMode(0);
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetFrameBorderMode(0);
+//=========Macro generated from canvas: Canvas_FssPgx7HfdxRnmsuKaUXcm/
+//=========  (Mon Aug 15 08:45:45 2016) by ROOT version5.34/26
+   TCanvas *Canvas_FssPgx7HfdxRnmsuKaUXcm = new TCanvas("Canvas_FssPgx7HfdxRnmsuKaUXcm", "",10,32,704,528);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetHighLightColor(2);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->Range(-0.125,-0.0343738,1.125,0.3093642);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetFillColor(0);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetBorderMode(0);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetBorderSize(2);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetFrameBorderMode(0);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetFrameBorderMode(0);
    
    TH1F *h_acceptance = new TH1F("h_acceptance","Acceptance Fraction of Most Recent Sampler",100,0,1);
-   h_acceptance->SetBinContent(1,0.02539062);
-   h_acceptance->SetBinContent(11,0.04492188);
-   h_acceptance->SetBinContent(21,0.1679688);
-   h_acceptance->SetBinContent(31,0.2519531);
-   h_acceptance->SetBinContent(41,0.2597656);
-   h_acceptance->SetBinContent(51,0.1621094);
-   h_acceptance->SetBinContent(61,0.06835938);
-   h_acceptance->SetBinContent(71,0.01171875);
-   h_acceptance->SetBinContent(81,0.005859375);
-   h_acceptance->SetBinContent(91,0.001953125);
-   h_acceptance->SetBinError(1,0.007042092);
-   h_acceptance->SetBinError(11,0.009366858);
-   h_acceptance->SetBinError(21,0.01811254);
-   h_acceptance->SetBinError(31,0.02218324);
-   h_acceptance->SetBinError(41,0.02252454);
-   h_acceptance->SetBinError(51,0.01779382);
-   h_acceptance->SetBinError(61,0.01155484);
-   h_acceptance->SetBinError(71,0.00478416);
-   h_acceptance->SetBinError(81,0.003382912);
-   h_acceptance->SetBinError(91,0.001953125);
+   h_acceptance->SetBinContent(1,0.2128906);
+   h_acceptance->SetBinContent(11,0.1210938);
+   h_acceptance->SetBinContent(21,0.2402344);
+   h_acceptance->SetBinContent(31,0.2207031);
+   h_acceptance->SetBinContent(41,0.1035156);
+   h_acceptance->SetBinContent(51,0.0859375);
+   h_acceptance->SetBinContent(61,0.01367188);
+   h_acceptance->SetBinContent(81,0.001953125);
+   h_acceptance->SetBinError(1,0.02039122);
+   h_acceptance->SetBinError(11,0.01537892);
+   h_acceptance->SetBinError(21,0.0216612);
+   h_acceptance->SetBinError(31,0.020762);
+   h_acceptance->SetBinError(41,0.01421896);
+   h_acceptance->SetBinError(51,0.01295557);
+   h_acceptance->SetBinError(61,0.005167483);
+   h_acceptance->SetBinError(81,0.001953125);
    h_acceptance->SetEntries(512);
    
    TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
@@ -42,8 +38,8 @@
    TText *text = ptstats->AddText("h_acceptance");
    text->SetTextSize(0.0368);
    text = ptstats->AddText("Entries = 512    ");
-   text = ptstats->AddText("Mean  = 0.3543");
-   text = ptstats->AddText("RMS   = 0.1486");
+   text = ptstats->AddText("Mean  = 0.2205");
+   text = ptstats->AddText("RMS   = 0.1621");
    ptstats->SetOptStat(1111);
    ptstats->SetOptFit(0);
    ptstats->Draw();
@@ -73,7 +69,7 @@
    pt->SetTextFont(42);
    text = pt->AddText("Acceptance Fraction of Most Recent Sampler");
    pt->Draw();
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->Modified();
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->cd();
-   Canvas_XbG23VkkvfqUXWZeomRBpZ->SetSelected(Canvas_XbG23VkkvfqUXWZeomRBpZ);
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->Modified();
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->cd();
+   Canvas_FssPgx7HfdxRnmsuKaUXcm->SetSelected(Canvas_FssPgx7HfdxRnmsuKaUXcm);
 }

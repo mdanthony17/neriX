@@ -292,10 +292,10 @@ class nr_band_fitter(object):
 		h_mc = f_reduced_spectrum.h_mc
 		self.a_energy = np.zeros(self.num_mc_events, dtype=np.float32)
 		
-		for i in xrange(self.num_mc_events):
+		for i in tqdm.tqdm(xrange(self.num_mc_events)):
 			self.a_energy[i] = h_mc.GetRandom()
 
-		print self.a_energy
+		#print self.a_energy
 
 		
 		# -----------------------------------------------
@@ -791,7 +791,7 @@ class nr_band_fitter(object):
 
 	def get_prior_log_likelihood_yields(self, l_yields):
 		for value in l_yields:
-			if value < 0. or value > 18.:
+			if value < 0. or value > 28.:
 				return -np.inf
 		return 0.
 	
@@ -960,12 +960,16 @@ class nr_band_fitter(object):
 			try:
 				self.gpu_aEnergy
 			except:
+				print 'Transferring energy array to GPU...'
 				self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.a_energy)
+				print 'Finished transferring energy array to GPU'
 			
 			
 			# for histogram
 			#print self.rng_states
 			tArgs = (self.rng_states, drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy.gpudata, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), gpu_bin_edges_s1, drv.In(num_bins_log), gpu_bin_edges_log, drv.InOut(a_hist_2d))
+			
+			#print globals()
 			
 			gpu_observables_func(*tArgs, **self.d_gpu_scale)
 			#print a_hist_2d[:4]

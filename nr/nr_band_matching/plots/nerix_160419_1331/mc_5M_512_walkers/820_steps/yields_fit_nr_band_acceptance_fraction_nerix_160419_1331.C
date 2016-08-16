@@ -1,0 +1,87 @@
+{
+//=========Macro generated from canvas: Canvas_9weQG3Ys58XSVQDLCBCBAN/
+//=========  (Wed Aug 10 06:24:03 2016) by ROOT version5.34/26
+   TCanvas *Canvas_9weQG3Ys58XSVQDLCBCBAN = new TCanvas("Canvas_9weQG3Ys58XSVQDLCBCBAN", "",10,32,704,528);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetHighLightColor(2);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->Range(-0.125,-0.02739046,1.125,0.2465141);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetFillColor(0);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetBorderMode(0);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetBorderSize(2);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetFrameBorderMode(0);
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetFrameBorderMode(0);
+   
+   TH1F *h_acceptance = new TH1F("h_acceptance","Acceptance Fraction of Most Recent Sampler",100,0,1);
+   h_acceptance->SetBinContent(4,0.001953125);
+   h_acceptance->SetBinContent(5,0.00390625);
+   h_acceptance->SetBinContent(6,0.0234375);
+   h_acceptance->SetBinContent(7,0.04882812);
+   h_acceptance->SetBinContent(8,0.0546875);
+   h_acceptance->SetBinContent(9,0.1210938);
+   h_acceptance->SetBinContent(10,0.1523438);
+   h_acceptance->SetBinContent(11,0.1582031);
+   h_acceptance->SetBinContent(12,0.1894531);
+   h_acceptance->SetBinContent(13,0.1308594);
+   h_acceptance->SetBinContent(14,0.06835938);
+   h_acceptance->SetBinContent(15,0.02929688);
+   h_acceptance->SetBinContent(16,0.015625);
+   h_acceptance->SetBinContent(18,0.001953125);
+   h_acceptance->SetBinError(4,0.001953125);
+   h_acceptance->SetBinError(5,0.002762136);
+   h_acceptance->SetBinError(6,0.006765823);
+   h_acceptance->SetBinError(7,0.009765625);
+   h_acceptance->SetBinError(8,0.01033497);
+   h_acceptance->SetBinError(9,0.01537892);
+   h_acceptance->SetBinError(10,0.01724953);
+   h_acceptance->SetBinError(11,0.01757812);
+   h_acceptance->SetBinError(12,0.01923605);
+   h_acceptance->SetBinError(13,0.01598702);
+   h_acceptance->SetBinError(14,0.01155484);
+   h_acceptance->SetBinError(15,0.007564421);
+   h_acceptance->SetBinError(16,0.005524272);
+   h_acceptance->SetBinError(18,0.001953125);
+   h_acceptance->SetEntries(512);
+   
+   TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
+   ptstats->SetName("stats");
+   ptstats->SetBorderSize(1);
+   ptstats->SetFillColor(0);
+   ptstats->SetTextAlign(12);
+   ptstats->SetTextFont(42);
+   TText *text = ptstats->AddText("h_acceptance");
+   text->SetTextSize(0.0368);
+   text = ptstats->AddText("Entries = 512    ");
+   text = ptstats->AddText("Mean  = 0.1039");
+   text = ptstats->AddText("RMS   = 0.02188");
+   ptstats->SetOptStat(1111);
+   ptstats->SetOptFit(0);
+   ptstats->Draw();
+   h_acceptance->GetListOfFunctions()->Add(ptstats);
+   ptstats->SetParent(h_acceptance);
+   h_acceptance->SetFillStyle(0);
+   h_acceptance->SetMarkerStyle(20);
+   h_acceptance->GetXaxis()->SetLabelFont(42);
+   h_acceptance->GetXaxis()->SetLabelSize(0.035);
+   h_acceptance->GetXaxis()->SetTitleSize(0.035);
+   h_acceptance->GetXaxis()->SetTitleFont(42);
+   h_acceptance->GetYaxis()->SetLabelFont(42);
+   h_acceptance->GetYaxis()->SetLabelSize(0.035);
+   h_acceptance->GetYaxis()->SetTitleSize(0.035);
+   h_acceptance->GetYaxis()->SetTitleFont(42);
+   h_acceptance->GetZaxis()->SetLabelFont(42);
+   h_acceptance->GetZaxis()->SetLabelSize(0.035);
+   h_acceptance->GetZaxis()->SetTitleSize(0.035);
+   h_acceptance->GetZaxis()->SetTitleFont(42);
+   h_acceptance->Draw("");
+   
+   TPaveText *pt = new TPaveText(0.15,0.9326,0.85,0.995,"blNDC");
+   pt->SetName("title");
+   pt->SetBorderSize(0);
+   pt->SetFillColor(0);
+   pt->SetFillStyle(0);
+   pt->SetTextFont(42);
+   text = pt->AddText("Acceptance Fraction of Most Recent Sampler");
+   pt->Draw();
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->Modified();
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->cd();
+   Canvas_9weQG3Ys58XSVQDLCBCBAN->SetSelected(Canvas_9weQG3Ys58XSVQDLCBCBAN);
+}
