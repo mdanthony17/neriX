@@ -1731,7 +1731,7 @@ if __name__ == '__main__':
 						(0.01, 0.5), (0.01, 0.5), (-5, 5), (0.1, 10), (0.5, 6)]
 	#test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=500, popsize=150, tol=0.01)
 
-	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=128)
+	test.fit_nr_band_no_nest(num_steps=5, num_walkers=1024)
 	
 	# py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par
 	

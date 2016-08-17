@@ -62,11 +62,12 @@ d_cathode_voltage_to_field = {0.345:210,
 
 
 class gpu_pool:
-	def __init__(self, num_gpus, grid_dim, block_dim, num_dim_gpu_call):
+	def __init__(self, num_gpus, grid_dim, block_dim, num_dim_gpu_call, d_gpu_single_copy_arrays):
 		self.num_gpus = num_gpus
 		self.grid_dim = grid_dim
 		self.block_dim = block_dim
 		self.num_dim_gpu_call = num_dim_gpu_call
+		self.d_gpu_single_copy_arrays = d_gpu_single_copy_arrays
 		
 		self.alive = True
 		self.q_gpu = Queue()
@@ -114,7 +115,7 @@ class gpu_pool:
 		
 		
 		
-		"""
+
 		seed = int(time.time()*1000)
 		
 		
@@ -123,11 +124,29 @@ class gpu_pool:
 		
 		local_rng_states = drv.mem_alloc(np.int32(self.block_dim*self.grid_dim)*pycuda.characterize.sizeof('curandStateXORWOW', '#include <curand_kernel.h>'))
 		local_gpu_setup_kernel(np.int32(int(self.block_dim*self.grid_dim)), local_rng_states, np.uint64(0), np.uint64(0), grid=(int(self.grid_dim), 1), block=(int(self.block_dim), 1, 1))
-		
+
 		print '\nSetup Kernel run!\n'
 		sys.stdout.flush()
-		"""
 
+		gpu_observables_production = pycuda.compiler.SourceModule(cuda_full_observables_production.cuda_full_observables_production_code, no_extern_c=True).get_function('gpu_full_observables_production_with_log_hist_spline')
+
+		print 'Putting energy array on GPU...'
+		gpu_aEnergy = pycuda.gpuarray.to_gpu(self.d_gpu_single_copy_arrays['energy'])
+	
+
+		print 'Putting bin edges on GPU...'
+		gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.d_gpu_single_copy_arrays['bin_edges_s1'])
+	
+	
+		print 'Putting bin edges on GPU...'
+		gpu_bin_edges_log = pycuda.gpuarray.to_gpu(self.d_gpu_single_copy_arrays['bin_edges_log'])
+		
+
+		d_gpu_local_info = {'function_to_call':gpu_observables_production,
+							'rng_states':local_rng_states,
+							'gpu_energy':gpu_aEnergy,
+							'gpu_bin_edges_s1':gpu_bin_edges_s1,
+							'gpu_bin_edges_log':gpu_bin_edges_log}
 		
 		# wrap up function
 		# modeled off of pycuda's autoinit
@@ -156,16 +175,17 @@ class gpu_pool:
 				
 				#print '\nTask ID: %d\n' % id_num
 				#print args
-				#sys.stdout.flush()
+				sys.stdout.flush()
 			
 				if task == 'exit':
 					_finish_up(ctx)
 				else:
-					#if len(args) == self.num_dim_gpu_call:
-					#	args = np.append(args, [local_rng_states])
+					if len(args) == self.num_dim_gpu_call or len(args) == 21:
+						args = np.append(args, [d_gpu_local_info])
 					return_value = task(args)
 			
-			
+				#print '\nFinished Task ID: %d\n' % id_num
+				#print id_num, return_value
 				
 				self.q_out.put((id_num, return_value))
 			else:
@@ -781,8 +801,11 @@ class nr_band_fitter(object):
 	
 	
 	
-	
-		self.gpu_pool = gpu_pool(num_gpus=num_gpus, grid_dim=numBlocks, block_dim=block_dim, num_dim_gpu_call=36)
+		d_gpu_single_copy_arrays = {'energy':self.a_energy,
+									'bin_edges_s1':self.a_s1_bin_edges,
+									'bin_edges_log':self.a_log_bin_edges
+									}
+		self.gpu_pool = gpu_pool(num_gpus=num_gpus, grid_dim=numBlocks, block_dim=block_dim, num_dim_gpu_call=36, d_gpu_single_copy_arrays=d_gpu_single_copy_arrays)
 	
 		self.b_suppress_likelihood = False
 	
@@ -945,7 +968,7 @@ class nr_band_fitter(object):
 # observables code because it depends on the energy
 
 
-	def likelihood_nr_band_no_nest(self, py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True):
+	def likelihood_nr_band_no_nest(self, py_0, py_1, py_2, py_3, py_4, py_5, py_6, py_7, qy_0, qy_1, qy_2, qy_3, qy_4, qy_5, qy_6, qy_7, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s1_eff_par0, s1_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par, d_gpu_local_info, draw_fit=False, lowerQuantile=0.0, upperQuantile=1.0, gpu_compute=True):
 
 		#start_time_tot_ll = time.time()
 
@@ -1094,9 +1117,9 @@ class nr_band_fitter(object):
 		
 		if gpu_compute:
 		
-		
+			"""
 			if not self.worker_initialized:
-				"""
+			
 				try:
 					print 'Initializing drivers...'
 					drv.init()
@@ -1110,7 +1133,7 @@ class nr_band_fitter(object):
 					sys.exit()
 				self.ctx = self.dev.make_context(drv.ctx_flags.SCHED_AUTO | drv.ctx_flags.MAP_HOST)
 				print self.dev.name()
-				"""
+				
 				
 				
 				seed = int(time.time()*1000)
@@ -1120,8 +1143,11 @@ class nr_band_fitter(object):
 				# source code
 				local_gpu_setup_kernel = self.source_module.get_function('setup_kernel')
 				
-				self.local_rng_states = drv.mem_alloc(self.num_mc_events*pycuda.characterize.sizeof('curandStateXORWOW', '#include <curand_kernel.h>'))
-				local_gpu_setup_kernel(np.int32(self.num_mc_events), self.local_rng_states, np.uint64(0), np.uint64(0), **self.d_gpu_scale)
+				local_rng_states = drv.mem_alloc(self.num_mc_events*pycuda.characterize.sizeof('curandStateXORWOW', '#include <curand_kernel.h>'))
+				local_gpu_setup_kernel(np.int32(self.num_mc_events), local_rng_states, np.uint64(0), np.uint64(0), **self.d_gpu_scale)
+				
+				#self.block_dims = self.d_gpu_scale['block']
+				#self.grid_dims = self.d_gpu_scale['grid']
 				
 				time.sleep(3)
 				
@@ -1132,37 +1158,49 @@ class nr_band_fitter(object):
 				
 				self.worker_initialized = True
 
-		
-			try:
-				self.gpu_aEnergy
-			except:
-				print 'Putting energy array on GPU...'
-				self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.a_energy)
-			
 
-			try:
-				self.gpu_bin_edges_s1
-			except:
-				print 'Putting bin edges on GPU...'
-				self.gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.a_s1_bin_edges)
-			
-			
-			try:
-				self.gpu_bin_edges_log
-			except:
-				print 'Putting bin edges on GPU...'
-				self.gpu_bin_edges_log = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
+				try:
+					self.gpu_aEnergy
+				except:
+					print 'Putting energy array on GPU...'
+					self.gpu_aEnergy = pycuda.gpuarray.to_gpu(self.a_energy)
+				
 
-			
+				try:
+					self.gpu_bin_edges_s1
+				except:
+					print 'Putting bin edges on GPU...'
+					self.gpu_bin_edges_s1 = pycuda.gpuarray.to_gpu(self.a_s1_bin_edges)
+				
+				
+				try:
+					self.gpu_bin_edges_log
+				except:
+					print 'Putting bin edges on GPU...'
+					self.gpu_bin_edges_log = pycuda.gpuarray.to_gpu(self.a_log_bin_edges)
+
+			print '\nWorker initialized\n'
+			print local_rng_states
+			"""
 			
 			# for histogram
 			#print self.rng_states
 			#print globals()
 			#print locals()
 			#print self.__dict__
-			tArgs = (self.local_rng_states, drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy.gpudata, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), self.gpu_bin_edges_s1, drv.In(num_bins_log), self.gpu_bin_edges_log, drv.InOut(a_hist_2d))
+			
+			"""
+			d_gpu_local_info = {'function_to_call':gpu_observables_production,
+							'rng_states':local_rng_states,
+							'gpu_energy':gpu_aEnergy,
+							'gpu_bin_edges_s1':gpu_bin_edges_s1,
+							'gpu_bin_edges_log':gpu_bin_edges_log}
+			"""
+			
+			tArgs = (d_gpu_local_info['rng_states'], drv.In(num_trials), drv.In(mean_field), d_gpu_local_info['gpu_energy'], drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), d_gpu_local_info['gpu_bin_edges_s1'], drv.In(num_bins_log), d_gpu_local_info['gpu_bin_edges_log'], drv.InOut(a_hist_2d))
+			#tArgs = (local_rng_states, drv.In(num_trials), drv.In(mean_field), self.gpu_aEnergy.gpudata, drv.In(num_spline_points), drv.In(a_spline_energies), drv.In(a_spline_photon_yields), drv.In(a_spline_charge_yields), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(exciton_to_ion_par0_rv), drv.In(exciton_to_ion_par1_rv), drv.In(exciton_to_ion_par2_rv), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s1_eff_par0), drv.In(s1_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(a_band_cut), drv.In(num_bins_s1), self.gpu_bin_edges_s1, drv.In(num_bins_log), self.gpu_bin_edges_log, drv.InOut(a_hist_2d))
 
-			self.gpu_observables_production(*tArgs, **self.d_gpu_scale)
+			d_gpu_local_info['function_to_call'](*tArgs, **self.d_gpu_scale)
 			#print a_hist_2d[:4]
 
 			a_s1_s2_mc = np.reshape(a_hist_2d, (self.s1_settings[0], self.log_settings[0])).T
@@ -1384,7 +1422,7 @@ class nr_band_fitter(object):
 		# S2 efficiency: 20, 21
 		# scale: 22
 		
-		return self.likelihood_nr_band_no_nest(py_0=a_parameters[0], py_1=a_parameters[1], py_2=a_parameters[2], py_3=a_parameters[3], py_4=a_parameters[4], py_5=a_parameters[5], py_6=a_parameters[6], py_7=a_parameters[7], qy_0=a_parameters[8], qy_1=a_parameters[9], qy_2=a_parameters[10], qy_3=a_parameters[11], qy_4=a_parameters[12], qy_5=a_parameters[13], qy_6=a_parameters[14], qy_7=a_parameters[15], intrinsic_res_s1=a_parameters[16], intrinsic_res_s2=a_parameters[17], g1_value=g1_value, spe_res_rv=spe_res_rv, g2_value=g2_value, gas_gain_rv=gas_gain_rv, gas_gain_width_rv=gas_gain_width_rv, pf_eff_par0=pf_eff_par0, pf_eff_par1=pf_eff_par1, s1_eff_par0=a_parameters[18], s1_eff_par1=a_parameters[19], s2_eff_par0=s2_eff_par0, s2_eff_par1=s2_eff_par1, pf_stdev_par0=pf_stdev_par0, pf_stdev_par1=pf_stdev_par1, pf_stdev_par2=pf_stdev_par2, exciton_to_ion_par0_rv=exciton_to_ion_par0_rv, exciton_to_ion_par1_rv=exciton_to_ion_par1_rv, exciton_to_ion_par2_rv=exciton_to_ion_par2_rv, scale_par=a_parameters[20], **kwargs)
+		return self.likelihood_nr_band_no_nest(py_0=a_parameters[0], py_1=a_parameters[1], py_2=a_parameters[2], py_3=a_parameters[3], py_4=a_parameters[4], py_5=a_parameters[5], py_6=a_parameters[6], py_7=a_parameters[7], qy_0=a_parameters[8], qy_1=a_parameters[9], qy_2=a_parameters[10], qy_3=a_parameters[11], qy_4=a_parameters[12], qy_5=a_parameters[13], qy_6=a_parameters[14], qy_7=a_parameters[15], intrinsic_res_s1=a_parameters[16], intrinsic_res_s2=a_parameters[17], g1_value=g1_value, spe_res_rv=spe_res_rv, g2_value=g2_value, gas_gain_rv=gas_gain_rv, gas_gain_width_rv=gas_gain_width_rv, pf_eff_par0=pf_eff_par0, pf_eff_par1=pf_eff_par1, s1_eff_par0=a_parameters[18], s1_eff_par1=a_parameters[19], s2_eff_par0=s2_eff_par0, s2_eff_par1=s2_eff_par1, pf_stdev_par0=pf_stdev_par0, pf_stdev_par1=pf_stdev_par1, pf_stdev_par2=pf_stdev_par2, exciton_to_ion_par0_rv=exciton_to_ion_par0_rv, exciton_to_ion_par1_rv=exciton_to_ion_par1_rv, exciton_to_ion_par2_rv=exciton_to_ion_par2_rv, scale_par=a_parameters[20], d_gpu_local_info=a_parameters[21], **kwargs)
 
 
 
@@ -1886,9 +1924,12 @@ class nr_band_fitter(object):
 	def suppress_likelihood(self, iterations=200):
 		
 		a_free_par_guesses = [1.03, 4.41, 5.80, 6.60, 7.64, 8.57, 9.19, 10.15, 7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25, 0.23, 0.05, 1.58, 5.46, 3.32]
-		l_log_likelihoods = [0. for i in xrange(iterations)]
-		for i in tqdm.tqdm(xrange(iterations)):
-			l_log_likelihoods[i] = self.wrapper_nr_band_for_minimizer_fixed_nuissance(a_free_par_guesses)
+		#l_log_likelihoods = [0. for i in xrange(iterations)]
+		#for i in tqdm.tqdm(xrange(iterations)):
+		#	l_log_likelihoods[i] = self.wrapper_nr_band_for_minimizer_fixed_nuissance(a_free_par_guesses)
+		
+		l_parameters = [a_free_par_guesses for i in xrange(iterations)]
+		l_log_likelihoods = self.gpu_pool.map(self.wrapper_nr_band_for_minimizer_fixed_nuissance, l_parameters)
 
 		var_ll = np.std(l_log_likelihoods)
 
@@ -1905,7 +1946,7 @@ class nr_band_fitter(object):
 
 
 if __name__ == '__main__':
-	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(5e5), num_gpus=2)
+	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(5e6), num_gpus=2)
 	
 	test.suppress_likelihood()
 
@@ -1917,7 +1958,7 @@ if __name__ == '__main__':
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
 	
 
-	test.fit_nr_band_no_nest(num_steps=5, num_walkers=128)
+	test.fit_nr_band_no_nest(num_steps=5, num_walkers=1024)
 	test.close_workers()
 
 
