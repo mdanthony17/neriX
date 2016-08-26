@@ -10,15 +10,10 @@ import corner
 import cPickle as pickle
 import time
 
-if len(sys.argv) != 5 and len(sys.argv) != 6:
-	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers> [<deviation_from_nest(efficiency fit only!!!)>]'
+if len(sys.argv) != 5:
+	print 'Use is python perform_full_matching.py <filename> <anode setting> <cathode setting> <num walkers>'
 	sys.exit()
 
-if len(sys.argv) == 6:
-	fit_efficiency = True
-	deviation_from_nest = float(sys.argv[5])
-else:
-	fit_efficiency = False
 
 filename = sys.argv[1]
 anode_setting = float(sys.argv[2])
@@ -32,24 +27,21 @@ l_plots = ['plots', filename]
 
 dir_specifier_name = '%.3fkV_%.1fkV' % (cathode_setting, anode_setting)
 
-if not fit_efficiency:
-	nameOfResultsDirectory += '/yields_fit'
-else:
-	nameOfResultsDirectory += '/efficiency_fit/%.2f_deviation_from_nest' % (deviation_from_nest)
-	
+nameOfResultsDirectory += '/yields_fit'
+
 sPathToFile = '%s/%s/%s/sampler_acceptance_fraction.p' % (nameOfResultsDirectory, dir_specifier_name, filename)
 sPathToFile_autocorrelation = '%s/%s/%s/sampler_acor.p' % (nameOfResultsDirectory, dir_specifier_name, filename)
 
 if os.path.exists(sPathToFile):
 	a_acceptance_fraction = pickle.load(open(sPathToFile, 'r'))
 	print 'Successfully loaded acceptance fraction array!'
-	a_acor = pickle.load(open(sPathToFile_autocorrelation, 'r'))
+	#a_acor = pickle.load(open(sPathToFile_autocorrelation, 'r'))
 else:
 	print sPathToFile
 	print 'Could not find file!'
 	sys.exit()
 
-print a_acor
+#print a_acor
 
 c_acceptance = Canvas()
 h_acceptance = Hist(100, 0, 1, name='h_acceptance', title='Acceptance Fraction of Most Recent Sampler')
@@ -62,10 +54,7 @@ c_acceptance.Update()
 raw_input('Press enter to continue...')
 
 plot_name = 'nr_band_acceptance_fraction_%s' % (filename)
-if not fit_efficiency:
-	plot_name = 'yields_fit_%s' % (plot_name)
-else:
-	plot_name = 'efficiency_fit_%.2f_deviation_%s' % (deviation_from_nest, plot_name)
+plot_name = 'yields_fit_%s' % (plot_name)
 
 neriX_analysis.save_plot(l_plots, c_acceptance, plot_name)
 

@@ -10,16 +10,20 @@ import corner
 import cPickle as pickle
 import time
 
-if len(sys.argv) != 3:
-	print 'Use is python perform_full_matching.py <cathode setting> <num walkers>'
+if len(sys.argv) != 4:
+	print 'Use is python perform_full_matching.py <cathode setting> <num walkers> <fit type>'
 	sys.exit()
 
 print '\n\nBy default look for all energies - change source if anything else is needed.\n'
 
 cathode_setting = float(sys.argv[1])
 num_walkers = int(sys.argv[2])
+fit_type = sys.argv[3]
 
-l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300]
+if fit_type == 's':
+    directory_descriptor = 'single_energy'
+
+l_degree_settings_in_use = [3500]
 s_degree_settings = ''
 for degree_setting in l_degree_settings_in_use:
 	s_degree_settings += '%s,' % (degree_setting)
@@ -30,21 +34,21 @@ l_plots = ['plots']
 
 dir_specifier_name = '%.3f_kV_%s_deg' % (cathode_setting, s_degree_settings)
 
-nameOfResultsDirectory += '/yields_fit'
+nameOfResultsDirectory += '/%s' % (directory_descriptor)
 
 sPathToFile = '%s/%s/acceptance_fraction.p' % (nameOfResultsDirectory, dir_specifier_name)
-sPathToFile_autocorrelation = '%s/%s/autocorrelation.p' % (nameOfResultsDirectory, dir_specifier_name)
+#sPathToFile_autocorrelation = '%s/%s/autocorrelation.p' % (nameOfResultsDirectory, dir_specifier_name)
 
 if os.path.exists(sPathToFile):
 	a_acceptance_fraction = pickle.load(open(sPathToFile, 'r'))
 	print 'Successfully loaded acceptance fraction array!'
-	a_acor = pickle.load(open(sPathToFile_autocorrelation, 'r'))
+	#a_acor = pickle.load(open(sPathToFile_autocorrelation, 'r'))
 else:
 	print sPathToFile
 	print 'Could not find file!'
 	sys.exit()
 
-print a_acor
+#print a_acor
 
 c_acceptance = Canvas()
 h_acceptance = Hist(100, 0, 1, name='h_acceptance', title='Acceptance Fraction of Most Recent Sampler')

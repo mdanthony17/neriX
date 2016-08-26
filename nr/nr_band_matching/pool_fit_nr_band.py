@@ -1238,11 +1238,15 @@ class nr_band_fitter(object):
 		# -----------------------------------------------
 		# -----------------------------------------------
 
-		#sum_mc = np.sum(a_s1_s2_mc, dtype=np.float32)
-		#if sum_mc == 0:
-		#	return -np.inf
+		sum_mc = np.sum(a_s1_s2_mc, dtype=np.float32)
+		if sum_mc == 0:
+			return -np.inf
 
 		#a_s1_s2_mc = np.multiply(a_s1_s2_mc, np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc)
+		
+		# if making PDF rather than scaling for rate
+		scale_par = float(self.num_mc_events) / sum_mc
+		
 		a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.num_data_points/float(self.num_mc_events))
 
 		if draw_fit:
@@ -1933,8 +1937,8 @@ class nr_band_fitter(object):
 
 		var_ll = np.std(l_log_likelihoods)
 
-		print 'Variance for %e MC iterations is %f' % (self.num_mc_events, var_ll)
-		print 'Will scale LL such that variance is 0.04'
+		print 'Standard deviation for %.3e MC iterations is %f' % (self.num_mc_events, var_ll)
+		print 'Will scale LL such that variance is 0.1'
 
 		self.b_suppress_likelihood = True
 		self.ll_suppression_factor = var_ll / 0.1
@@ -1946,7 +1950,7 @@ class nr_band_fitter(object):
 
 
 if __name__ == '__main__':
-	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(5e6), num_gpus=2)
+	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(5e5), num_gpus=1)
 	
 	test.suppress_likelihood()
 
