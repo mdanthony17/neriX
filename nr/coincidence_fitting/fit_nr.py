@@ -1584,6 +1584,10 @@ class fit_nr(object):
                 return -np.inf
 
             scale_par = float(self.num_mc_events) / sum_mc
+            #print degree_setting
+            #print prior_ln_likelihood
+            #print 'scale par: %f' % (scale_par)
+            #print 'normalization: %f\n' % (float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][degree_setting]['num_data_pts']/float(self.num_mc_events))
 
             a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][degree_setting]['num_data_pts']/float(self.num_mc_events))
 
@@ -1698,6 +1702,9 @@ class fit_nr(object):
                 
         total_ln_likelihood = prior_ln_likelihood + matching_ln_likelihood
         #print total_ln_likelihood
+        
+        if self.b_suppress_likelihood:
+            total_ln_likelihood /= self.ll_suppression_factor
                 
         if np.isnan(total_ln_likelihood):
             return -np.inf
@@ -2079,7 +2086,7 @@ if __name__ == '__main__':
     """
     
 
-    test = fit_nr('ml', d_coincidence_data, num_mc_events=5e6, num_gpus=2)
+    test = fit_nr('ml', d_coincidence_data, num_mc_events=5e5, num_gpus=2)
     test.suppress_likelihood()
     #l_test_parameters_multiple_energies_lindhard_model = [0, 1.240, 0.0472, 239, 0.01385, 0.0620, 0.1394, 3.3, 1.14, 0.31, 0.02, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
     
