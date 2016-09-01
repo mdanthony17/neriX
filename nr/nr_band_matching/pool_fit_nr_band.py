@@ -1952,7 +1952,7 @@ class nr_band_fitter(object):
 if __name__ == '__main__':
 	test = nr_band_fitter('nerix_160419_1331', 4.5, 0.345, num_mc_events=int(5e5), num_gpus=1)
 	
-	test.suppress_likelihood()
+	#test.suppress_likelihood()
 
 	#print len(a_free_par_guesses)
 	#test.minimize_nll_free_pars(a_free_par_guesses)
@@ -1962,7 +1962,7 @@ if __name__ == '__main__':
 	# qy_nest: [7.69, 6.67, 6.06, 5.72, 5.30, 4.93, 4.68, 4.25]
 	
 
-	test.fit_nr_band_no_nest(num_steps=5, num_walkers=1024)
+	#test.fit_nr_band_no_nest(num_steps=5, num_walkers=1024)
 	test.close_workers()
 
 

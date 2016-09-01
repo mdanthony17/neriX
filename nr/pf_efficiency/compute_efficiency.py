@@ -51,7 +51,7 @@ s1_settings_large_window = [800, 0, 40]
 rel_diff_settings = [100, -0.5, 0.5]
 
 
-gain_adjustment_term = 1. #1.4e6/8.85e5
+gain_adjustment_term = 1.4e6/8.85e5
 s1_branch = 'S1sTotBottom[0]*%f' % gain_adjustment_term
 
 # adjust S1 inputs for appropriate gain

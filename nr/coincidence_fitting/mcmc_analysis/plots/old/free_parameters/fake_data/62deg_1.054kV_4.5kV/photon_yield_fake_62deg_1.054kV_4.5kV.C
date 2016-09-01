@@ -1,0 +1,140 @@
+{
+//=========Macro generated from canvas: 7c694464ff314812afd3d1247bc03e9f/
+//=========  (Tue Feb 23 07:33:11 2016) by ROOT version5.34/26
+   TCanvas *7c694464ff314812afd3d1247bc03e9f = new TCanvas("7c694464ff314812afd3d1247bc03e9f", "",10,45,704,527);
+   7c694464ff314812afd3d1247bc03e9f->SetHighLightColor(2);
+   7c694464ff314812afd3d1247bc03e9f->Range(2.5,-153.1241,17.5,1378.117);
+   7c694464ff314812afd3d1247bc03e9f->SetFillColor(0);
+   7c694464ff314812afd3d1247bc03e9f->SetBorderMode(0);
+   7c694464ff314812afd3d1247bc03e9f->SetBorderSize(2);
+   7c694464ff314812afd3d1247bc03e9f->SetFrameBorderMode(0);
+   7c694464ff314812afd3d1247bc03e9f->SetFrameBorderMode(0);
+   
+   TH1F *h_photon_yield = new TH1F("h_photon_yield","photon_yield",100,4,16);
+   h_photon_yield->SetBinContent(31,10);
+   h_photon_yield->SetBinContent(32,5);
+   h_photon_yield->SetBinContent(33,18);
+   h_photon_yield->SetBinContent(34,30);
+   h_photon_yield->SetBinContent(35,62);
+   h_photon_yield->SetBinContent(36,65);
+   h_photon_yield->SetBinContent(37,130);
+   h_photon_yield->SetBinContent(38,183);
+   h_photon_yield->SetBinContent(39,329);
+   h_photon_yield->SetBinContent(40,372);
+   h_photon_yield->SetBinContent(41,652);
+   h_photon_yield->SetBinContent(42,795);
+   h_photon_yield->SetBinContent(43,823);
+   h_photon_yield->SetBinContent(44,957);
+   h_photon_yield->SetBinContent(45,1133);
+   h_photon_yield->SetBinContent(46,906);
+   h_photon_yield->SetBinContent(47,835);
+   h_photon_yield->SetBinContent(48,761);
+   h_photon_yield->SetBinContent(49,552);
+   h_photon_yield->SetBinContent(50,452);
+   h_photon_yield->SetBinContent(51,342);
+   h_photon_yield->SetBinContent(52,268);
+   h_photon_yield->SetBinContent(53,210);
+   h_photon_yield->SetBinContent(54,95);
+   h_photon_yield->SetBinContent(55,90);
+   h_photon_yield->SetBinContent(56,65);
+   h_photon_yield->SetBinContent(57,35);
+   h_photon_yield->SetBinContent(58,20);
+   h_photon_yield->SetBinContent(59,20);
+   h_photon_yield->SetBinContent(60,15);
+   h_photon_yield->SetBinContent(62,5);
+   h_photon_yield->SetBinContent(63,5);
+   h_photon_yield->SetBinError(31,3.162278);
+   h_photon_yield->SetBinError(32,2.236068);
+   h_photon_yield->SetBinError(33,4.242641);
+   h_photon_yield->SetBinError(34,5.477226);
+   h_photon_yield->SetBinError(35,7.874008);
+   h_photon_yield->SetBinError(36,8.062258);
+   h_photon_yield->SetBinError(37,11.40175);
+   h_photon_yield->SetBinError(38,13.52775);
+   h_photon_yield->SetBinError(39,18.13836);
+   h_photon_yield->SetBinError(40,19.2873);
+   h_photon_yield->SetBinError(41,25.53429);
+   h_photon_yield->SetBinError(42,28.19574);
+   h_photon_yield->SetBinError(43,28.68798);
+   h_photon_yield->SetBinError(44,30.93542);
+   h_photon_yield->SetBinError(45,33.66007);
+   h_photon_yield->SetBinError(46,30.09983);
+   h_photon_yield->SetBinError(47,28.89637);
+   h_photon_yield->SetBinError(48,27.58623);
+   h_photon_yield->SetBinError(49,23.49468);
+   h_photon_yield->SetBinError(50,21.26029);
+   h_photon_yield->SetBinError(51,18.49324);
+   h_photon_yield->SetBinError(52,16.37071);
+   h_photon_yield->SetBinError(53,14.49138);
+   h_photon_yield->SetBinError(54,9.746794);
+   h_photon_yield->SetBinError(55,9.486833);
+   h_photon_yield->SetBinError(56,8.062258);
+   h_photon_yield->SetBinError(57,5.91608);
+   h_photon_yield->SetBinError(58,4.472136);
+   h_photon_yield->SetBinError(59,4.472136);
+   h_photon_yield->SetBinError(60,3.872983);
+   h_photon_yield->SetBinError(62,2.236068);
+   h_photon_yield->SetBinError(63,2.236068);
+   h_photon_yield->SetEntries(10240);
+   h_photon_yield->SetStats(0);
+   h_photon_yield->SetFillStyle(0);
+   h_photon_yield->SetMarkerStyle(20);
+   h_photon_yield->SetMarkerSize(0);
+   h_photon_yield->GetXaxis()->SetLabelFont(42);
+   h_photon_yield->GetXaxis()->SetLabelSize(0.035);
+   h_photon_yield->GetXaxis()->SetTitleSize(0.035);
+   h_photon_yield->GetXaxis()->SetTitleFont(42);
+   h_photon_yield->GetYaxis()->SetLabelFont(42);
+   h_photon_yield->GetYaxis()->SetLabelSize(0.035);
+   h_photon_yield->GetYaxis()->SetTitleSize(0.035);
+   h_photon_yield->GetYaxis()->SetTitleFont(42);
+   h_photon_yield->GetZaxis()->SetLabelFont(42);
+   h_photon_yield->GetZaxis()->SetLabelSize(0.035);
+   h_photon_yield->GetZaxis()->SetTitleSize(0.035);
+   h_photon_yield->GetZaxis()->SetTitleFont(42);
+   h_photon_yield->Draw("");
+   
+   TPaveText *pt = new TPaveText(0.3792857,0.9374,0.6207143,0.995,"blNDC");
+   pt->SetName("title");
+   pt->SetBorderSize(0);
+   pt->SetFillColor(0);
+   pt->SetFillStyle(0);
+   pt->SetTextFont(42);
+   TText *text = pt->AddText("photon_yield");
+   pt->Draw();
+   TLine *line = new TLine(8.878066,0,8.878066,1133);
+
+   Int_t ci;      // for color index setting
+   TColor *color; // for color definition with alpha
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(9.352974,0,9.352974,1133);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(9.878661,0,9.878661,1133);
+
+   ci = TColor::GetColor("#0000ff");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   line = new TLine(9.08,0,9.08,1133);
+
+   ci = TColor::GetColor("#ff0000");
+   line->SetLineColor(ci);
+   line->SetLineStyle(7);
+   line->Draw();
+   
+   pt = new TPaveText(0.6,0.55,0.88,0.6,"blNDC");
+   pt->SetBorderSize(0);
+   pt->SetFillStyle(0);
+   text = pt->AddText("P_{y} = 9.35^{-0.47}_{+0.53} #frac{photons}{keV}");
+   pt->Draw();
+   7c694464ff314812afd3d1247bc03e9f->Modified();
+   7c694464ff314812afd3d1247bc03e9f->cd();
+   7c694464ff314812afd3d1247bc03e9f->SetSelected(7c694464ff314812afd3d1247bc03e9f);
+}

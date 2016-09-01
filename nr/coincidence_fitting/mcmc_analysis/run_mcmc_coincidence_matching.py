@@ -20,11 +20,11 @@ num_steps = int(sys.argv[2])
 fit_type = sys.argv[3]
 
 d_coincidence_data = {}
-d_coincidence_data['degree_settings'] = [3500]
+d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300]
 d_coincidence_data['cathode_settings'] = [0.345]
 
 
-current_matching = fit_nr.fit_nr(fit_type, d_coincidence_data, num_mc_events=2e7, num_gpus=2)
+current_matching = fit_nr.fit_nr(fit_type, d_coincidence_data, num_mc_events=1e7, num_gpus=2)
 current_matching.suppress_likelihood()
 
 # intrinsic_res_s1, intrinsic_res_s2, g1_rv, spe_res_rv, g2_rv, gas_gain_rv

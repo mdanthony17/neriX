@@ -45,7 +45,8 @@ s2Branch = 'cpS2sTotBottom[0]'
 s1_asym_branch = 's1asym' #'(%s - S1sTotTop[0])/(%s + S1sTotTop[0])' % (s1Branch, s1Branch)
 s2_asym_branch = 's2asym' #'(%s - S2sTotTop[0])/(%s + S2sTotTop[0])' % (s2Branch, s2Branch)
 
-z_branch = 'Z_any_peak'
+z_branch = 'Z'
+#z_branch = 'Z_any_peak'
 width_branch = 'S2sWidth[0]'
 
 
@@ -79,8 +80,8 @@ current_analysis.add_cut('%s < %f && %s < %f' % (s1Branch, s1Max, s2Branch, s2Ma
 
 # cuts to test
 current_analysis.add_single_scatter_cut()
-current_analysis.add_xs1asym_cut()
-#current_analysis.add_xs1asym_cut(any_peak=True)
+#current_analysis.add_xs1asym_cut()
+current_analysis.add_xs1asym_cut(any_peak=True)
 current_analysis.add_xs2asym_cut()
 
 #current_analysis.add_cut('%s < %f*exp(-%s/%f)+%f' % (s2_asym_branch, -0.5, s2Branch, 400, 0.4))
@@ -90,7 +91,7 @@ current_analysis.add_cut('NbS1Peaks == 1')
 current_analysis.set_event_list()
 
 
-#current_analysis.get_T1().Scan('EventId:S1sPeak[]:%s:S2sPeak[0]:%s' % (s1Branch, s2Branch), '%s < 4 && %s > 1250 && %s < 1500' % (s1Branch, s2Branch, s2Branch))
+current_analysis.get_T1().Scan('EventId:S1sPeak[]:%s:S2sPeak[0]:%s' % (s1Branch, s2Branch), '%s < 1.5 && %s > 1250 && %s < 1500' % (s1Branch, s2Branch, s2Branch))
 
 # create functions for cuts
 
