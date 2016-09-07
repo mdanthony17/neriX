@@ -231,7 +231,16 @@ def multiply_leff_array_by_co57_ly(l_leff):
         l_leff[i] *= 63.
     return l_leff
 
-# points from Plante et al
+
+
+
+
+# --------------------------------------------
+# --------------------------------------------
+#  Points from Plante et al
+# --------------------------------------------
+# --------------------------------------------
+
 l_plante_energies = [3, 3.9, 5.0, 6.5, 8.4, 10.7, 14.8, 55.2]
 l_plante_energies_unc = [0.6, 0.7, 0.8, 1.0, 1.3, 1.6, 1.3, 8.8]
 l_plante_ly = [0.088, 0.095, 0.098, 0.121, 0.139, 0.143, 0.144, 0.268]
@@ -240,6 +249,31 @@ l_plante_ly_unc = [[0.015, 0.016, 0.015, 0.010, 0.011, 0.010, 0.009, 0.013], [0.
 l_plante_ly = multiply_leff_array_by_co57_ly(l_plante_ly)
 l_plante_ly_unc[0] = multiply_leff_array_by_co57_ly(l_plante_ly_unc[0])
 l_plante_ly_unc[1] = multiply_leff_array_by_co57_ly(l_plante_ly_unc[1])
+
+
+
+# --------------------------------------------
+# --------------------------------------------
+#  Points from Lux
+# --------------------------------------------
+# --------------------------------------------
+
+l_lux_energies_qy = [0.70, 1.10, 1.47, 2.00, 2.77, 3.86, 5.55, 8.02, 11.52, 16.56, 24.2]
+l_lux_energies_qy_unc = [0.13, 0.18, 0.12, 0.10, 0.10, 0.08, 0.09, 0.10, 0.12, 0.16, 0.2]
+l_lux_qy = [8.2, 7.4, 10.1, 8.0, 7.5, 7.3, 7.2, 6.8, 5.88, 5.28, 4.62]
+l_lux_qy_unc = [[2.1, 1.7, 1.6, 0.6, 0.5, 0.3, 0.2, 0.17, 0.13, 0.13, 0.10], [2.4, 1.9, 1.5, 0.9, 0.5, 0.3, 0.2, 0.15, 0.12, 0.11, 0.13]]
+
+l_lux_energies_py = [1.08, 1.92, 3.13, 4.45, 5.89, 7.44, 9.1, 10.9, 12.8]
+l_lux_energies_py_unc = [0.13, 0.09, 0.11, 0.11, 0.13, 0.17, 0.2, 0.3, 0.3]
+l_lux_py = [4.9, 5.2, 4.9, 6.4, 6.1, 7.4, 7.9, 8.1, 8.9]
+l_lux_py_unc = [[1.0, 0.4, 0.4, 0.4, 0.3, 0.4, 0.4, 0.5, 0.4], [1.2, 0.6, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.6]]
+
+
+
+
+
+
+
 
 
 f, (ax1, ax2) = plt.subplots(2)
@@ -255,8 +289,12 @@ ax1.plot(a_energies, a_median_py, 'b-')
 ax1.fill_between(a_energies, a_one_sigma_below_py, a_one_sigma_above_py, facecolor='blue', alpha=0.2, interpolate=True)
 ax1.plot(a_energies, a_median_py_nest, 'r--')
 ax1.fill_between(a_energies, a_one_sigma_below_py_nest, a_one_sigma_above_py_nest, facecolor='red', alpha=0.1, interpolate=True)
+
 ax1.errorbar(l_plante_energies, l_plante_ly, xerr=l_plante_energies_unc, yerr=l_plante_ly_unc, fmt='g.')
-#ax1.plot([3, 5], [4, 2], 'b.')
+ax1.errorbar(l_lux_energies_py, l_lux_py, xerr=l_lux_energies_py_unc, yerr=l_lux_py_unc, fmt='m.')
+
+
+
 
 ax2.set_xlim(0.95*min(a_energies), 1.05*max(a_energies))
 ax2.set_ylim(2, 12)
@@ -270,7 +308,9 @@ ax2.fill_between(a_energies, a_one_sigma_below_qy, a_one_sigma_above_qy, facecol
 ax2.plot(a_energies, a_median_qy_nest, 'r--')
 ax2.fill_between(a_energies, a_one_sigma_below_qy_nest, a_one_sigma_above_qy_nest, facecolor='red', alpha=0.2, interpolate=True)
 
+ax2.errorbar(l_lux_energies_qy, l_lux_qy, xerr=l_lux_energies_qy_unc, yerr=l_lux_qy_unc, fmt='m.')
 
+f.savefig('./plots/ml_ly_qy_comparison.png')
 
 plt.show()
 

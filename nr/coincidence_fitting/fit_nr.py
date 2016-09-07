@@ -306,7 +306,7 @@ class fit_nr(object):
 
         # set number of mc events
         self.d_gpu_scale = {}
-        block_dim = 128
+        block_dim = 1024
         self.d_gpu_scale['block'] = (block_dim,1,1)
         numBlocks = floor(num_mc_events / float(block_dim))
         self.d_gpu_scale['grid'] = (int(numBlocks), 1)
@@ -1591,9 +1591,15 @@ class fit_nr(object):
 
             a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][degree_setting]['num_data_pts']/float(self.num_mc_events))
 
-            if draw_fit:
+            #'ml'
+            if not draw_fit:
 
                 f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+                
+                ax1.set_xlabel('S1 [PE]')
+                ax1.set_ylabel('log(S2/S1)')
+                ax2.set_xlabel('S1 [PE]')
+                ax2.set_ylabel('log(S2/S1)')
 
                 s1_s2_data_plot = np.rot90(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][degree_setting]['a_log_s2_s1'])
                 s1_s2_data_plot = np.flipud(s1_s2_data_plot)
@@ -1661,8 +1667,8 @@ class fit_nr(object):
                 g_s2_mc.SetLineColor(root.kBlue)
                 g_s2_mc.SetFillStyle(3005)
 
-                g_s2_data.SetTitle('S2 Comparison')
-                g_s2_data.GetXaxis().SetTitle('S2 [PE]')
+                g_s2_data.SetTitle('Log(S2/S1) Comparison')
+                g_s2_data.GetXaxis().SetTitle('Log(S2/S1)')
                 g_s2_data.GetYaxis().SetTitle('Counts')
 
                 g_s2_data.SetLineColor(root.kRed)
@@ -1701,7 +1707,7 @@ class fit_nr(object):
             #print matching_ln_likelihood
                 
         total_ln_likelihood = prior_ln_likelihood + matching_ln_likelihood
-        #print total_ln_likelihood
+        print total_ln_likelihood
         
         if self.b_suppress_likelihood:
             total_ln_likelihood /= self.ll_suppression_factor
@@ -2086,13 +2092,14 @@ if __name__ == '__main__':
     """
     
 
-    test = fit_nr('ml', d_coincidence_data, num_mc_events=5e5, num_gpus=2)
-    test.suppress_likelihood()
+    test = fit_nr('ml', d_coincidence_data, num_mc_events=2e5, num_gpus=2)
+    #test.suppress_likelihood()
     #l_test_parameters_multiple_energies_lindhard_model = [0, 1.240, 0.0472, 239, 0.01385, 0.0620, 0.1394, 3.3, 1.14, 0.31, 0.02, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
+    l_test_parameters_multiple_energies_lindhard_model = [0.13, 5.151, 0.2889, 10000, 0.08231, 0.454, 0.1539, 1318, 154, 0.18, 0.22, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
     
-    #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_multiple_energies_lindhard_model, [l_test_parameters_multiple_energies_lindhard_model])
-    a_free_par_bounds = [(-6, 6), (0.5, 1.7), (0.01, 0.75), (200, 300), (0.007, 0.019), (0.02, 0.1), (0.05, 0.25), (0.5, 10), (0.1, 3), (0.01, 1.5), (0.01, 1.5)]
-    test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
+    test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_multiple_energies_lindhard_model, [l_test_parameters_multiple_energies_lindhard_model])
+    #a_free_par_bounds = [(-6, 6), (0.5, 1.7), (0.01, 0.75), (200, 300), (0.007, 0.019), (0.02, 0.1), (0.05, 0.25), (0.5, 10), (0.1, 3), (0.01, 1.5), (0.01, 1.5)]
+    #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
     
     
     #test.run_mcmc(num_steps=50, num_walkers=128)

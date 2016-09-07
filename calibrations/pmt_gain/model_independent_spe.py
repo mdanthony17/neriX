@@ -2,7 +2,7 @@
 
 import ROOT as root
 import sys, array
-#import neriX_analysis
+import neriX_config
 from rootpy.io import File
 from rootpy.tree import Tree, TreeModel, TreeChain
 from rootpy.plotting import Hist, Hist2D, Canvas, Legend
@@ -16,8 +16,8 @@ if(len(sys.argv) != 4):
 	sys.exit(1)
 
 
-filenameLow = '../../data/run_16/' + sys.argv[1]
-filenameHigh = '../../data/run_16/' + sys.argv[2]
+filenameLow = neriX_config.pathToData + 'run_16/' + sys.argv[1]
+filenameHigh = neriX_config.pathToData + 'run_16/' + sys.argv[2]
 
 if filenameHigh[-5:] != '.root':
 	filenameHigh += '.root'
@@ -32,7 +32,7 @@ fLedHigh = File(filenameHigh)
 T0_low = fLedLow.T0
 T0_high = fLedHigh.T0
 
-low_threshold_width = 3.
+low_threshold_width = 4.
 high_threshold_width = 1.
 
 
