@@ -8,14 +8,15 @@ extern "C" {
 __device__ int gpu_binomial(curandState_t *rand_state, int num_trials, float prob_success)
 {
 
+    /*
 	int x = 0;
 	for(int i = 0; i < num_trials; i++) {
     if(curand_uniform(rand_state) < prob_success)
 		x += 1;
 	}
 	return x;
+	*/
 	
-	/*
 	
 	// Rejection Method (from 7.3 of numerical recipes)
 	// slower on 970!!
@@ -82,7 +83,7 @@ __device__ int gpu_binomial(curandState_t *rand_state, int num_trials, float pro
 	if (prob_success != p) bnl = num_trials - bnl;
 	return bnl;
 	
-	*/
+	
 	
 	
 	// BTRS method (NOT WORKING)
@@ -240,7 +241,7 @@ __global__ void setup_kernel (int nthreads, curandState *state, unsigned long lo
 
 
 
-__global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, float *mean_num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *bkg_mean, float *bkg_std, int *num_bins, float *bin_edges)
+__global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, float *mean_num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, float *bkg_mean, float *bkg_std, int *num_bins, float *bin_edges)
 {
     //printf("hello\\n");
     
@@ -249,7 +250,8 @@ __global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, f
     
     int bin_number;
     int num_dynodes = 12;
-    float tot_num_pe = curand_poisson(&s, *mean_num_pe);
+    float f_tot_num_pe;
+    int i_tot_num_pe = curand_poisson(&s, *mean_num_pe);
     
     
     if (iteration < *num_trials)
@@ -272,10 +274,16 @@ __global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, f
 			return;
 		}
         
-        if (tot_num_pe > 0)
+        if (i_tot_num_pe > 0)
         {
             for (int i = 0; i < num_dynodes; i++)
-                tot_num_pe = curand_poisson(&s, tot_num_pe * *mean_e_from_dynode);
+            {
+                if (i_tot_num_pe < 10000)
+                    i_tot_num_pe = gpu_binomial(&s, (int)floorf(i_tot_num_pe * *mean_e_from_dynode), *probability_electron_ionized);
+                else
+                    //i_tot_num_pe = curand_poisson(&s, i_tot_num_pe * *mean_e_from_dynode * *probability_electron_ionized);
+                    i_tot_num_pe = (curand_normal(&s) * powf(i_tot_num_pe**mean_e_from_dynode**probability_electron_ionized*(1-*probability_electron_ionized), 0.5)) + i_tot_num_pe**mean_e_from_dynode**probability_electron_ionized;
+            }
         }
         
         
@@ -284,10 +292,11 @@ __global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, f
 			state[iteration] = s;
 			return;
 		}
-        tot_num_pe += (curand_normal(&s) * *bkg_std) + *bkg_mean;
+        f_tot_num_pe = (curand_normal(&s) * *bkg_std) + *bkg_mean + i_tot_num_pe;
         
         
-        bin_number = gpu_find_lower_bound(num_bins, bin_edges, tot_num_pe);
+        
+        bin_number = gpu_find_lower_bound(num_bins, bin_edges, f_tot_num_pe);
 		
 		if (bin_number == -1)
 		{
@@ -298,6 +307,7 @@ __global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, f
 		atomicAdd(&a_hist[bin_number], 1);
 		
 		state[iteration] = s;
+        //printf("hi: %f\\n", f_tot_num_pe);
 		return;
         
         
