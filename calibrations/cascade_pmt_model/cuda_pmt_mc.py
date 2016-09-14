@@ -241,7 +241,7 @@ __global__ void setup_kernel (int nthreads, curandState *state, unsigned long lo
 
 
 
-__global__ void gpu_pmt_mc(curandState *state, int *num_trials, float *a_hist, float *mean_num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, float *bkg_mean, float *bkg_std, int *num_bins, float *bin_edges)
+__global__ void cascade_pmt_model(curandState *state, int *num_trials, float *a_hist, float *mean_num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, float *bkg_mean, float *bkg_std, int *num_bins, float *bin_edges)
 {
     //printf("hello\\n");
     

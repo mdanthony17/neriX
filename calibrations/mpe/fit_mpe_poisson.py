@@ -2,7 +2,7 @@ import ROOT as root
 from rootpy.plotting import Canvas, Hist
 from rootpy.io import File, root_open
 import neriX_analysis
-import neriX_datasets
+import neriX_datasets, neriX_config
 import sys, os
 import numpy as np
 from scipy import stats
@@ -18,7 +18,7 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
     if filename[-5:] == '.root':
         filename = filename[:-5]
 
-    sDataPath = '/Users/Matt/Desktop/Xenon/neriX/data/run_%d/%s.root' % (run_number, filename)
+    sDataPath = '%s/run_%d/%s.root' % (neriX_config.pathToData, run_number, filename)
 
     sPathToSaveOutput = './results/run_' + str(run_number) + '/' + filename
     aColors = [4, 2, 8, 7, 5, 9]*5
@@ -40,7 +40,7 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
 
 
     # 50 bins used previously
-    mpe_spec_binning = [100, -1.5e6, 8e6]
+    mpe_spec_binning = [45, -0.2e6, 3e6]
 
     file_mpe = File(sDataPath, 'read')
 
@@ -49,14 +49,14 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
     else:
         l_mpe_fit_func = ['[5]/(2*3.14*([2]**2. + %d*[4]**2.))**0.5*TMath::Poisson(%d, [0])*exp(-0.5*((x - %.1f*[3] - [1])/(%.1f*[4]**2 + [2]**2)**0.5)**2)' % (iElectron, iElectron, iElectron, iElectron) for iElectron in xrange(1, num_photons + 1)]
 
-    h_mpe_spec = Hist(*mpe_spec_binning, name='h_mpe_spec', title='h_mpe_spec')
+    h_mpe_spec = Hist(*mpe_spec_binning, name='h_mpe_spec', title='MPE fit - %s' % filename)
     h_mpe_spec.SetMarkerSize(0)
 
     c1 = Canvas()
 
     channel = 16
     parameter_to_draw = 'SingleIntegral[%d]' % (channel)
-    parameter_to_draw = 'SinglePeak[%d] + SingleBefore[%d][0] + SingleBefore[%d][1] + SingleAfter[%d][0] + SingleAfter[%d][1]' % (5*(channel,))
+    #parameter_to_draw = 'SinglePeak[%d] + SingleBefore[%d][0] + SingleBefore[%d][1] + SingleAfter[%d][0] + SingleAfter[%d][1]' % (5*(channel,))
     tree_mpe = file_mpe.T0
     tree_mpe.Draw(parameter_to_draw, hist=h_mpe_spec)
     h_mpe_spec.Draw()
@@ -218,7 +218,7 @@ def mpe_fitting(filename, run, num_photons, use_ideal=True):
     return string_to_return, -amin / 2., forTextFile
 
 
-lFiles = ['nerix_160531_0936']
+lFiles = ['nerix_160407_1533']
 
 #lNumPhotons = [2, 3, 4, 5, 6]
 lNumPhotons = [10, 11, 12, 13, 14]

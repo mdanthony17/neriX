@@ -33,7 +33,7 @@ T0_low = fLedLow.T0
 T0_high = fLedHigh.T0
 
 low_threshold_width = 4.
-high_threshold_width = 1.
+high_threshold_width = 2.
 
 
 #--------------- Start Parameters to Change ----------------
