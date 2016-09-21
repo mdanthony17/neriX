@@ -10,6 +10,7 @@ nr/coincidence_fitting/neriX_simulation_config.pyc
 nr/coincidence_fitting/mcmc_analysis/fake_data/results/
 nr/coincidence_fitting/mcmc_analysis/mcmc_results/
 nr/coincidence_fitting/mcmc_analysis/mcmc_results_local/
+calibrations/gas_gain/results
 nr/pmt_gain/results
 calibrations/cascade_pmt_model/results
 nr/nr_band_matching/mcmc_results_local/

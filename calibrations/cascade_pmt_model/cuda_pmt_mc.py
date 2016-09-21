@@ -5,6 +5,14 @@ cuda_pmt_mc ="""
 
 extern "C" {
 
+
+__device__ int gpu_exponential(curandState_t *rand_state, float exp_constant, float exp_offset)
+{
+    // pdf = 1/const * exp(-(x-offset)/const)
+    return -logf(curand_uniform(rand_state)) * exp_constant + exp_offset;
+}
+
+
 __device__ int gpu_binomial(curandState_t *rand_state, int num_trials, float prob_success)
 {
 
@@ -241,7 +249,7 @@ __global__ void setup_kernel (int nthreads, curandState *state, unsigned long lo
 
 
 
-__global__ void cascade_pmt_model(curandState *state, int *num_trials, float *a_hist, float *mean_num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, float *bkg_mean, float *bkg_std, int *num_bins, float *bin_edges)
+__global__ void cascade_pmt_model(curandState *state, int *num_trials, float *a_hist, float *mean_num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, float *bkg_mean, float *bkg_std, float *bkg_exp, float *prob_exp_bkg, int *num_bins, float *bin_edges)
 {
     //printf("hello\\n");
     
@@ -314,6 +322,13 @@ __global__ void cascade_pmt_model(curandState *state, int *num_trials, float *a_
 		}
         f_tot_num_pe = (curand_normal(&s) * *bkg_std) + *bkg_mean + i_tot_num_pe;
         
+        if (*bkg_exp < 0)
+		{	
+			state[iteration] = s;
+			return;
+		}
+        if(curand_uniform(&s) < *prob_exp_bkg)
+            f_tot_num_pe += gpu_exponential(&s, *bkg_exp, *bkg_mean);
         
         
         bin_number = gpu_find_lower_bound(num_bins, bin_edges, f_tot_num_pe);
@@ -402,6 +417,112 @@ __global__ void pure_cascade_spectrum(curandState *state, int *num_trials, float
         
         
     }
+
+
+}
+
+
+
+
+__global__ void fixed_pe_cascade_spectrum(curandState *state, int *num_trials, float *a_hist, int *num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, float *bkg_mean, float *bkg_std, float *bkg_exp, float *prob_exp_bkg, int *num_bins, float *bin_edges)
+{
+    //printf("hello\\n");
+    
+    int iteration = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x;
+    curandState s = state[iteration];
+    
+    int bin_number;
+    int num_dynodes = 12;
+    float f_tot_num_pe;
+    int i_tot_num_pe = *num_pe;
+    int pe_from_first_dynode;
+    
+    
+    if (iteration < *num_trials)
+	{
+    
+        if (*prob_hit_first_dynode < 0 || *prob_hit_first_dynode > 1)
+		{	
+			state[iteration] = s;
+			return;
+		}
+    
+        /*
+        if (gpu_binomial(&s, 1, *prob_hit_first_dynode) < 1)
+        {
+            num_dynodes -= 1;
+        }
+        */
+        
+        pe_from_first_dynode = gpu_binomial(&s, i_tot_num_pe, 1-*prob_hit_first_dynode);
+        i_tot_num_pe -= pe_from_first_dynode;
+        
+        // check if all PE are from first dynode
+        // if so just pretend all were from cathode
+        // but assume one less dynode
+        if (i_tot_num_pe == 0)
+        {
+            i_tot_num_pe = pe_from_first_dynode;
+            num_dynodes -= 1;
+        }
+        
+        if (*mean_e_from_dynode < 0)
+		{	
+			state[iteration] = s;
+			return;
+		}
+        
+        if (i_tot_num_pe > 0)
+        {
+            for (int i = 0; i < num_dynodes; i++)
+            {
+                // after first dynode add the PE originating from
+                // first dynode back in
+                if (i == 1)
+                    i_tot_num_pe += pe_from_first_dynode;
+            
+                if (i_tot_num_pe < 10000)
+                    i_tot_num_pe = gpu_binomial(&s, (int)floorf(i_tot_num_pe * *mean_e_from_dynode), *probability_electron_ionized);
+                else
+                    //i_tot_num_pe = curand_poisson(&s, i_tot_num_pe * *mean_e_from_dynode * *probability_electron_ionized);
+                    i_tot_num_pe = (curand_normal(&s) * powf(i_tot_num_pe**mean_e_from_dynode**probability_electron_ionized*(1-*probability_electron_ionized), 0.5)) + i_tot_num_pe**mean_e_from_dynode**probability_electron_ionized;
+            }
+        }
+        
+        
+        if (*bkg_std < 0)
+		{	
+			state[iteration] = s;
+			return;
+		}
+        f_tot_num_pe = (curand_normal(&s) * *bkg_std) + *bkg_mean + i_tot_num_pe;
+        
+        if (*bkg_exp < 0)
+		{	
+			state[iteration] = s;
+			return;
+		}
+        if(curand_uniform(&s) < *prob_exp_bkg)
+            f_tot_num_pe += gpu_exponential(&s, *bkg_exp, *bkg_mean);
+        
+        
+        bin_number = gpu_find_lower_bound(num_bins, bin_edges, f_tot_num_pe);
+		
+		if (bin_number == -1)
+		{
+			state[iteration] = s;
+			return;
+		}
+		
+		atomicAdd(&a_hist[bin_number], 1);
+		
+		state[iteration] = s;
+        //printf("hi: %f\\n", f_tot_num_pe);
+		return;
+        
+        
+        
+    }
     
 
 
@@ -412,7 +533,7 @@ __global__ void pure_cascade_spectrum(curandState *state, int *num_trials, float
 
 
 
-
+// final close
 }
 
 """

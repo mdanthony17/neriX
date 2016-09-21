@@ -37,6 +37,7 @@ import pycuda.autoinit
 
 gpu_cascade_model = SourceModule(cuda_pmt_mc.cuda_pmt_mc, no_extern_c=True).get_function('cascade_pmt_model')
 gpu_pure_cascade_spectrum = SourceModule(cuda_pmt_mc.cuda_pmt_mc, no_extern_c=True).get_function('pure_cascade_spectrum')
+gpu_fixed_pe_cascade_spectrum = SourceModule(cuda_pmt_mc.cuda_pmt_mc, no_extern_c=True).get_function('fixed_pe_cascade_spectrum')
 setup_kernel = SourceModule(cuda_pmt_mc.cuda_pmt_mc, no_extern_c=True).get_function('setup_kernel')
 
 
@@ -107,8 +108,8 @@ class fit_pmt_gain(object):
         self.d_fit_files['mpe1']['tree'] = self.d_fit_files['mpe1']['file'].T0
         self.d_fit_files['mpe2']['tree'] = self.d_fit_files['mpe2']['file'].T0
 
-        self.d_fit_files['mpe1']['settings'] = [25, -2e5, 3e6]
-        self.d_fit_files['mpe2']['settings'] = [25, -2e5, 4e6]
+        self.d_fit_files['mpe1']['settings'] = [50, -6e5, 3e6]
+        self.d_fit_files['mpe2']['settings'] = [50, -6e5, 4e6]
         
         self.d_fit_files['mpe1']['bin_edges'] = np.linspace(self.d_fit_files['mpe1']['settings'][1], self.d_fit_files['mpe1']['settings'][2], self.d_fit_files['mpe1']['settings'][0]+1) # need +1 for bin edges
         self.d_fit_files['mpe1']['bin_width'] = self.d_fit_files['mpe1']['bin_edges'][1] - self.d_fit_files['mpe1']['bin_edges'][0]
@@ -157,6 +158,8 @@ class fit_pmt_gain(object):
         self.s_directory_save_name = 'results/%s/' % (self.timestamp)
         self.s_directory_save_plots_name = 'plots/%s/' % (self.timestamp)
         
+        
+        self.a_free_par_guesses = [0.8881, 25.106, 0.1251, 4.55e4, 2.129e5, 9.24e5, 0.074, 1.04, 2.104]
     
     
         self.b_suppress_likelihood = False
@@ -184,7 +187,7 @@ class fit_pmt_gain(object):
 
             
     def cascade_model_ln_likelihood(self, a_parameters):
-        prob_hit_first, mean_e_from_dynode, probability_electron_ionized, bkg_mean, bkg_std, mean_num_pe_mpe1, mean_num_pe_mpe2 = a_parameters
+        prob_hit_first, mean_e_from_dynode, probability_electron_ionized, bkg_mean, bkg_std, bkg_exp, prob_exp_bkg, mean_num_pe_mpe1, mean_num_pe_mpe2 = a_parameters
 
         ln_prior = 0
         ln_likelihood = 0
@@ -192,6 +195,8 @@ class fit_pmt_gain(object):
         ln_prior += self.prior_between_0_and_1(prob_hit_first)
         ln_prior += self.prior_greater_than_0(mean_e_from_dynode)
         ln_prior += self.prior_greater_than_0(bkg_std)
+        ln_prior += self.prior_greater_than_0(bkg_exp)
+        ln_prior += self.prior_between_0_and_1(prob_exp_bkg)
         ln_prior += self.prior_greater_than_0(mean_num_pe_mpe1) # just require > 0
         ln_prior += self.prior_greater_than_0(mean_num_pe_mpe2) # just require > 0
 
@@ -210,6 +215,8 @@ class fit_pmt_gain(object):
         probability_electron_ionized = np.asarray(probability_electron_ionized, dtype=np.float32)
         bkg_mean = np.asarray(bkg_mean, dtype=np.float32)
         bkg_std = np.asarray(bkg_std, dtype=np.float32)
+        bkg_exp = np.asarray(bkg_exp, dtype=np.float32)
+        prob_exp_bkg = np.asarray(prob_exp_bkg, dtype=np.float32)
         
         num_bins_mpe1 = np.asarray(len(self.d_fit_files['mpe1']['hist']), dtype=np.int32)
         mpe1_bin_edges = np.asarray(self.d_fit_files['mpe1']['bin_edges'], dtype=np.float32)
@@ -217,8 +224,8 @@ class fit_pmt_gain(object):
         mpe2_bin_edges = np.asarray(self.d_fit_files['mpe2']['bin_edges'], dtype=np.float32)
         
         
-        l_mpe1_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe1), drv.In(mean_num_pe_mpe1), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
-        l_mpe2_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe2), drv.In(mean_num_pe_mpe2), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(num_bins_mpe2), drv.In(mpe2_bin_edges)]
+        l_mpe1_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe1), drv.In(mean_num_pe_mpe1), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
+        l_mpe2_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe2), drv.In(mean_num_pe_mpe2), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe2), drv.In(mpe2_bin_edges)]
     
     
         #start_time_mpe1 = time.time()
@@ -250,9 +257,9 @@ class fit_pmt_gain(object):
     
     def run_cascade_model_mcmc(self, num_walkers=32, num_steps=2000, threads=1):
         
-        l_value_guesses = [0.974, 24.257, 0.1291, 5.27e4, 2.23e5, 1.07, 2.12]
-        l_std_guesses = [0.005, 0.5, 0.01, 1e4, 5e4, 0.03, 0.06]
-        l_par_names = ['p_hit_first_dynode', 'electrons_per_dynode', 'p_e_freed', 'bkg_mean', 'bkg_std', 'mean_num_pe_mpe1', 'mean_num_pe_mpe2']
+        l_value_guesses = self.a_free_par_guesses
+        l_std_guesses = [0.005, 0.5, 0.01, 1e4, 5e4, 8e4, 0.04, 0.03, 0.06]
+        l_par_names = ['p_hit_first_dynode', 'electrons_per_dynode', 'p_e_freed', 'bkg_mean', 'bkg_std', 'bkg_std', 'bkg_exp', 'mean_num_pe_mpe1', 'mean_num_pe_mpe2']
 
         
         
@@ -350,7 +357,7 @@ class fit_pmt_gain(object):
     
     
     def draw_mc_model_fit(self, a_parameters):
-        prob_hit_first, mean_e_from_dynode, probability_electron_ionized, bkg_mean, bkg_std, mean_num_pe_mpe1, mean_num_pe_mpe2 = a_parameters
+        prob_hit_first, mean_e_from_dynode, probability_electron_ionized, bkg_mean, bkg_std, bkg_exp, prob_exp_bkg, mean_num_pe_mpe1, mean_num_pe_mpe2 = a_parameters
         
         
         a_hist_mpe1 = np.zeros(len(self.d_fit_files['mpe1']['hist']), dtype=np.float32)
@@ -365,6 +372,8 @@ class fit_pmt_gain(object):
         probability_electron_ionized = np.asarray(probability_electron_ionized, dtype=np.float32)
         bkg_mean = np.asarray(bkg_mean, dtype=np.float32)
         bkg_std = np.asarray(bkg_std, dtype=np.float32)
+        bkg_exp = np.asarray(bkg_exp, dtype=np.float32)
+        prob_exp_bkg = np.asarray(prob_exp_bkg, dtype=np.float32)
         
         num_bins_mpe1 = np.asarray(len(self.d_fit_files['mpe1']['hist']), dtype=np.int32)
         mpe1_bin_edges = np.asarray(self.d_fit_files['mpe1']['bin_edges'], dtype=np.float32)
@@ -372,8 +381,8 @@ class fit_pmt_gain(object):
         mpe2_bin_edges = np.asarray(self.d_fit_files['mpe2']['bin_edges'], dtype=np.float32)
         
         
-        l_mpe1_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe1), drv.In(mean_num_pe_mpe1), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
-        l_mpe2_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe2), drv.In(mean_num_pe_mpe2), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(num_bins_mpe2), drv.In(mpe2_bin_edges)]
+        l_mpe1_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe1), drv.In(mean_num_pe_mpe1), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
+        l_mpe2_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe2), drv.In(mean_num_pe_mpe2), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe2), drv.In(mpe2_bin_edges)]
     
     
         #start_time_mpe1 = time.time()
@@ -415,7 +424,7 @@ class fit_pmt_gain(object):
         
         print '\n\nAdded single PE spectrum with mean and variance output in this function too\n\n'
         
-        num_dim = 7
+        num_dim = len(self.a_free_par_guesses)
         
         sPathToFile = self.s_directory_save_name + self.dict_filename
         
@@ -454,8 +463,10 @@ class fit_pmt_gain(object):
             probability_electron_ionized = a_sampler[i][2]
             bkg_mean = a_sampler[i][3]
             bkg_std = a_sampler[i][4]
-            mean_num_pe_mpe1 = a_sampler[i][5]
-            mean_num_pe_mpe2 = a_sampler[i][6]
+            bkg_exp = a_sampler[i][5]
+            prob_exp_bkg = a_sampler[i][6]
+            mean_num_pe_mpe1 = a_sampler[i][7]
+            mean_num_pe_mpe2 = a_sampler[i][8]
         
         
             a_hist_mpe1 = np.zeros(num_bins_plots_mpe1, dtype=np.float32)
@@ -472,6 +483,8 @@ class fit_pmt_gain(object):
             probability_electron_ionized = np.asarray(probability_electron_ionized, dtype=np.float32)
             bkg_mean = np.asarray(bkg_mean, dtype=np.float32)
             bkg_std = np.asarray(bkg_std, dtype=np.float32)
+            bkg_exp = np.asarray(bkg_exp, dtype=np.float32)
+            prob_exp_bkg = np.asarray(prob_exp_bkg, dtype=np.float32)
             
             num_bins_mpe1 = np.asarray(num_bins_plots_mpe1, dtype=np.int32)
             mpe1_bin_edges = np.asarray(self.d_fit_files['mpe1']['bin_edges_plots'], dtype=np.float32)
@@ -479,8 +492,8 @@ class fit_pmt_gain(object):
             mpe2_bin_edges = np.asarray(self.d_fit_files['mpe2']['bin_edges_plots'], dtype=np.float32)
             
             
-            l_mpe1_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe1), drv.In(mean_num_pe_mpe1), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
-            l_mpe2_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe2), drv.In(mean_num_pe_mpe2), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(num_bins_mpe2), drv.In(mpe2_bin_edges)]
+            l_mpe1_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe1), drv.In(mean_num_pe_mpe1), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
+            l_mpe2_args_gpu = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_mpe2), drv.In(mean_num_pe_mpe2), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe2), drv.In(mpe2_bin_edges)]
         
         
             #start_time_mpe1 = time.time()
@@ -502,12 +515,23 @@ class fit_pmt_gain(object):
             l_pure_spec = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_pure), drv.In(np.asarray(1, dtype=np.int32)), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
             
             gpu_pure_cascade_spectrum(*l_pure_spec, **self.d_gpu_scale)
-            a_means[i], a_stds[i] = weighted_avg_and_std(self.d_fit_files['mpe1']['bin_centers_plots'], a_hist_pure)
-            a_pure_single_spec = np.asarray(a_hist_pure, dtype=np.float32)/np.sum(a_hist_pure)
+            
+            sum_pure_spec = np.sum(a_hist_pure)
+            
+            if sum_pure_spec != 0:
+                a_means[i], a_stds[i] = weighted_avg_and_std(self.d_fit_files['mpe1']['bin_centers_plots'], a_hist_pure)
+                a_pure_single_spec = np.asarray(a_hist_pure, dtype=np.float32)/np.sum(a_hist_pure)
+                a_histograms_pure[i] = a_pure_single_spec
+            else:
+                print 'Bad pure spectrum giving, removing sample'
+                a_means[i], a_stds[i] = -1, -1
+                # remove the -1's later
         
-            a_histograms_pure[i] = a_pure_single_spec
         
         
+        # remove all bad pure spectras
+        a_means = filter(lambda a: a!=-1, a_means)
+        a_stds = filter(lambda a: a!=-1, a_stds)
         
         
         a_one_sigma_below_mpe1 = np.zeros(num_bins_plots_mpe1, dtype=np.float32)
@@ -562,6 +586,10 @@ class fit_pmt_gain(object):
         ax3.set_title('Single PE Spectrum - Best Fit')
         ax3.set_xlabel(r'Integrated Charge [$e^{-}$]')
         ax3.set_ylabel('Normalized Counts')
+
+
+        ax1.text(0.7, 0.9, '%s\n%s' % (s_mean_gain, s_rms_gain), ha='center', va='center', transform=ax1.transAxes)
+        ax2.text(0.7, 0.9, '%s\n%s' % (s_mean_gain, s_rms_gain), ha='center', va='center', transform=ax2.transAxes)
         ax3.text(0.7, 0.8, '%s\n%s' % (s_mean_gain, s_rms_gain), ha='center', va='center', transform=ax3.transAxes)
         
         if not os.path.exists(self.s_directory_save_plots_name):
@@ -578,7 +606,7 @@ class fit_pmt_gain(object):
 
     def draw_cascade_model_corner_plot(self, num_walkers, num_steps_to_include):
         
-        l_labels_for_corner_plot = ['p_hit_first_dynode', 'electrons_per_dynode', 'p_e_freed', 'bkg_mean', 'bkg_std', 'mean_num_pe_mpe1', 'mean_num_pe_mpe2']
+        l_labels_for_corner_plot = ['p_hit_first_dynode', 'electrons_per_dynode', 'p_e_freed', 'bkg_mean', 'bkg_std', 'bkg_exp', 'p_exp_bkg', 'mean_num_pe_mpe1', 'mean_num_pe_mpe2']
         num_dim = len(l_labels_for_corner_plot)
         
         sPathToFile = self.s_directory_save_name + self.dict_filename
@@ -608,8 +636,153 @@ class fit_pmt_gain(object):
             os.makedirs(self.s_directory_save_plots_name)
 
         fig.savefig(self.s_directory_save_plots_name + self.s_base_save_name + '_corner.png')
+        
+        try:
+            print emcee.autocorr.integrated_time(np.mean(a_sampler, axis=0), axis=0,
+                                        low=10, high=None, step=1, c=2,
+                                        fast=False)
+        except:
+            print 'Chain too short to find autocorrelation time!'
 
+
+
+
+    def draw_fit_with_peaks(self, num_walkers, num_steps_to_include):
+        
+        num_dim =len(self.a_free_par_guesses)
+        
+        sPathToFile = self.s_directory_save_name + self.dict_filename
+        
+        if os.path.exists(sPathToFile):
+            dSampler = pickle.load(open(sPathToFile, 'r'))
+            l_chains = []
+            for sampler in dSampler[num_walkers]:
+                l_chains.append(sampler['_chain'])
+
+            a_sampler = np.concatenate(l_chains, axis=1)
+
+            print 'Successfully loaded sampler!'
+        else:
+            print sPathToFile
+            print 'Could not find file!'
+            sys.exit()
+        
+        a_sampler = a_sampler[:, -num_steps_to_include:, :num_dim].reshape((-1, num_dim))
+        a_medians = np.median(a_sampler, axis=0)
+
+
+        l_num_pe = [0, 1, 2, 3, 4, 5, 6]
+        l_colors = ['r', 'b', 'g', 'c', 'y', 'saddlebrown', 'orchid']
+        prob_hit_first, mean_e_from_dynode, probability_electron_ionized, bkg_mean, bkg_std, bkg_exp, prob_exp_bkg, mean_num_pe_mpe1, mean_num_pe_mpe2 = a_medians
+
+        d_hists = {}
+        d_hists['mpe1'] = [np.zeros(len(self.d_fit_files['mpe1']['bin_centers_plots']), dtype=np.float32) for i in xrange(len(l_num_pe))]
+        d_hists['mpe2'] = [np.zeros(len(self.d_fit_files['mpe2']['bin_centers_plots']), dtype=np.float32) for i in xrange(len(l_num_pe))]
+
+        d_sum_hists = {}
+        d_sum_hists['mpe1'] = np.zeros(len(self.d_fit_files['mpe1']['bin_centers_plots']), dtype=np.float32)
+        d_sum_hists['mpe2'] = np.zeros(len(self.d_fit_files['mpe2']['bin_centers_plots']), dtype=np.float32)
+        #sum_hist = np.zeros(len(self.d_fit_files['bin_centers_plots']), dtype=np.float32)
+        
+        mean_num_pe_mpe1 = np.asarray(mean_num_pe_mpe1, dtype=np.float32)
+        mean_num_pe_mpe2 = np.asarray(mean_num_pe_mpe2, dtype=np.float32)
+        
+        num_trials = np.asarray(self.num_mc_events, dtype=np.int32)
+
+
+
+        prob_hit_first = np.asarray(prob_hit_first, dtype=np.float32)
+        mean_e_from_dynode = np.asarray(mean_e_from_dynode, dtype=np.float32)
+        probability_electron_ionized = np.asarray(probability_electron_ionized, dtype=np.float32)
+        bkg_mean = np.asarray(bkg_mean, dtype=np.float32)
+        bkg_std = np.asarray(bkg_std, dtype=np.float32)
+        bkg_exp = np.asarray(bkg_exp, dtype=np.float32)
+        prob_exp_bkg = np.asarray(prob_exp_bkg, dtype=np.float32)
+        
+        bin_edges_mpe1 = np.asarray(self.d_fit_files['mpe1']['bin_edges_plots'], dtype=np.float32)
+        bin_edges_mpe2 = np.asarray(self.d_fit_files['mpe2']['bin_edges_plots'], dtype=np.float32)
+        
+        num_bins_mpe1 = np.asarray(len(bin_edges_mpe1)-1, dtype=np.int32)
+        num_bins_mpe2 = np.asarray(len(bin_edges_mpe2)-1, dtype=np.int32)
+        
+        sum_of_hists_mpe1 = 0
+        sum_of_hists_mpe2 = 0
+
+        for i, num_pe in enumerate(l_num_pe):
+            current_hist_mpe1 = d_hists['mpe1'][i]
+            num_trials_mpe1 = np.asarray(int(self.num_mc_events*scipy.stats.poisson.pmf(num_pe, mean_num_pe_mpe1)), dtype=np.int32)
+            
+            current_hist_mpe2 = d_hists['mpe2'][i]
+            num_trials_mpe2 = np.asarray(int(self.num_mc_events*scipy.stats.poisson.pmf(num_pe, mean_num_pe_mpe2)), dtype=np.int32)
+            
+            num_pe = np.asarray(num_pe, dtype=np.int32)
+        
+        
+            l_args_gpu_mpe1 = [self.rng_states, drv.In(num_trials_mpe1), drv.InOut(current_hist_mpe1), drv.In(num_pe), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe1), drv.In(bin_edges_mpe1)]
+            l_args_gpu_mpe2 = [self.rng_states, drv.In(num_trials_mpe2), drv.InOut(current_hist_mpe2), drv.In(num_pe), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(bkg_mean), drv.In(bkg_std), drv.In(bkg_exp), drv.In(prob_exp_bkg), drv.In(num_bins_mpe2), drv.In(bin_edges_mpe2)]
+            
+            gpu_fixed_pe_cascade_spectrum(*l_args_gpu_mpe1, **self.d_gpu_scale)
+            sum_of_hists_mpe1 += np.sum(current_hist_mpe1)
+            
+            gpu_fixed_pe_cascade_spectrum(*l_args_gpu_mpe2, **self.d_gpu_scale)
+            sum_of_hists_mpe2 += np.sum(current_hist_mpe2)
+            
+            d_hists['mpe1'][i] = current_hist_mpe1
+            d_hists['mpe2'][i] = current_hist_mpe2
+
+
+
+
+
+        for i, num_pe in enumerate(l_num_pe):
+            current_hist_mpe1 = d_hists['mpe1'][i]
+            current_hist_mpe2 = d_hists['mpe2'][i]
+            
+            current_hist_mpe1 = np.asarray(current_hist_mpe1, dtype=np.float32)*np.sum(self.d_fit_files['mpe1']['hist'])/sum_of_hists_mpe1*self.d_fit_files['mpe1']['bin_width']/self.d_fit_files['mpe1']['bin_width_plots']
+            current_hist_mpe2 = np.asarray(current_hist_mpe2, dtype=np.float32)*np.sum(self.d_fit_files['mpe2']['hist'])/sum_of_hists_mpe2*self.d_fit_files['mpe2']['bin_width']/self.d_fit_files['mpe2']['bin_width_plots']
+            
+            d_sum_hists['mpe1'] += current_hist_mpe1
+            d_sum_hists['mpe2'] += current_hist_mpe2
+            
+            d_hists['mpe1'][i] = current_hist_mpe1
+            d_hists['mpe2'][i] = current_hist_mpe2
+        
+
+
+
+
+        f1, (ax1) = plt.subplots(1)
+        ax1.set_yscale('log', nonposx='clip')
+        
+        f2, (ax2) = plt.subplots(1)
+        ax2.set_yscale('log', nonposx='clip')
     
+        a_x_values, a_y_values, a_x_err_low, a_x_err_high, a_y_err_low, a_y_err_high = neriX_analysis.prepare_hist_arrays_for_plotting(self.d_fit_files['mpe1']['hist'], self.d_fit_files['mpe1']['bin_edges'])
+        ax1.errorbar(a_x_values, a_y_values, xerr=[a_x_err_low, a_x_err_high], yerr=[a_y_err_low, a_y_err_high], color='k', fmt='.')
+        ax1.plot(self.d_fit_files['mpe1']['bin_centers_plots'], d_sum_hists['mpe1'], color='darkorange', linestyle='-')
+        
+        a_x_values, a_y_values, a_x_err_low, a_x_err_high, a_y_err_low, a_y_err_high = neriX_analysis.prepare_hist_arrays_for_plotting(self.d_fit_files['mpe2']['hist'], self.d_fit_files['mpe2']['bin_edges'])
+        ax2.errorbar(a_x_values, a_y_values, xerr=[a_x_err_low, a_x_err_high], yerr=[a_y_err_low, a_y_err_high], color='k', fmt='.')
+        ax2.plot(self.d_fit_files['mpe2']['bin_centers_plots'], d_sum_hists['mpe2'], color='darkorange', linestyle='-')
+        
+
+        for i in xrange(len(l_num_pe)):
+            ax1.plot(self.d_fit_files['mpe1']['bin_centers_plots'], d_hists['mpe1'][i], color=l_colors[i])
+            ax2.plot(self.d_fit_files['mpe2']['bin_centers_plots'], d_hists['mpe2'][i], color=l_colors[i])
+        
+        
+        ax1.set_title('Integrated Charge Spectrum - %s' % (self.d_fit_filenames['mpe1']))
+        ax1.set_xlabel(r'Integrated Charge [$e^{-}$]')
+        ax1.set_ylabel('Counts')
+
+        ax2.set_title('Integrated Charge Spectrum - %s' % (self.d_fit_filenames['mpe2']))
+        ax2.set_xlabel(r'Integrated Charge [$e^{-}$]')
+        ax2.set_ylabel('Counts')
+        
+        f1.savefig('%s%s_pe_specs_%s.png' % (self.s_directory_save_plots_name, self.s_base_save_name, self.d_fit_filenames['mpe1']))
+        f2.savefig('%s%s_pe_specs_%s.png' % (self.s_directory_save_plots_name, self.s_base_save_name, self.d_fit_filenames['mpe2']))
+
+
     
 
 
@@ -626,7 +799,7 @@ class fit_pmt_gain(object):
     def suppress_likelihood(self, iterations=200):
 
         #a_free_par_guesses = [0.9807, 3.1225, 4.5875e4, 2.1723e5, 1.104, 2.1]
-        a_free_par_guesses = [0.974, 24.257, 0.1291, 5.27e4, 2.23e5, 1.07, 2.12]
+        a_free_par_guesses = self.a_free_par_guesses
         
         l_parameters = [a_free_par_guesses for i in xrange(iterations)]
         l_log_likelihoods = [0. for i in xrange(iterations)]
@@ -662,15 +835,16 @@ if __name__ == '__main__':
     #    print test.gpu_mc_model_ln_likelihood([0.05, 0.95, 3.15, 1e4, 2e5, 1.2])
 
 
-    #test.draw_cascade_model_with_error_bands(num_walkers=32, num_steps_to_include=20)
-    #test.draw_cascade_model_corner_plot(num_walkers=32, num_steps_to_include=20)
+    test.draw_cascade_model_with_error_bands(num_walkers=128, num_steps_to_include=20)
+    test.draw_cascade_model_corner_plot(num_walkers=128, num_steps_to_include=20)
+    test.draw_fit_with_peaks(num_walkers=128, num_steps_to_include=150)
 
-    test.suppress_likelihood()
+    #test.suppress_likelihood()
     
-    #a_bounds = [(0.75, 1), (20, 40), (0, 0.3), (1e3, 1e5), (5e4, 5e5), (0.6, 2), (1.5, 2.5)]
+    #a_bounds = [(0.75, 1), (20, 40), (0, 0.3), (1e3, 1e5), (5e4, 5e5), (1e4, 1e6), (0, 1), (0.6, 2), (1.5, 2.5)]
     #test.differential_evolution_minimizer(a_bounds, maxiter=50, tol=0.01, popsize=10, polish=False)
 
-    test.run_cascade_model_mcmc(num_walkers=32, num_steps=100, threads=1)
+    #test.run_cascade_model_mcmc(num_walkers=128, num_steps=50, threads=1)
 
 
 
