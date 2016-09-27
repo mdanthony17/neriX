@@ -23,7 +23,6 @@ from root_numpy import tree2array, array2tree
 import scipy.optimize as op
 import scipy.special
 import scipy.misc
-import gc
 
 
 #print pickle.Pickler.dispatch
@@ -490,8 +489,8 @@ class fit_gas_gain:
 
 
 if __name__ == '__main__':
-    test = fit_gas_gain('nerix_160404_1059')
-    #test = fit_gas_gain('nerix_160407_1357')
+    #test = fit_gas_gain('nerix_160404_1059')
+    test = fit_gas_gain('nerix_160407_1357')
     #test = fit_gas_gain('nerix_160412_0919')
     #test = fit_gas_gain('nerix_160414_1215')
     #test = fit_gas_gain('nerix_160418_0919')

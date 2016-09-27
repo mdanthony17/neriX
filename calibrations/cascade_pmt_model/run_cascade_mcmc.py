@@ -30,6 +30,10 @@ d_fit_filenames['mpe2'] = filename_mpe2
 fitter = fit_pmt_gain.fit_pmt_gain(d_fit_filenames, num_mc_events=num_mc_events, b_making_comparison_plots=True)
 
 fitter.suppress_likelihood()
+
+#a_bounds = [(0.75, 1), (24, 26), (0.12, 0.13), (1e3, 1e5), (5e4, 5e5), (1e4, 1e6), (0, 1), (0.6, 2), (1.5, 3.0)]
+#fitter.differential_evolution_minimizer(a_bounds, maxiter=50, tol=0.01, popsize=10, polish=False)
+
 fitter.run_cascade_model_mcmc(num_walkers=num_walkers, num_steps=num_steps, threads=1)
 
 
