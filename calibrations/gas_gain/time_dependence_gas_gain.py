@@ -74,6 +74,10 @@ d_gas_gain[1.054]['color'] = 'green'
 d_gas_gain[2.356]['color'] = 'red'
 
 
+l_all_gas_gains_value = []
+l_all_gas_gains_unc = []
+l_all_gas_gain_widths_value = []
+l_all_gas_gain_widths_unc = []
 
 l_time = []
 
@@ -122,6 +126,21 @@ for filename in l_filenames:
     d_gas_gain[cathode_setting]['l_gas_gain_width_mad'].append(neriX_analysis.mad(a_sampler[:, index_bot_width]))
 
     d_gas_gain[cathode_setting]['l_time'].append(neriX_analysis.convert_name_to_unix_time(filename))
+
+
+    # now add lists for combined fit
+    l_time.append(neriX_analysis.convert_name_to_unix_time(filename))
+    l_all_gas_gains_value.append(bot_mean_median)
+    l_all_gas_gains_unc.append(neriX_analysis.mad(a_sampler[:, index_bot_mean]))
+    l_all_gas_gain_widths_value.append(bot_width_median)
+    l_all_gas_gain_widths_unc.append(neriX_analysis.mad(a_sampler[:, index_bot_width]))
+
+l_time = np.asarray(l_time)
+l_all_gas_gains_value = np.asarray(l_all_gas_gains_value)
+l_all_gas_gains_unc = np.asarray(l_all_gas_gains_unc)
+l_all_gas_gain_widths_value = np.asarray(l_all_gas_gain_widths_value)
+l_all_gas_gain_widths_unc = np.asarray(l_all_gas_gain_widths_unc)
+
 
 for cathode_setting in l_cathode_settings:
     d_gas_gain[cathode_setting]['l_gas_gain_mean_median'] = np.asarray(d_gas_gain[cathode_setting]['l_gas_gain_mean_median'])
@@ -193,7 +212,7 @@ a_starting_pos_width = emcee.utils.sample_ball(l_guesses_width, l_stds_width, si
 for cathode_setting in l_cathode_settings:
 
     # mean of gas gain
-    d_gas_gain[cathode_setting]['sampler_gas_gain_mean'] = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_gas_gain[cathode_setting]['l_gas_gain_mean_median'], d_gas_gain[cathode_setting]['l_gas_gain_mean_mad']])
+    d_gas_gain[cathode_setting]['sampler_gas_gain_mean'] = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_gas_gain[cathode_setting]['l_gas_gain_mean_median'], d_gas_gain[cathode_setting]['l_gas_gain_mean_mad']/0.67449])
 
     with click.progressbar(d_gas_gain[cathode_setting]['sampler_gas_gain_mean'].sample(a_starting_pos_mean, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
         for pos, lnprob, state in mcmc_sampler:
@@ -206,7 +225,7 @@ for cathode_setting in l_cathode_settings:
 
 
     # width of gas gain
-    d_gas_gain[cathode_setting]['sampler_gas_gain_width'] = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_gas_gain[cathode_setting]['l_gas_gain_width_median'], d_gas_gain[cathode_setting]['l_gas_gain_width_mad']])
+    d_gas_gain[cathode_setting]['sampler_gas_gain_width'] = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_gas_gain[cathode_setting]['l_gas_gain_width_median'], d_gas_gain[cathode_setting]['l_gas_gain_width_mad']/0.67449])
 
     with click.progressbar(d_gas_gain[cathode_setting]['sampler_gas_gain_width'].sample(a_starting_pos_width, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
         for pos, lnprob, state in mcmc_sampler:
@@ -219,11 +238,48 @@ for cathode_setting in l_cathode_settings:
 
 
     # make corner plots for each fit
-    d_gas_gain[cathode_setting]['fig_for_gg_mean'] = corner.corner(d_gas_gain[cathode_setting]['a_samples_gas_gain_mean'], labels=l_labels_mean, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 12})
+    d_gas_gain[cathode_setting]['fig_for_gg_mean'] = corner.corner(d_gas_gain[cathode_setting]['a_samples_gas_gain_mean'], labels=l_labels_mean, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
     d_gas_gain[cathode_setting]['fig_for_gg_mean'].savefig('%sposterior_gg_mean_%.3f.png' % (s_time_dependence_plots_dir, cathode_setting))
 
-    d_gas_gain[cathode_setting]['fig_for_gg_width'] = corner.corner(d_gas_gain[cathode_setting]['a_samples_gas_gain_width'], labels=l_labels_width, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 12})
+    d_gas_gain[cathode_setting]['fig_for_gg_width'] = corner.corner(d_gas_gain[cathode_setting]['a_samples_gas_gain_width'], labels=l_labels_width, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize":8})
     d_gas_gain[cathode_setting]['fig_for_gg_width'].savefig('%sposterior_gg_width_%.3f.png' % (s_time_dependence_plots_dir, cathode_setting))
+
+
+# repeat fitting for all data points together
+
+sampler_combined_gg_mean = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[l_all_gas_gains_value, l_all_gas_gains_unc/0.67449])
+
+with click.progressbar(sampler_combined_gg_mean.sample(a_starting_pos_mean, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+    for pos, lnprob, state in mcmc_sampler:
+        pass
+
+a_samples_combined_mean = sampler_combined_gg_mean.chain[:, :, :2].reshape((-1, 2))
+a_samples_combined_mean = a_samples_combined_mean[-steps_to_keep:, :]
+
+mean_combined_gg_mean, std_combined_gg_mean = np.percentile(a_samples_combined_mean, 50., axis=0)
+
+
+# width of gas gain
+sampler_combined_gg_width = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[l_all_gas_gain_widths_value, l_all_gas_gain_widths_unc/0.67449])
+
+with click.progressbar(sampler_combined_gg_width.sample(a_starting_pos_width, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+    for pos, lnprob, state in mcmc_sampler:
+        pass
+
+a_samples_combined_width = sampler_combined_gg_width.chain[:, :, :2].reshape((-1, 2))
+a_samples_combined_width = a_samples_combined_width[-steps_to_keep:, :]
+
+mean_combined_gg_width, std_combined_gg_width = np.percentile(a_samples_combined_width, 50., axis=0)
+
+
+# make corner plots for each fit
+fig_combined_gg_mean = corner.corner(a_samples_combined_mean, labels=l_labels_mean, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+fig_combined_gg_mean.savefig('%sposterior_gg_mean_combined.png' % (s_time_dependence_plots_dir))
+
+fig_combined_gg_width = corner.corner(a_samples_combined_width, labels=l_labels_width, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+fig_combined_gg_width.savefig('%sposterior_gg_width_combined.png' % (s_time_dependence_plots_dir))
+
+
 
 
 fig1, ax1 = plt.subplots(1)
@@ -248,6 +304,8 @@ for cathode_setting in l_cathode_settings:
     y_mean_plus_one_sigma_for_gg_mean_line = np.asarray([d_gas_gain[cathode_setting]['mean_for_gg_mean']+d_gas_gain[cathode_setting]['std_for_gg_mean'] for i in xrange(points_for_lines)])
     y_mean_minus_one_sigma_for_gg_mean_line = np.asarray([d_gas_gain[cathode_setting]['mean_for_gg_mean']-d_gas_gain[cathode_setting]['std_for_gg_mean'] for i in xrange(points_for_lines)])
     
+    
+    
     ax1.plot(x_line, y_mean_for_gg_mean_line, color=d_gas_gain[cathode_setting]['color'], linestyle='--')
     ax1.fill_between(x_line, y_mean_minus_one_sigma_for_gg_mean_line, y_mean_plus_one_sigma_for_gg_mean_line, color=d_gas_gain[cathode_setting]['color'], alpha=0.2)
 
@@ -268,9 +326,31 @@ for cathode_setting in l_cathode_settings:
     d_gas_gain[cathode_setting]['legend_entry'] = mpatches.Patch(color=d_gas_gain[cathode_setting]['color'], label=r'%.3f kV' % (cathode_setting))
     l_legend_handles.append(d_gas_gain[cathode_setting]['legend_entry'])
 
+
+
+# add combined fits to plot
+
+y_all_mean = np.asarray([mean_combined_gg_mean for i in xrange(points_for_lines)])
+y_all_mean_plus_one_sigma = np.asarray([mean_combined_gg_mean + std_combined_gg_mean for i in xrange(points_for_lines)])
+y_all_mean_minus_one_sigma = np.asarray([mean_combined_gg_mean - std_combined_gg_mean for i in xrange(points_for_lines)])
+ax1.plot(x_line, y_all_mean, color='black', linestyle='--')
+ax1.fill_between(x_line, y_all_mean_minus_one_sigma, y_all_mean_plus_one_sigma, color='black', alpha=0.1, hatch='/')
+
+y_all_mean = np.asarray([mean_combined_gg_width for i in xrange(points_for_lines)])
+y_all_mean_plus_one_sigma = np.asarray([mean_combined_gg_width + std_combined_gg_width for i in xrange(points_for_lines)])
+y_all_mean_minus_one_sigma = np.asarray([mean_combined_gg_width - std_combined_gg_width for i in xrange(points_for_lines)])
+ax2.plot(x_line, y_all_mean, color='black', linestyle='--')
+ax2.fill_between(x_line, y_all_mean_minus_one_sigma, y_all_mean_plus_one_sigma, color='black', alpha=0.1, hatch='/')
+
+# add combined to legend handles
+l_legend_handles.append(mpatches.Patch(color='black', hatch='/', label=r'All Fields'))
+
+
+
 ax1.legend(handles=l_legend_handles, title='Cathode Voltages')
 ax1.set_title('Gas Gain Mean - Run 16 Average')
 ax1.set_ylabel('Gas Gain Mean [PE]')
+ax1.set_ylim(12.8, 15)
 fig1.autofmt_xdate()
 
 ax2.legend(handles=l_legend_handles, title='Cathode Voltages')

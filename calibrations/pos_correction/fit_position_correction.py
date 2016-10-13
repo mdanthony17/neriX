@@ -32,17 +32,29 @@ import scipy.misc
 
 def neg_ln_likelihood_2d_gaussian(a_parameters, x):
     mean_x, mean_y, var_x, var_y, cov_xy = a_parameters
-    return -np.sum(scipy.stats.multivariate_normal.logpdf(x.T, mean=[mean_x, mean_y], cov=[[var_x, cov_xy], [cov_xy, var_y]]))
+    ln_likelihood = -np.sum(scipy.stats.multivariate_normal.logpdf(x.T, mean=[mean_x, mean_y], cov=[[var_x, cov_xy], [cov_xy, var_y]]))
+    if np.isfinite(ln_likelihood):
+        return ln_likelihood
+    else:
+        return -np.inf
 
 def neg_ln_likelihood_1d_gaussian(a_parameters, x):
     mean_x, stdev_x = a_parameters
     #print a_parameters
-    #print -np.sum(scipy.stats.norm.logpdf(x, loc=mean_x, scale=stdev_x))
-    return -np.sum(scipy.stats.norm.logpdf(x, loc=mean_x, scale=stdev_x))
+    ln_likelihood = -np.sum(scipy.stats.norm.logpdf(x, loc=mean_x, scale=stdev_x))
+    if np.isfinite(ln_likelihood):
+        return ln_likelihood
+    else:
+        return -np.inf
 
+def reduce_method(m):
+    return (getattr, (m.__self__, m.__func__.__name__))
 
-class fit_position_corrections:
+class fit_position_correction:
     def __init__(self, d_files):
+        # make class methods pickleable for multithreading process
+        copy_reg.pickle(types.MethodType, reduce_method)
+    
         self.l_s1_settings = [40, 1200, 4500]
         self.l_s2_settings = [40, 3e5, 10e5]
         self.l_dt_settings = [25, 0, 26]
@@ -59,8 +71,8 @@ class fit_position_corrections:
 
         self.l_radial_cut = [0, 0.85]
         
-        self.s1_branch = 'S1sTotBottom[0]'
-        self.s2_branch = 'S2sTotBottom[0]'
+        self.s1_branch = 'ctS1sTotBottom[0]'
+        self.s2_branch = 'ctS2sTotBottom[0]'
         
         self.l_cathode_settings = self.d_files.keys()
         self.l_cathode_settings.sort()
@@ -88,6 +100,13 @@ class fit_position_corrections:
             
             current_analysis.set_event_list()
             
+            # if you want to use corrected branch
+            """
+            # need to custom make string for zeroeth index
+            s1_branch = '%s[0]' % (current_analysis.get_T1().GetAlias(self.s1_branch))
+            s2_branch = '%s[0]' % (current_analysis.get_T1().GetAlias(self.s2_branch))
+            """
+            
             current_tree = tree2array(current_analysis.get_T1(), [self.s1_branch, self.s2_branch, current_analysis.get_T1().GetAlias('dt'), current_analysis.get_T1().GetAlias('Z')], selection=current_analysis.get_cuts())
             current_tree.dtype.names = l_column_names
             column_dtype = current_tree.dtype
@@ -108,10 +127,10 @@ class fit_position_corrections:
         # ---------- MAKE CES CUT ----------
 
         # no time correction: 0.08, 14.
-        correction_factor = 1.48e6 / 9.5e5
+        correction_factor = 1.05 #1.48e6 / 9.5e5
         print 'Correction factor: %.3e' % (correction_factor)
-        g1 = 0.13/correction_factor
-        g2 = 21./correction_factor
+        g1 = 0.13*correction_factor
+        g2 = 21.*correction_factor
         sigma_ces = 2.0
 
         c_ces = Canvas()
@@ -209,21 +228,22 @@ class fit_position_corrections:
             if not os.path.exists(self.s_directory_save_name + str(cathode_setting)):
                 os.makedirs(self.s_directory_save_name + str(cathode_setting))
             
-            l_percentiles = [35, 55, 95]
-            estimated_lower_bound, estimated_mean, estimated_upper_bound = np.percentile(-self.d_info[cathode_setting]['df_tree']['s1']/g2 + self.d_info[cathode_setting]['df_tree']['s2']/g1, l_percentiles)
-            print estimated_lower_bound, estimated_mean
-            estimated_stdev = 5e5
+            l_percentiles = [15, 55, 99]
+            estimated_lower_bound, estimated_mean, estimated_upper_bound = np.percentile(-self.d_info[cathode_setting]['df_tree']['s1']/g1 + self.d_info[cathode_setting]['df_tree']['s2']/g2, l_percentiles)
+            #print estimated_lower_bound, estimated_mean
+            estimated_stdev = 3e3
             width_cut = 3.
             a_1d_gaus_guesses = np.asarray([estimated_mean, estimated_stdev])
             
             # make dataframe with rough upper bound in discrimination space
-            reduced_df = self.d_info[cathode_setting]['df_tree'][((-self.d_info[cathode_setting]['df_tree']['s1']/g2 + self.d_info[cathode_setting]['df_tree']['s2']/g1) > estimated_lower_bound) & ((-self.d_info[cathode_setting]['df_tree']['s1']/g2 + self.d_info[cathode_setting]['df_tree']['s2']/g1) < estimated_upper_bound)]
+            reduced_df_with_cut = self.d_info[cathode_setting]['df_tree'][((-self.d_info[cathode_setting]['df_tree']['s1']/g1 + self.d_info[cathode_setting]['df_tree']['s2']/g2) > estimated_lower_bound) & ((-self.d_info[cathode_setting]['df_tree']['s1']/g1 + self.d_info[cathode_setting]['df_tree']['s2']/g2) < estimated_upper_bound) & (self.d_info[cathode_setting]['df_tree'].z < self.z_cut_electron_lifetime)]
+            reduced_df_z_cut_only = self.d_info[cathode_setting]['df_tree'][(self.d_info[cathode_setting]['df_tree'].z < self.z_cut_electron_lifetime)]
             
             # fit reduced data with gaussian
-            data_array = np.asarray(-reduced_df['s1']/g2 + reduced_df['s2']/g1)
+            data_array = np.asarray(-reduced_df_with_cut['s1']/g1 + reduced_df_with_cut['s2']/g2)
             data_array = data_array[np.isfinite(data_array)]
             #result_1d_guas_fit = op.minimize(neg_ln_likelihood_1d_gaussian, a_1d_gaus_guesses, args=np.asarray(data_array))
-            result_1d_guas_fit = op.differential_evolution(neg_ln_likelihood_1d_gaussian, bounds=[(3e6, 7e6), (1e5, 1.5e6)], args=[data_array], polish=True)
+            result_1d_guas_fit = op.differential_evolution(neg_ln_likelihood_1d_gaussian, bounds=[(500, 30000), (500, 20000)], args=[data_array], polish=True)
             
             gaus_mean, gaus_stdev =  result_1d_guas_fit.x
             
@@ -231,7 +251,7 @@ class fit_position_corrections:
 
             f1, (ax1) = plt.subplots(1)
             #dummy1, x_edges, y_edges, dummy2 = ax1.hist2d(self.d_info[cathode_setting]['df_tree']['s2'], np.log(self.d_info[cathode_setting]['df_tree']['s2']/self.d_info[cathode_setting]['df_tree']['s1']), bins=40)
-            dummy1, x_edges, dummy2 = ax1.hist(-self.d_info[cathode_setting]['df_tree']['s1']/g2 + self.d_info[cathode_setting]['df_tree']['s2']/g1, bins=60, normed=True)
+            dummy1, x_edges, dummy2 = ax1.hist(-reduced_df_z_cut_only['s1']/g1 + reduced_df_z_cut_only['s2']/g2, bins=60, normed=True)
             
             #x_contour, y_contour = np.meshgrid(x_edges, y_edges)
             #z_contour = scipy.stats.multivariate_normal.pdf(np.asarray([x_contour, y_contour]).T, mean=[gaus_mean_s1, gaus_mean_s2], cov=[[gaus_var_s1, gaus_cov_s1_s2], [gaus_cov_s1_s2, gaus_var_s2]])
@@ -240,10 +260,18 @@ class fit_position_corrections:
             
             x_gaus = np.linspace(x_edges[0], x_edges[-1], 100)
             y_gaus = scipy.stats.norm.pdf(x_gaus, loc=gaus_mean, scale=gaus_stdev)
-            ax1.plot(x_gaus, y_gaus, color='magenta', linestyle='--')
+            ax1.plot(x_gaus, y_gaus, color='magenta', linestyle='-')
+            
+            # draw lines for gaussian fit range
+            ax1.axvline(x=estimated_lower_bound, color='r', linestyle='--')
+            ax1.axvline(x=estimated_upper_bound, color='r', linestyle='--')
+            
+            # draw lines for cuts
+            ax1.axvline(x=gaus_mean-width_cut*gaus_stdev, color='g', linestyle='--')
+            ax1.axvline(x=gaus_mean+width_cut*gaus_stdev, color='g', linestyle='--')
             
             ax1.set_title('Double Scatter Removal - %.3f kV' % (cathode_setting))
-            ax1.set_xlabel(r'$-\frac{S1}{g_{2}} + \frac{S2}{g1}$')
+            ax1.set_xlabel(r'$-\frac{S1}{g_{1}} + \frac{S2}{g2}$')
             ax1.set_ylabel(r'Normalized Counts')
             
             
@@ -251,7 +279,7 @@ class fit_position_corrections:
             
             
             # add cut to dataframe
-            self.d_info[cathode_setting]['df_tree'] = self.d_info[cathode_setting]['df_tree'][ ( -self.d_info[cathode_setting]['df_tree']['s1']/g2 + self.d_info[cathode_setting]['df_tree']['s2']/g1 > (gaus_mean - width_cut*gaus_stdev) ) & ( -self.d_info[cathode_setting]['df_tree']['s1']/g2 + self.d_info[cathode_setting]['df_tree']['s2']/g1 < (gaus_mean + width_cut*gaus_stdev) ) ]
+            self.d_info[cathode_setting]['df_tree'] = self.d_info[cathode_setting]['df_tree'][ ( -self.d_info[cathode_setting]['df_tree']['s1']/g1 + self.d_info[cathode_setting]['df_tree']['s2']/g2 > (gaus_mean - width_cut*gaus_stdev) ) & ( -self.d_info[cathode_setting]['df_tree']['s1']/g1 + self.d_info[cathode_setting]['df_tree']['s2']/g2 < (gaus_mean + width_cut*gaus_stdev) ) ]
             
 
             df_current = self.d_info[cathode_setting]['df_tree']
@@ -261,6 +289,7 @@ class fit_position_corrections:
             current_s1_mean_center = np.mean(df_current[(df_current.z > self.l_center_of_detector[0]) & (df_current.z < self.l_center_of_detector[1])]['s1'])
             current_s2_mean_center = np.mean(df_current[(df_current.z > self.l_center_of_detector[0]) & (df_current.z < self.l_center_of_detector[1])]['s2'])
             self.d_info[cathode_setting]['a_scaled_s1'] = self.d_info[cathode_setting]['df_tree']['s1'] / current_s1_mean_center
+            self.d_info[cathode_setting]['a_scaled_s1_top_half'] = self.d_info[cathode_setting]['df_tree_top_half']['s1'] / current_s1_mean_center
             self.d_info[cathode_setting]['s2_scale_guess'] = current_s2_mean_center
 
 
@@ -275,20 +304,17 @@ class fit_position_corrections:
         
         self.d_par_names = {}
         self.d_par_names['s1_z'] = ['intercept', 'slope']
-        self.d_par_names['s2_dt'] = ['scale', 'electron_lifetime', 'intrinsic_width', 'diffusion_const']
+        self.d_par_names['s2_dt'] = ['scale', 'electron_lifetime', 'intrinsic_width']
         
         for cathode_setting in self.l_cathode_settings:
             self.d_free_par_guesses['s1_z'][cathode_setting] = [0.88, -0.01]
-            self.d_free_par_guesses['s2_dt'][cathode_setting] = [self.d_info[cathode_setting]['s2_scale_guess']*1.05, 400, self.d_info[cathode_setting]['s2_scale_guess']*0.1, 2e4]
+            self.d_free_par_guesses['s2_dt'][cathode_setting] = [self.d_info[cathode_setting]['s2_scale_guess']*1.05, 400, self.d_info[cathode_setting]['s2_scale_guess']*0.1]
         
             self.d_free_par_std_guesses['s1_z'][cathode_setting] = [0.1, -0.001]
-            self.d_free_par_std_guesses['s2_dt'][cathode_setting] = [self.d_info[cathode_setting]['s2_scale_guess']*0.2, 100, self.d_info[cathode_setting]['s2_scale_guess']*0.02, 5e3]
+            self.d_free_par_std_guesses['s2_dt'][cathode_setting] = [self.d_info[cathode_setting]['s2_scale_guess']*0.2, 100, self.d_info[cathode_setting]['s2_scale_guess']*0.02]
 
 
 
-
-        
-        
 
         
         
@@ -298,7 +324,7 @@ class fit_position_corrections:
         intercept, slope = a_parameters
         
 
-        ln_likelihood = -np.sum(( self.d_info[cathode_setting]['a_scaled_s1'] - (intercept + slope*self.d_info[cathode_setting]['df_tree']['z']) )**2)
+        ln_likelihood = -np.sum(( self.d_info[cathode_setting]['a_scaled_s1_top_half'] - (intercept + slope*self.d_info[cathode_setting]['df_tree_top_half']['z']) )**2)
 
         if not np.isfinite(ln_likelihood):
             return -np.inf
@@ -308,13 +334,18 @@ class fit_position_corrections:
         
         
     def ln_likelihood_s2_dt(self, a_parameters, cathode_setting):
-        scale, e_lifetime, intrinsic_width, diffusion_const = a_parameters
+        scale, e_lifetime, intrinsic_width = a_parameters
         
-        if e_lifetime <= 0. or scale <= 0. or e_lifetime > 1000 or intrinsic_width <= 0 or diffusion_const <= 0:
+        if not (scale > 0 and scale < 8e5):
+            return -np.inf
+        if not (e_lifetime > 0 and e_lifetime < 5000):
+            return -np.inf
+        if not (intrinsic_width > 1000 and intrinsic_width < 1e5):
             return -np.inf
         
-        s2_width = intrinsic_width + diffusion_const*(self.d_info[cathode_setting]['df_tree']['dt']-self.dt_gate_offset)**0.5
-        ln_likelihood = np.sum(-( self.d_info[cathode_setting]['df_tree']['s2'] - (scale*np.exp( -(self.d_info[cathode_setting]['df_tree']['dt']-self.dt_gate_offset)/e_lifetime )) )**2/s2_width**2/2. - np.log(s2_width))
+        
+        s2_width = intrinsic_width
+        ln_likelihood = np.sum(-( self.d_info[cathode_setting]['df_tree_top_half']['s2'] - (scale*np.exp( -(self.d_info[cathode_setting]['df_tree_top_half']['dt']-self.dt_gate_offset)/e_lifetime )) )**2/s2_width**2/2. - np.log(s2_width))
         
         if not np.isfinite(ln_likelihood):
             return -np.inf
@@ -431,7 +462,11 @@ class fit_position_corrections:
 
 
     def draw_pos_correction_plots(self, analysis_name, cathode_setting, num_walkers, num_steps_to_include):
-        if not (analysis_name == 's1_z' or analysis_name == 's2_dt'):
+        if analysis_name == 's1_z':
+            ln_likelihood_func = self.ln_likelihood_s1_z
+        elif analysis_name == 's2_dt':
+            ln_likelihood_func = self.ln_likelihood_s2_dt
+        else:
             print '\nAnalysis should either be "s1_z" or "s2_dt"\n\n'
             return
         
@@ -477,6 +512,12 @@ class fit_position_corrections:
 
 
         a_medians = np.median(a_sampler, axis=0)
+        
+        ln_likelihood_median = ln_likelihood_func(a_medians, cathode_setting)
+        num_pts = len(self.d_info[cathode_setting]['df_tree']['s2'])
+        print '\n\n\n\nFit Information:'
+        print 'Ln Likelihood at median: %f' % (ln_likelihood_median)
+        print 'NDF: %d\n\n\n' % (num_pts - num_dim)
 
         f1, (ax1) = plt.subplots(1)
         if analysis_name == 's1_z':
@@ -517,7 +558,7 @@ if __name__ == '__main__':
     d_files[1.500] = 'nerix_160411_0739'
     d_files[2.356] = 'nerix_160411_0925'
 
-    test = fit_position_corrections(d_files)
+    test = fit_position_correction(d_files)
 
     for cathode_setting in d_files:
         test.run_mcmc('s1_z', cathode_setting, 32, 1000, threads=1)

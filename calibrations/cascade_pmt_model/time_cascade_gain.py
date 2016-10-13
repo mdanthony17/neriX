@@ -55,175 +55,175 @@ for dir_name in l_dir_names:
         l_filenames.append(dir_name)
 
 d_spe_gain = {}
-d_spe_gain[('nerix_160407_1533', 'nerix_160407_1550')] = {'gain':9.63e5,
-                                                          'gain_unc':1.93e5,
-                                                          'stdev':5.56e5,
-                                                          'stdev_unc':6.92e4
+d_spe_gain[('nerix_160407_1533', 'nerix_160407_1550')] = {'gain':9.13e5,
+                                                          'gain_unc':3.54e4,
+                                                          'stdev':5.40e5,
+                                                          'stdev_unc':1.76e4
                                                           }
-d_spe_gain[('nerix_160411_1118', 'nerix_160411_1127')] = {'gain':9.09e5,
-                                                          'gain_unc':8.99e4,
-                                                          'stdev':5.39e5,
-                                                          'stdev_unc':5.14e4
+d_spe_gain[('nerix_160411_1118', 'nerix_160411_1127')] = {'gain':9.10e5,
+                                                          'gain_unc':8.77e4,
+                                                          'stdev':5.40e5,
+                                                          'stdev_unc':5.05e4
                                                           }
-d_spe_gain[('nerix_160414_1006', 'nerix_160414_1015')] = {'gain':8.96e5,
-                                                          'gain_unc':5.51e4,
+d_spe_gain[('nerix_160414_1006', 'nerix_160414_1015')] = {'gain':9.02e5,
+                                                          'gain_unc':5.47e4,
                                                           'stdev':5.33e5,
-                                                          'stdev_unc':2.74e4
+                                                          'stdev_unc':2.73e4
                                                           }
-d_spe_gain[('nerix_160418_1523', 'nerix_160418_1531')] = {'gain':9.27e5,
+d_spe_gain[('nerix_160418_1523', 'nerix_160418_1531')] = {'gain':9.28e5,
                                                           'gain_unc':1.48e5,
                                                           'stdev':5.46e5,
                                                           'stdev_unc':8.55e4
                                                           }
-d_spe_gain[('nerix_160421_1521', 'nerix_160421_1528')] = {'gain':9.47e5,
-                                                          'gain_unc':5.26e4,
-                                                          'stdev':5.57e5,
-                                                          'stdev_unc':2.35e4
+d_spe_gain[('nerix_160421_1521', 'nerix_160421_1528')] = {'gain':9.49e5,
+                                                          'gain_unc':4.56e4,
+                                                          'stdev':5.58e5,
+                                                          'stdev_unc':2.03e4
                                                           }
-d_spe_gain[('nerix_160425_1529', 'nerix_160425_1537')] = {'gain':9.61e5,
-                                                          'gain_unc':9.26e4,
-                                                          'stdev':5.64e5,
-                                                          'stdev_unc':5.19e4
+d_spe_gain[('nerix_160425_1529', 'nerix_160425_1537')] = {'gain':9.59e5,
+                                                          'gain_unc':9.16e4,
+                                                          'stdev':5.63e5,
+                                                          'stdev_unc':5.18e4
                                                           }
-d_spe_gain[('nerix_160428_1008', 'nerix_160428_1016')] = {'gain':9.33e5,
-                                                          'gain_unc':4.76e4,
-                                                          'stdev':5.50e5,
-                                                          'stdev_unc':2.31e4
+d_spe_gain[('nerix_160428_1008', 'nerix_160428_1016')] = {'gain':9.11e5,
+                                                          'gain_unc':4.69e4,
+                                                          'stdev':5.39e5,
+                                                          'stdev_unc':2.29e4
                                                           }
-d_spe_gain[('nerix_160502_1650', 'nerix_160502_1658')] = {'gain':9.31e5,
-                                                          'gain_unc':1.17e5,
-                                                          'stdev':5.48e5,
-                                                          'stdev_unc':6.71e4
+d_spe_gain[('nerix_160502_1650', 'nerix_160502_1658')] = {'gain':9.24e5,
+                                                          'gain_unc':1.21e5,
+                                                          'stdev':5.44e5,
+                                                          'stdev_unc':6.95e4
                                                           }
 d_spe_gain[('nerix_160505_1120', 'nerix_160505_1128')] = {'gain':9.29e5,
-                                                          'gain_unc':5.45e4,
+                                                          'gain_unc':5.35e4,
                                                           'stdev':5.47e5,
-                                                          'stdev_unc':2.68e4
+                                                          'stdev_unc':2.65e4
                                                           }
-d_spe_gain[('nerix_160509_0946', 'nerix_160509_0953')] = {'gain':9.22e5,
-                                                          'gain_unc':1.05e5,
-                                                          'stdev':5.43e5,
-                                                          'stdev_unc':5.66e4
+d_spe_gain[('nerix_160509_0946', 'nerix_160509_0953')] = {'gain':9.28e5,
+                                                          'gain_unc':1.07e5,
+                                                          'stdev':5.46e5,
+                                                          'stdev_unc':5.73e4
                                                           }
-d_spe_gain[('nerix_160512_1155', 'nerix_160512_1202')] = {'gain':9.60e5,
-                                                          'gain_unc':1.85e5,
-                                                          'stdev':5.56e5,
-                                                          'stdev_unc':8.40e4
+d_spe_gain[('nerix_160512_1155', 'nerix_160512_1202')] = {'gain':9.37e5,
+                                                          'gain_unc':1.78e5,
+                                                          'stdev':5.46e5,
+                                                          'stdev_unc':8.15e4
                                                           }
-d_spe_gain[('nerix_160516_1126', 'nerix_160516_1136')] = {'gain':8.91e5,
-                                                          'gain_unc':8.87e4,
-                                                          'stdev':5.29e5,
-                                                          'stdev_unc':5.10e4
+d_spe_gain[('nerix_160516_1126', 'nerix_160516_1136')] = {'gain':9.07e5,
+                                                          'gain_unc':3.60e4,
+                                                          'stdev':5.38e5,
+                                                          'stdev_unc':1.78e4
                                                           }
-d_spe_gain[('nerix_160519_0952', 'nerix_160519_1007')] = {'gain':9.34e5,
-                                                          'gain_unc':3.00e4,
-                                                          'stdev':5.51e5,
-                                                          'stdev_unc':1.37e4
+d_spe_gain[('nerix_160519_0952', 'nerix_160519_1007')] = {'gain':9.38e5,
+                                                          'gain_unc':3.01e4,
+                                                          'stdev':5.54e5,
+                                                          'stdev_unc':1.32e4
                                                           }
-d_spe_gain[('nerix_160523_0956', 'nerix_160523_1003')] = {'gain':9.18e5,
-                                                          'gain_unc':9.23e4,
-                                                          'stdev':5.43e5,
-                                                          'stdev_unc':5.26e4
+d_spe_gain[('nerix_160523_0956', 'nerix_160523_1003')] = {'gain':9.04e5,
+                                                          'gain_unc':9.00e4,
+                                                          'stdev':5.36e5,
+                                                          'stdev_unc':5.15e4
                                                           }
-d_spe_gain[('nerix_160525_1217', 'nerix_160525_1225')] = {'gain':9.66e5,
-                                                          'gain_unc':4.21e4,
-                                                          'stdev':5.66e5,
+d_spe_gain[('nerix_160525_1217', 'nerix_160525_1225')] = {'gain':9.37e5,
+                                                          'gain_unc':4.24e4,
+                                                          'stdev':5.52e5,
+                                                          'stdev_unc':2.05e4
+                                                          }
+d_spe_gain[('nerix_160531_0936', 'nerix_160531_0945')] = {'gain':9.34e5,
+                                                          'gain_unc':4.09e4,
+                                                          'stdev':5.52e5,
                                                           'stdev_unc':1.97e4
                                                           }
-d_spe_gain[('nerix_160531_0936', 'nerix_160531_0945')] = {'gain':9.32e5,
-                                                          'gain_unc':4.80e4,
-                                                          'stdev':5.51e5,
-                                                          'stdev_unc':2.34e4
+d_spe_gain[('nerix_160604_1241', 'nerix_160604_1248')] = {'gain':9.34e5,
+                                                          'gain_unc':4.70e4,
+                                                          'stdev':5.53e5,
+                                                          'stdev_unc':2.28e4
                                                           }
-d_spe_gain[('nerix_160604_1241', 'nerix_160604_1248')] = {'gain':9.42e5,
-                                                          'gain_unc':5.75e4,
-                                                          'stdev':5.56e5,
-                                                          'stdev_unc':2.81e4
-                                                          }
-d_spe_gain[('nerix_160606_0941', 'nerix_160606_0950')] = {'gain':9.88e5,
-                                                          'gain_unc':3.43e4,
-                                                          'stdev':5.78e5,
-                                                          'stdev_unc':1.53e4
-                                                          }
-d_spe_gain[('nerix_160609_0956', 'nerix_160609_1005')] = {'gain':9.54e5,
-                                                          'gain_unc':9.53e4,
-                                                          'stdev':5.60e5,
-                                                          'stdev_unc':5.33e4
-                                                          }
-d_spe_gain[('nerix_160614_0956', 'nerix_160614_1004')] = {'gain':9.63e5,
-                                                          'gain_unc':9.98e4,
-                                                          'stdev':5.64e5,
-                                                          'stdev_unc':4.99e4
-                                                          }
-d_spe_gain[('nerix_160617_0946', 'nerix_160617_0953')] = {'gain':9.42e5,
-                                                          'gain_unc':9.22e4,
+d_spe_gain[('nerix_160606_0941', 'nerix_160606_0950')] = {'gain':9.38e5,
+                                                          'gain_unc':3.95e4,
                                                           'stdev':5.54e5,
-                                                          'stdev_unc':5.24e4
+                                                          'stdev_unc':1.84e4
                                                           }
-d_spe_gain[('nerix_160620_0945', 'nerix_160620_0954')] = {'gain':9.64e5,
-                                                          'gain_unc':6.55e4,
-                                                          'stdev':5.65e5,
-                                                          'stdev_unc':2.48e4
+d_spe_gain[('nerix_160609_0956', 'nerix_160609_1005')] = {'gain':9.19e5,
+                                                          'gain_unc':9.24e4,
+                                                          'stdev':5.43e5,
+                                                          'stdev_unc':5.23e4
                                                           }
-d_spe_gain[('nerix_160623_1044', 'nerix_160623_1052')] = {'gain':9.69e5,
-                                                          'gain_unc':6.45e4,
+d_spe_gain[('nerix_160614_0956', 'nerix_160614_1004')] = {'gain':9.67e5,
+                                                          'gain_unc':3.75e4,
                                                           'stdev':5.67e5,
-                                                          'stdev_unc':2.81e4
+                                                          'stdev_unc':1.72e4
                                                           }
-d_spe_gain[('nerix_160627_0944', 'nerix_160627_0952')] = {'gain':9.66e5,
-                                                          'gain_unc':1.14e5,
+d_spe_gain[('nerix_160617_0946', 'nerix_160617_0953')] = {'gain':9.25e5,
+                                                          'gain_unc':9.44e4,
+                                                          'stdev':5.45e5,
+                                                          'stdev_unc':5.35e4
+                                                          }
+d_spe_gain[('nerix_160620_0945', 'nerix_160620_0954')] = {'gain':9.30e5,
+                                                          'gain_unc':4.38e4,
+                                                          'stdev':5.48e5,
+                                                          'stdev_unc':2.13e4
+                                                          }
+d_spe_gain[('nerix_160623_1044', 'nerix_160623_1052')] = {'gain':9.30e5,
+                                                          'gain_unc':3.86e4,
+                                                          'stdev':5.48e5,
+                                                          'stdev_unc':1.84e4
+                                                          }
+d_spe_gain[('nerix_160627_0944', 'nerix_160627_0952')] = {'gain':9.38e5,
+                                                          'gain_unc':4.81e4,
+                                                          'stdev':5.53e5,
+                                                          'stdev_unc':2.28e4
+                                                          }
+d_spe_gain[('nerix_160630_0934', 'nerix_160630_0942')] = {'gain':9.70e5,
+                                                          'gain_unc':3.81e4,
+                                                          'stdev':5.67e5,
+                                                          'stdev_unc':1.67e4
+                                                          }
+d_spe_gain[('nerix_160705_0945', 'nerix_160705_0955')] = {'gain':9.37e5,
+                                                          'gain_unc':4.97e4,
+                                                          'stdev':5.52e5,
+                                                          'stdev_unc':2.38e4
+                                                          }
+d_spe_gain[('nerix_160711_0808', 'nerix_160711_0816')] = {'gain':9.60e5,
+                                                          'gain_unc':3.87e4,
                                                           'stdev':5.64e5,
-                                                          'stdev_unc':4.49e4
+                                                          'stdev_unc':1.77e4
                                                           }
-d_spe_gain[('nerix_160630_0934', 'nerix_160630_0942')] = {'gain':1.06e6,
-                                                          'gain_unc':6.67e4,
-                                                          'stdev':6.07e5,
-                                                          'stdev_unc':2.78e4
+d_spe_gain[('nerix_160715_0939', 'nerix_160715_0948')] = {'gain':9.31e5,
+                                                          'gain_unc':5.80e4,
+                                                          'stdev':5.49e5,
+                                                          'stdev_unc':2.79e4
                                                           }
-d_spe_gain[('nerix_160705_0945', 'nerix_160705_0955')] = {'gain':9.60e5,
-                                                          'gain_unc':5.05e4,
-                                                          'stdev':5.64e5,
-                                                          'stdev_unc':2.31e4
-                                                          }
-d_spe_gain[('nerix_160711_0808', 'nerix_160711_0816')] = {'gain':9.53e5,
-                                                          'gain_unc':1.26e5,
+d_spe_gain[('nerix_160718_0929', 'nerix_160718_0936')] = {'gain':9.47e5,
+                                                          'gain_unc':6.57e4,
                                                           'stdev':5.58e5,
-                                                          'stdev_unc':5.13e4
-                                                          }
-d_spe_gain[('nerix_160715_0939', 'nerix_160715_0948')] = {'gain':9.40e5,
-                                                          'gain_unc':4.89e4,
-                                                          'stdev':5.54e5,
-                                                          'stdev_unc':2.34e4
-                                                          }
-d_spe_gain[('nerix_160718_0929', 'nerix_160718_0936')] = {'gain':9.74e5,
-                                                          'gain_unc':9.88e4,
-                                                          'stdev':5.69e5,
-                                                          'stdev_unc':3.78e4
+                                                          'stdev_unc':3.17e4
                                                           }
 d_spe_gain[('nerix_160722_0933', 'nerix_160722_0940')] = {'gain':9.40e5,
-                                                          'gain_unc':7.71e4,
+                                                          'gain_unc':5.16e4,
                                                           'stdev':5.54e5,
-                                                          'stdev_unc':3.48e4
+                                                          'stdev_unc':2.49e4
                                                           }
-d_spe_gain[('nerix_160725_0936', 'nerix_160725_0944')] = {'gain':9.33e5,
-                                                          'gain_unc':4.80e4,
-                                                          'stdev':5.51e5,
-                                                          'stdev_unc':2.34e4
+d_spe_gain[('nerix_160725_0936', 'nerix_160725_0944')] = {'gain':9.30e5,
+                                                          'gain_unc':5.66e4,
+                                                          'stdev':5.49e5,
+                                                          'stdev_unc':2.66e4
                                                           }
-d_spe_gain[('nerix_160728_0938', 'nerix_160728_0947')] = {'gain':9.26e5,
-                                                          'gain_unc':6.17e4,
+d_spe_gain[('nerix_160728_0938', 'nerix_160728_0947')] = {'gain':9.24e5,
+                                                          'gain_unc':5.63e4,
+                                                          'stdev':5.46e5,
+                                                          'stdev_unc':2.71e4
+                                                          }
+d_spe_gain[('nerix_160801_0933', 'nerix_160801_0940')] = {'gain':9.40e5,
+                                                          'gain_unc':5.13e4,
+                                                          'stdev':5.54e5,
+                                                          'stdev_unc':2.52e4
+                                                          }
+d_spe_gain[('nerix_160808_1038', 'nerix_160808_1045')] = {'gain':9.28e5,
+                                                          'gain_unc':9.72e4,
                                                           'stdev':5.47e5,
-                                                          'stdev_unc':3.03e4
-                                                          }
-d_spe_gain[('nerix_160801_0933', 'nerix_160801_0940')] = {'gain':9.65e5,
-                                                          'gain_unc':4.62e4,
-                                                          'stdev':5.66e5,
-                                                          'stdev_unc':2.19e4
-                                                          }
-d_spe_gain[('nerix_160808_1038', 'nerix_160808_1045')] = {'gain':9.63e5,
-                                                          'gain_unc':1.06e5,
-                                                          'stdev':5.64e5,
-                                                          'stdev_unc':5.63e4
+                                                          'stdev_unc':5.45e4
                                                           }
 
 l_spe_gain_mean = []
