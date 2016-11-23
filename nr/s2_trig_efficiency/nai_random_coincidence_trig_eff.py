@@ -37,8 +37,9 @@ dt_ub = 1800.
 mod_dt_offset_branch = '(NaiPeak[0] - S1sPeak[0])'
 l_mod_dt_offset_settings = [15, 180, 195]
 
-neriX_analysis.warning_message('Hard-coded gain correction')
-s2_branch = 'S2sTotBottom[0]*1.48e6/9e5'
+correction_factor = 9.35e5/1.48e6
+neriX_analysis.warning_message('Hard-coded gain correction: %.3f')
+s2_branch = 'S2sTotBottom[0]/%f' % (correction_factor)
 l_s2_settings = [20, 0, 2000]
 
 trig_branch = 'TrigLeftEdge-S2sLeftEdge[0]'
@@ -49,7 +50,7 @@ trig_ub = 100
 trial_width = 0.5
 cut_width = 3.0
 
-s1_branch = 'S1sTotBottom[0]*1.48e6/9e5'
+s1_branch = 'S1sTotBottom[0]/%f' % (correction_factor)
 
 #--------------- End Parameters to Change ----------------
 
@@ -155,7 +156,8 @@ c_s2_spectrum.Update()
 current_analysis.add_cut(s_na22_height_cut) # DON'T take Na22 peak in NaI (not random)
 current_analysis.add_cut('%s > 0' % (s2_branch))
 current_analysis.add_cut('%s < %f' % (s2_branch, l_s2_settings[2]))
-current_analysis.add_cut('(%s < %f)' % (s1_branch, 10))
+current_analysis.add_cut('(%s < %f)' % (s1_branch, 20))
+#current_analysis.add_cut(s_no_large_s1)
 current_analysis.add_cut('S2sPeak[0] > 200 && S2sPeak[0] < 1800')
 
 current_analysis.multithread_set_event_list(7)
@@ -240,7 +242,7 @@ def pyfunc_eff(x, center, shape):
 		return 1. - exp(-(x-center)/shape)
 
 
-g_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, l_s2_settings[1], l_s2_settings[2])
+g_conf_band = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_fit_pars, a_cov_matrix, l_s2_settings[1], l_s2_settings[2], root_output=True)
 g_conf_band.Draw('3 same')
 
 
@@ -260,7 +262,7 @@ c3.Update()
 
 
 neriX_analysis.save_plot(['results', 'random_coincidence'], c_s2_spectrum, 's2_rate_comparison')
-neriX_analysis.save_plot(['results', 'random_coincidence'], c3, 's2_trig_efficiency')
+neriX_analysis.save_plot(['results', 'random_coincidence'], c3, 's2_trig_efficiency_random')
 neriX_analysis.save_plot(['results', 'random_coincidence'], c4, 's2_trig_time')
 
 

@@ -11,6 +11,11 @@ import matplotlib
 matplotlib.use('QT4Agg')
 import matplotlib.pyplot as plt
 
+import pandas
+import root_pandas
+
+from rootpy.plotting import root2matplotlib as rplt
+
 import emcee, corner, click
 import neriX_analysis, neriX_datasets
 from rootpy.plotting import Hist2D, Hist, Legend, Canvas
@@ -19,306 +24,416 @@ import numpy as np
 import tqdm, time, copy_reg, types, pickle
 from root_numpy import tree2array, array2tree
 import scipy.optimize as op
+import scipy.stats
 import scipy.special
-import gc
+import scipy.misc
 
+import gc
 gc.disable()
 
-
-#print pickle.Pickler.dispatch
-
-"""
-def _pickle_method(method):
-    print method.__dict__
-    func_name = method.im_func.__name__
-    obj = method.im_self
-    cls = method.im_class
-    return _unpickle_method, (func_name, obj, cls)
-
-def _unpickle_method(func_name, obj, cls):
-    for cls in cls.mro():
-        try:
-            func = cls.__dict__[func_name]
-        except KeyError:
-            pass
-        else:
-            break
-    return func.__get__(obj, cls)
-
-copy_reg.pickle(types.FunctionType, _pickle_method, _unpickle_method)
-"""
-
-#print pickle.Pickler.dispatch
-
-def save_function(self, obj):
-    # Save functions by value if they are defined interactively
-    if obj.__module__ == '__main__' or obj.func_name == '<lambda>':
-        args = (obj.func_code, obj.func_globals, obj.func_name, obj.func_defaults, obj.func_closure)
-        self.save_reduce(types.FunctionType, args, obj=obj)
+def neg_ln_likelihood_2d_gaussian(a_parameters, x):
+    mean_x, mean_y, var_x, var_y, cov_xy = a_parameters
+    ln_likelihood = -np.sum(scipy.stats.multivariate_normal.logpdf(x.T, mean=[mean_x, mean_y], cov=[[var_x, cov_xy], [cov_xy, var_y]]))
+    if np.isfinite(ln_likelihood):
+        return ln_likelihood
     else:
-        pickle.Pickler.save_global(self, obj)
-pickle.Pickler.dispatch[types.FunctionType] = save_function
+        return -np.inf
+
+def neg_ln_likelihood_1d_gaussian(a_parameters, x):
+    mean_x, stdev_x = a_parameters
+    #print a_parameters
+    ln_likelihood = -np.sum(scipy.stats.norm.logpdf(x, loc=mean_x, scale=stdev_x))
+    if np.isfinite(ln_likelihood):
+        return ln_likelihood
+    else:
+        return -np.inf
+
+def reduce_method(m):
+    return (getattr, (m.__self__, m.__func__.__name__))
+
+class fit_anticorrelation():
 
 
-
-#print pickle.Pickler.dispatch
-
-def fit_anticorrelation(d_files, batch_mode=False):
+    def __init__(self, d_files):
 
 
-    l_acceptable_energies = ['cs137', 'na22', 'bkg']
+        l_acceptable_energies = ['cs137', 'na22']
+        self.s_dict_filename = 'sampler_dictionary.p'
+        self.s_base_save_name = 'ac_'
 
-    # will have to change the setting based on the source otherwise
-    # neriX_analysis won't accept the files
-    # will do this within the loop
-    l_settings = [[-1,0.345,4.5], [-1,0.7,4.5], [-1,1.054,4.5], [-1,1.500,4.5], [-1,2.356,4.5]]
+        # will have to change the setting based on the source otherwise
+        # neriX_analysis won't accept the files
+        # will do this within the loop
+        l_settings = [[-1,0.345,4.5], [-1,0.7,4.5], [-1,1.054,4.5], [-1,1.500,4.5], [-1,2.356,4.5]]
+        
+        # make class methods pickleable for multithreading process
+        copy_reg.pickle(types.MethodType, reduce_method)
 
-    # check that files given are of a supported energy
+        # check that files given are of a supported energy
 
-    for source in d_files:
-        if source in l_acceptable_energies:
-            continue
-        else:
-            print 'File of type %s not supported yet!' % (source)
-            sys.exit()
+        for source in d_files:
+            if source in l_acceptable_energies:
+                continue
+            else:
+                print 'File of type %s not supported yet!' % (source)
+                sys.exit()
 
-    hard_coded_correction_factor = 1.07
-    neriX_analysis.warning_message('Using hard coded correction: %.2e' % hard_coded_correction_factor)
+        correction_factor = self.get_correction_factor()
+        
 
-    s1_par = 'cpS1sTotBottom[0]/%f' % hard_coded_correction_factor
-    s2_par = 'cpS2sTotBottom[0]/%f' % hard_coded_correction_factor
+        s1_par = 'cpS1sTotBottom[0]/%f' % correction_factor
+        s2_par = 'cpS2sTotBottom[0]/%f' % correction_factor
 
-    #s1_par = 'cpS1sTotBottom[0]'
-    #s2_par = 'cpS2sTotBottom[0]'
+        #s1_par = 'cpS1sTotBottom[0]'
+        #s2_par = 'cpS2sTotBottom[0]'
 
-    column_names = ('S1', 'S2')
+        column_names = ('S1', 'S2')
 
-    bounds_width_inclusion = 1.5
-
-
-    # use dictionary to store all arrays, histograms,
-    # fits, etc.
-
-    d_energy_information = {}
-    d_s1_s2_arrays = {}
-
-    base_save_name = 'ac_'
-
-    for dummy_index, source in enumerate(d_files):
-        base_save_name += '%s_' % source
-
-        # create entry in dictionary
-        d_energy_information[source] = {}
+        bounds_width_inclusion = 2.5
+        orth_bins, orth_min, orth_max = 100, -500, 600
 
 
-        if source == 'cs137':
-            d_energy_information[source]['num_bins'] = 250
-            d_energy_information[source]['ub_ces'] = 1200
-        elif source == 'na22':
-            d_energy_information[source]['num_bins'] = 250
-            d_energy_information[source]['ub_ces'] = 800
-        elif source == 'bkg':
-            d_energy_information[source]['num_bins'] = 50
-            d_energy_information[source]['ub_ces'] = 450
-        elif source == 'co57':
-            d_energy_information[source]['num_bins'] = 50
-            d_energy_information[source]['ub_ces'] = 250
+        # use dictionary to store all arrays, histograms,
+        # fits, etc.
 
+        self.d_energy_information = {}
+        self.d_source_functions = {}
+        self.d_s1_s2_arrays = {}
 
-        a_combined_tree = -1
+        self.base_save_name = 'ac_'
+        
+        self.d_files = d_files
 
-        column_dtype = -1
+        for dummy_index, source in enumerate(d_files):
+            self.base_save_name += '%s_' % source
 
-        l_columns = [np.empty(0) for i in xrange(len(column_names))]
-
-        l_files = d_files[source]
-
-        # must change l_settings based on current source
-        if source == 'cs137':
-            correct_degree_setting = -1
-            d_energy_information[source]['peaks'] = 662.
-            d_energy_information[source]['color'] = root.kBlue
-        elif source == 'na22':
-            correct_degree_setting = -5
-            d_energy_information[source]['peaks'] = 511.
-            d_energy_information[source]['color'] = root.kRed
-        elif source == 'bkg':
-            correct_degree_setting = -6
-            d_energy_information[source]['peaks'] = 164.
-            d_energy_information[source]['color'] = root.kGreen+1
-        elif source == 'co57':
-            correct_degree_setting = -2
-            d_energy_information[source]['peaks'] = 122.
-            d_energy_information[source]['color'] = root.kMagenta+1
-
-        for i in xrange(len(l_settings)):
-            l_settings[i][0] = correct_degree_setting
-
-
-
-        # transpose list of files such that
-        # files of the same cathode voltage are together
-        l_files = map(list, zip(*l_files))
-
-
-        for cur_index, files_at_setting in enumerate(l_files):
-            # if fitting a full run, "file" is actually a list of
-            # files for a given cathode setting
-            # name is from older version
-
-            current_analysis = neriX_analysis.neriX_analysis(list(files_at_setting), *l_settings[cur_index])
-
-            current_analysis.add_z_cut()
-            #current_analysis.add_z_cut(0, -12) # top only
-            current_analysis.add_single_scatter_cut()
-            current_analysis.add_radius_cut(0, 0.85)
-            current_analysis.add_cut('(s1asym > 0)')
-
-            run_number = current_analysis.get_run()
-
-            current_analysis.set_event_list()
+            # create entry in dictionary
+            self.d_energy_information[source] = {}
             
-            """
-            c_test = Canvas()
-            h_test = Hist2D(40, 500, 5000, 40, 3e5, 9e5)
-            current_analysis.Draw('cpS1sTotBottom[0]:ctS2sTotBottom[0]', hist=h_test)
-            h_test.Draw('colz')
-            c_test.Update()
-            raw_input()
-            """
-
-            if cur_index == 0:
-                if len(files_at_setting) == 1:
-                    directory_save_name = './results/run_%d/%s/' % (run_number, files_at_setting[0][:12])
-                else:
-                    directory_save_name = './results/run_%d_combination/' % (run_number)
 
 
-            for j in xrange(len(list(files_at_setting))):
-                #print s1_par, s2_par
-                current_tree = tree2array(current_analysis.get_T1(j), [s1_par, s2_par], selection=current_analysis.get_cuts())
-                current_tree.dtype.names = column_names
-                column_dtype = current_tree.dtype
-                for i, column_name in enumerate(current_tree.dtype.names):
-                    l_columns[i] = np.append(l_columns[i], current_tree[column_name])
-
-            del current_analysis
-
-        a_combined_tree = np.empty(len(l_columns[0]), dtype=column_dtype)
-        for i, column_name in enumerate(column_names):
-            a_combined_tree[column_name] = l_columns[i]
-
-        d_energy_information[source]['combined_tree'] = array2tree(a_combined_tree, name='combined_tree_%s' % (source))
+            if source == 'cs137':
+                self.d_energy_information[source]['num_bins'] = 250
+                self.d_energy_information[source]['ub_ces'] = 1200
+            elif source == 'na22':
+                self.d_energy_information[source]['num_bins'] = 250
+                self.d_energy_information[source]['ub_ces'] = 800
+            elif source == 'bkg':
+                self.d_energy_information[source]['num_bins'] = 50
+                self.d_energy_information[source]['ub_ces'] = 450
+            elif source == 'co57':
+                self.d_energy_information[source]['num_bins'] = 50
+                self.d_energy_information[source]['ub_ces'] = 250
 
 
-        # ---------- MAKE CES CUT ----------
+            a_combined_tree = -1
 
-        # no time correction: 0.08, 14.
-        g1_test = 0.13 #0.12
-        g2_test = 21. #28.
-        sigmaCES = 3.0
+            column_dtype = -1
 
-        d_energy_information[source]['canvas'] = Canvas(width=900, height=700, name='cCES')
-        d_energy_information[source]['canvas'].SetGridx()
-        d_energy_information[source]['canvas'].SetGridy()
+            l_columns = [np.empty(0) for i in xrange(len(column_names))]
 
-        d_energy_information[source]['hist'] = Hist(d_energy_information[source]['num_bins'], 0, d_energy_information[source]['ub_ces'], name='hCES_%s' % (source), title='hCES_%s' % (source), drawstyle='hist')
-        d_energy_information[source]['combined_tree'].Draw('0.0137*(S1/%f + S2/%f)>>hCES_%s' % (g1_test, g2_test, source))
+            l_files = d_files[source]
 
-        d_energy_information[source]['hist'].Draw()
-        d_energy_information[source]['canvas'].Update()
+            # must change l_settings based on current source
+            if source == 'cs137':
+                correct_degree_setting = -1
+                self.d_energy_information[source]['peaks'] = 662.
+                self.d_energy_information[source]['color'] = root.kBlue
+            elif source == 'na22':
+                correct_degree_setting = -5
+                self.d_energy_information[source]['peaks'] = 511.
+                self.d_energy_information[source]['color'] = root.kRed
+            elif source == 'bkg':
+                correct_degree_setting = -6
+                self.d_energy_information[source]['peaks'] = 164.
+                self.d_energy_information[source]['color'] = root.kGreen+1
+            elif source == 'co57':
+                correct_degree_setting = -2
+                self.d_energy_information[source]['peaks'] = 122.
+                self.d_energy_information[source]['color'] = root.kMagenta+1
 
-        d_energy_information[source]['lbCES'] = float(raw_input('\n\nPlease enter lower bound on combined energy scale: '))
-        d_energy_information[source]['ubCES'] = float(raw_input('\n\nPlease enter upper bound on combined energy scale: '))
-
-        #print '\n\nDEBUG MODE SKIPPING LIMIT PICKS\n\n'
-        #d_energy_information[source]['lbCES'] = 400
-        #d_energy_information[source]['ubCES'] = 700
-
-        if source == 'cs137':
-
-            d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )' % (d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES']), d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParameters(1000, 0.5, 150, 500, 662, 50)
-            d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
-            d_energy_information[source]['func'].SetParLimits(1, 0, 1)
-            d_energy_information[source]['func'].SetParLimits(2, 50, 1000)
-            d_energy_information[source]['func'].SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParLimits(4, 10, 100)
-
-
-        elif source == 'na22':
-
-            d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )' % (d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES']), d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParameters(1000, 0.7, 170, 511, 20)
-            d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
-            d_energy_information[source]['func'].SetParLimits(1, 0, 1)
-            d_energy_information[source]['func'].SetParLimits(2, 10, 500)
-            d_energy_information[source]['func'].SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParLimits(4, 10, 100)
-
-
-        elif source == 'bkg':
-
-            d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1] + (1.-[1])/(2*3.141592)^0.5/[3]*exp(-0.5*pow((x-[2])/[3], 2)) )', d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParameters(1000, 0.5, 164, 50)
-            d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
-            d_energy_information[source]['func'].SetParLimits(1, 0, 1)
-            d_energy_information[source]['func'].SetParLimits(2, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParLimits(3, 1, 50)
-
-        elif source == 'co57':
-
-            d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1] + (1.-[1])/(2*3.141592)^0.5/[3]*exp(-0.5*pow((x-[2])/[3], 2)) )', d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParameters(1000, 0.5, 164, 50)
-            d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
-            d_energy_information[source]['func'].SetParLimits(1, 0, 1)
-            d_energy_information[source]['func'].SetParLimits(2, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func'].SetParLimits(3, 1, 50)
+            for i in xrange(len(l_settings)):
+                l_settings[i][0] = correct_degree_setting
 
 
 
-        d_energy_information[source]['hist'].Fit(d_energy_information[source]['func'], 'LR')
-        d_energy_information[source]['func'].Draw('same')
-        d_energy_information[source]['canvas'].Update()
-
-        raw_input('\nFit okay?\n')
+            # transpose list of files such that
+            # files of the same cathode voltage are together
+            l_files = map(list, zip(*l_files))
 
 
-        # set lower and upper bounds such that guassian is mostly included
-        # but minimal bkg is included
-        d_energy_information[source]['lbCES_gaus_only'] = d_energy_information[source]['func'].GetParameter(3) - bounds_width_inclusion*d_energy_information[source]['func'].GetParameter(4)
-        d_energy_information[source]['ubCES_gaus_only'] = d_energy_information[source]['func'].GetParameter(3) + bounds_width_inclusion*d_energy_information[source]['func'].GetParameter(4)
+            for cur_index, files_at_setting in enumerate(l_files):
+                # if fitting a full run, "file" is actually a list of
+                # files for a given cathode setting
+                # name is from older version
 
-        #print d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES']
+                current_analysis = neriX_analysis.neriX_analysis(list(files_at_setting), *l_settings[cur_index])
+
+                current_analysis.add_z_cut()
+                #current_analysis.add_z_cut(0, -12) # top only
+                current_analysis.add_single_scatter_cut()
+                current_analysis.add_radius_cut(0, 0.85)
+                current_analysis.add_cut('(s1asym > 0)')
+
+                run_number = current_analysis.get_run()
+
+                current_analysis.set_event_list()
+                
+                """
+                c_test = Canvas()
+                h_test = Hist2D(40, 500, 5000, 40, 3e5, 9e5)
+                current_analysis.Draw('cpS1sTotBottom[0]:ctS2sTotBottom[0]', hist=h_test)
+                h_test.Draw('colz')
+                c_test.Update()
+                raw_input()
+                """
+
+                if cur_index == 0:
+                    if len(files_at_setting) == 1:
+                        self.s_directory_save_name = './results/run_%d/%s/' % (run_number, files_at_setting[0][:12])
+                    else:
+                        self.s_directory_save_name = './results/run_%d_combination/' % (run_number)
+            
+                    if not os.path.exists(self.s_directory_save_name):
+                        os.makedirs(self.s_directory_save_name)
 
 
-        # will fit background with gaussian
-        # background can be either exponential or constant
-        # exponential: Cs137, Na22
-        # constant: Co57, bkg peaks
-        sCES_arr = '(0.0137*(S1/%f + S2/%f)) > %f && (0.0137*(S1/%f + S2/%f)) < %f' % (g1_test, g2_test, d_energy_information[source]['lbCES_gaus_only'], g1_test, g2_test, d_energy_information[source]['ubCES_gaus_only'])
+                for j in xrange(len(list(files_at_setting))):
+                    #print s1_par, s2_par
+                    current_tree = tree2array(current_analysis.get_T1(j), [s1_par, s2_par], selection=current_analysis.get_cuts())
+                    current_tree.dtype.names = column_names
+                    column_dtype = current_tree.dtype
+                    for i, column_name in enumerate(current_tree.dtype.names):
+                        l_columns[i] = np.append(l_columns[i], current_tree[column_name])
+
+                del current_analysis
+
+            a_combined_tree = np.empty(len(l_columns[0]), dtype=column_dtype)
+            for i, column_name in enumerate(column_names):
+                a_combined_tree[column_name] = l_columns[i]
+
+            self.d_energy_information[source]['combined_tree'] = array2tree(a_combined_tree, name='combined_tree_%s' % (source))
 
 
-        d_s1_s2_arrays[source] = tree2array(d_energy_information[source]['combined_tree'], ['S1', 'S2'], selection=sCES_arr)
+            # ---------- MAKE CES CUT ----------
+
+            # no time correction: 0.08, 14.
+            g1_test = 0.1308 #0.12
+            g2_test = 0.978*21.46 #28.
+
+            self.d_energy_information[source]['canvas'] = Canvas(width=900, height=700, name='cCES')
+            self.d_energy_information[source]['canvas'].SetGridx()
+            self.d_energy_information[source]['canvas'].SetGridy()
+
+            self.d_energy_information[source]['hist'] = Hist(self.d_energy_information[source]['num_bins'], 0, self.d_energy_information[source]['ub_ces'], name='hCES_%s' % (source), title='hCES_%s' % (source), drawstyle='hist')
+            self.d_energy_information[source]['combined_tree'].Draw('0.0137*(S1/%f + S2/%f)>>hCES_%s' % (g1_test, g2_test, source))
+
+            self.d_energy_information[source]['hist'].Draw()
+            self.d_energy_information[source]['canvas'].Update()
+
+            print self.d_energy_information[source]['hist']
+
+            #self.d_energy_information[source]['lbCES'] = float(raw_input('\n\nPlease enter lower bound on combined energy scale: '))
+            #self.d_energy_information[source]['ubCES'] = float(raw_input('\n\nPlease enter upper bound on combined energy scale: '))
+
+            #print '\n\nDEBUG MODE SKIPPING LIMIT PICKS\n\n'
+            #self.d_energy_information[source]['lbCES'] = 400
+            #self.d_energy_information[source]['ubCES'] = 700
+
+            if source == 'cs137':
+
+                self.d_energy_information[source]['lbCES'] = 550
+                self.d_energy_information[source]['ubCES'] = 800
+
+                self.d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )' % (self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES']), self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParameters(1000, 0.5, 150, 500, 662, 50)
+                self.d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
+                self.d_energy_information[source]['func'].SetParLimits(1, 0, 1)
+                self.d_energy_information[source]['func'].SetParLimits(2, 50, 1000)
+                self.d_energy_information[source]['func'].SetParLimits(3, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParLimits(4, 10, 100)
+
+
+            elif source == 'na22':
+            
+                self.d_energy_information[source]['lbCES'] = 420
+                self.d_energy_information[source]['ubCES'] = 620
+
+                self.d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )' % (self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES']), self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParameters(1000, 0.7, 170, 511, 20)
+                self.d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
+                self.d_energy_information[source]['func'].SetParLimits(1, 0, 1)
+                self.d_energy_information[source]['func'].SetParLimits(2, 10, 500)
+                self.d_energy_information[source]['func'].SetParLimits(3, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParLimits(4, 10, 100)
+
+
+            elif source == 'bkg':
+
+                self.d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1] + (1.-[1])/(2*3.141592)^0.5/[3]*exp(-0.5*pow((x-[2])/[3], 2)) )', self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParameters(1000, 0.5, 164, 50)
+                self.d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
+                self.d_energy_information[source]['func'].SetParLimits(1, 0, 1)
+                self.d_energy_information[source]['func'].SetParLimits(2, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParLimits(3, 1, 50)
+
+            elif source == 'co57':
+
+                self.d_energy_information[source]['func'] = root.TF1('fGausCES_%s' % (source), '[0]*( [1] + (1.-[1])/(2*3.141592)^0.5/[3]*exp(-0.5*pow((x-[2])/[3], 2)) )', self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParameters(1000, 0.5, 164, 50)
+                self.d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
+                self.d_energy_information[source]['func'].SetParLimits(1, 0, 1)
+                self.d_energy_information[source]['func'].SetParLimits(2, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParLimits(3, 1, 50)
 
 
 
-    for source in d_s1_s2_arrays:
-        print source
-        print d_s1_s2_arrays[source]['S1'].mean()
-        print d_s1_s2_arrays[source]['S2'].mean()
+            self.d_energy_information[source]['hist'].Fit(self.d_energy_information[source]['func'], 'LR')
+            self.d_energy_information[source]['func'].Draw('same')
+            self.d_energy_information[source]['canvas'].Update()
 
 
-    def ln_prior_g1_g2(g1, g2):
-        if 0.09 < g1 < 0.15 and 15. < g2 < 33.:
+
+            #raw_input('\nFit okay?\n')
+
+
+            # set lower and upper bounds such that guassian is mostly included
+            # but minimal bkg is included
+            self.d_energy_information[source]['lbCES_gaus_only'] = self.d_energy_information[source]['func'].GetParameter(3) - bounds_width_inclusion*self.d_energy_information[source]['func'].GetParameter(4)
+            self.d_energy_information[source]['ubCES_gaus_only'] = self.d_energy_information[source]['func'].GetParameter(3) + bounds_width_inclusion*self.d_energy_information[source]['func'].GetParameter(4)
+
+            #print self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES']
+
+            trial_width = 2.
+
+            # will fit background with gaussian
+            # background can be either exponential or constant
+            # exponential: Cs137, Na22
+            # constant: Co57, bkg peaks
+            sCES_arr = '(0.0137*(S1/%f + S2/%f)) > %f && (0.0137*(S1/%f + S2/%f)) < %f' % (g1_test, g2_test, self.d_energy_information[source]['lbCES_gaus_only'], g1_test, g2_test, self.d_energy_information[source]['ubCES_gaus_only'])
+            
+            
+            
+            
+            # now deal with axis orthogonal to energy to deal
+            # with S1 scatters in dead volume
+            
+            self.d_energy_information[source]['c_orth'] = Canvas(width=900, height=700, name='cCES')
+
+            self.d_energy_information[source]['h_orth'] = Hist(100, -500, 600, name='h_orth_%s' % (source), title='h_orth_%s' % (source), drawstyle='hist')
+            self.d_energy_information[source]['combined_tree'].Draw('0.0137*(-S1/%f + S2/%f)>>h_orth_%s' % (g1_test, g2_test, source), sCES_arr, '')
+            
+            self.d_energy_information[source]['f_orth_trial'] = root.TF1('f_gaus_trial_%s' % (source), 'gaus', 50, 400)
+            self.d_energy_information[source]['h_orth'].Fit('f_gaus_trial_%s' % (source))
+            
+            self.d_energy_information[source]['f_orth'] = root.TF1('f_gaus_%s' % (source), 'gaus', self.d_energy_information[source]['f_orth_trial'].GetParameter(1) - trial_width*self.d_energy_information[source]['f_orth_trial'].GetParameter(2), self.d_energy_information[source]['f_orth_trial'].GetParameter(1) + trial_width*self.d_energy_information[source]['f_orth_trial'].GetParameter(2))
+            self.d_energy_information[source]['h_orth'].Fit('f_gaus_%s' % (source))
+            
+            self.d_energy_information[source]['h_orth'].Draw()
+            self.d_energy_information[source]['f_orth'].Draw('same')
+            self.d_energy_information[source]['c_orth'].Update()
+            
+            orth_lb_cut = self.d_energy_information[source]['f_orth'].GetParameter(1) - bounds_width_inclusion*self.d_energy_information[source]['f_orth'].GetParameter(2)
+            orth_ub_cut = self.d_energy_information[source]['f_orth'].GetParameter(1) + bounds_width_inclusion*self.d_energy_information[source]['f_orth'].GetParameter(2)
+            
+            #raw_input('press enter to continue')
+            
+            
+            
+            # make ces and orthogonal figures to show cuts and save
+            
+            self.d_energy_information[source]['fig_ces'], self.d_energy_information[source]['ax_ces'] = plt.subplots(1)
+            
+            self.d_energy_information[source]['ax_ces'].hist(0.0137 * (a_combined_tree['S1']/g1_test + a_combined_tree['S2']/g2_test), bins=self.d_energy_information[source]['num_bins'], range=[0, self.d_energy_information[source]['ub_ces']])
+            self.d_energy_information[source]['ax_ces'].axvline(self.d_energy_information[source]['lbCES_gaus_only'], color='r', linestyle='--')
+            self.d_energy_information[source]['ax_ces'].axvline(self.d_energy_information[source]['ubCES_gaus_only'], color='r', linestyle='--')
+            
+            self.d_energy_information[source]['ax_ces'].set_title(r'Full Energy Cut')
+            self.d_energy_information[source]['ax_ces'].set_xlabel(r'$w(\frac{S1}{g_1} + \frac{S2}{\eta g_{gas}}) [keV]$')
+            self.d_energy_information[source]['ax_ces'].set_ylabel('Counts')
+            
+            self.d_energy_information[source]['fig_ces'].savefig(self.s_directory_save_name + self.s_base_save_name + '%s_ces_cut.png' % (source))
+            
+            
+            
+            a_ces_cut_only = tree2array(self.d_energy_information[source]['combined_tree'], ['S1', 'S2'], selection='%s' % (sCES_arr))
+            self.d_energy_information[source]['fig_orth'], self.d_energy_information[source]['ax_orth'] = plt.subplots(1)
+            
+            self.d_energy_information[source]['ax_orth'].hist(0.0137 * (-a_ces_cut_only['S1']/g1_test + a_ces_cut_only['S2']/g2_test), bins=orth_bins, range=[orth_min, orth_max])
+            self.d_energy_information[source]['ax_orth'].axvline(orth_lb_cut, color='r', linestyle='--')
+            self.d_energy_information[source]['ax_orth'].axvline(orth_ub_cut, color='r', linestyle='--')
+            
+            self.d_energy_information[source]['ax_orth'].set_title(r'Dead Volume Scatter Removal')
+            self.d_energy_information[source]['ax_orth'].set_xlabel(r'$w(-\frac{S1}{g_1} + \frac{S2}{\eta g_{gas}}) [keV]$')
+            self.d_energy_information[source]['ax_orth'].set_ylabel('Counts')
+            
+            self.d_energy_information[source]['fig_orth'].savefig(self.s_directory_save_name + self.s_base_save_name + '%s_orth_cut.png' % (source))
+            
+            
+            
+            
+            s_orth_cut = '(0.0137*(-S1/%f + S2/%f)) > %f && (0.0137*(-S1/%f + S2/%f)) < %f' % (g1_test, g2_test, orth_lb_cut, g1_test, g2_test, orth_ub_cut)
+
+
+            self.d_s1_s2_arrays[source] = tree2array(self.d_energy_information[source]['combined_tree'], ['S1', 'S2'], selection='(%s) && (%s)' % (sCES_arr, s_orth_cut))
+    
+    
+            if 'cs137' in d_files:
+                self.d_source_functions['cs137'] = {}
+                self.d_source_functions['cs137']['lbCES'] = self.d_energy_information[source]['lbCES']
+                self.d_source_functions['cs137']['ubCES'] = self.d_energy_information[source]['ubCES']
+                self.d_source_functions['cs137']['ln_prior'] = self.ln_prior_greater_than_zero
+                self.d_source_functions['cs137']['ln_likelihood'] = self.ln_likelihood_cs137
+    
+            if 'na22' in d_files:
+                self.d_source_functions['na22'] = {}
+                self.d_source_functions['na22']['lbCES'] = self.d_energy_information[source]['lbCES']
+                self.d_source_functions['na22']['ubCES'] = self.d_energy_information[source]['ubCES']
+                self.d_source_functions['na22']['ln_prior'] = self.ln_prior_greater_than_zero
+                self.d_source_functions['na22']['ln_likelihood'] = self.ln_likelihood_na22
+                
+        
+
+
+
+        
+    def get_correction_factor(self):
+        # should eventually read from file Zach gives
+        # or better yet just be a constant
+        correction_factor = 1.07
+        neriX_analysis.warning_message('Using hard coded correction: %.2e' % correction_factor)
+        return correction_factor
+    
+    
+    
+    
+    
+    def ln_prior_greater_than_zero(self, par):
+        if par > 0.:
             return 0.
         else:
             return -np.inf
 
 
-    def ln_prior_w_normal(w_value):
+
+    def ln_prior_between_zero_and_one(self, par):
+        if 0. < par < 1.:
+            return 0.
+        else:
+            return -np.inf
+
+
+
+    def ln_prior_gas_gain(self, gas_gain):
+        measured_value = 21.29
+        measured_uncertainty = 0.53
+        return np.log(1./(2*np.pi)**0.5/measured_uncertainty) - 0.5*(gas_gain-measured_value)**2/measured_uncertainty**2
+
+
+
+    def ln_prior_w_normal(self, w_value):
         measured_value = 13.7
-        measured_uncertainty = 0.2
+        measured_uncertainty = 0.4
         return np.log(1./(2*np.pi)**0.5/measured_uncertainty) - 0.5*(w_value-measured_value)**2/measured_uncertainty**2
 
 
@@ -330,75 +445,37 @@ def fit_anticorrelation(d_files, batch_mode=False):
             return -np.inf
 
 
-    # create dictionary for storing info about functions
-    # for each source and required parameters
-    d_source_functions = {}
-
-    # ------------------------------------------
-    # ------------------------------------------
-    # Prior and likelihood functions
-    # for Cs137
-    # ------------------------------------------
-    # ------------------------------------------
 
 
-    def ln_prior_cs137(s2_width_cs137):
-        if 5e3 < s2_width_cs137 < 1e5:
-            return 0.
-        else:
-            return -np.inf
-
-
-    def ln_likelihood_cs137(a_s1, a_s2, g1, g2, w_value, s2_width_cs137):
+    def ln_likelihood_cs137(self, a_s1, a_s2, g1, eta, gas_gain, w_value, s2_width_cs137):
+        g2 = eta*gas_gain
+        """
         a_model_s2 = -(g2/g1)*a_s1 + 662.*g2/(w_value/1000.)
         #print g1, g2, w_value, s2_width_cs137
         return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_cs137) - 0.5*(a_s2-a_model_s2)**2/s2_width_cs137**2)
+        """
+        a_energy = 0.0137 * (a_s1/g1 + a_s2/g2)
+        return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_cs137) - 0.5*(a_energy-662.)**2/s2_width_cs137**2)
+        
 
-    if 'cs137' in d_files:
-        d_source_functions['cs137'] = {}
-        d_source_functions['cs137']['lbCES'] = d_energy_information[source]['lbCES']
-        d_source_functions['cs137']['ubCES'] = d_energy_information[source]['ubCES']
-        d_source_functions['cs137']['ln_prior'] = ln_prior_cs137
-        d_source_functions['cs137']['ln_likelihood'] = ln_likelihood_cs137
-        d_source_functions['cs137']['pars'] = [0. for i in xrange(d_source_functions['cs137']['ln_prior'].__code__.co_argcount)]
-        d_source_functions['cs137']['par_guesses'] = [4e4]
-
-    # ------------------------------------------
-    # ------------------------------------------
-    # Prior and likelihood functions
-    # for Na22
-    # ------------------------------------------
-    # ------------------------------------------
-
-
-    def ln_prior_na22(s2_width_na22):
-        if 5e3 < s2_width_na22 < 1e5:
-            return 0.
-        else:
-            return -np.inf
-
-
-    def ln_likelihood_na22(a_s1, a_s2, g1, g2, w_value, s2_width_na22):
+    
+    def ln_likelihood_na22(self, a_s1, a_s2, g1, eta, gas_gain, w_value, s2_width_na22):
+        g2 = eta*gas_gain
+        """
         a_model_s2 = -(g2/g1)*a_s1 + 511.*g2/(w_value/1000.)
         #print g1, g2, w_value, s2_width_na22
         return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_na22) - 0.5*(a_s2-a_model_s2)**2/s2_width_na22**2)
-
-
-
-    if 'na22' in d_files:
-        d_source_functions['na22'] = {}
-        d_source_functions['na22']['lbCES'] = d_energy_information[source]['lbCES']
-        d_source_functions['na22']['ubCES'] = d_energy_information[source]['ubCES']
-        d_source_functions['na22']['ln_prior'] = ln_prior_na22
-        d_source_functions['na22']['ln_likelihood'] = ln_likelihood_na22
-        d_source_functions['na22']['pars'] = [0. for i in xrange(d_source_functions['na22']['ln_prior'].__code__.co_argcount)]
-        d_source_functions['na22']['par_guesses'] = [3e4]
-
-
-    def ln_posterior(a_parameters, d_s1_s2_arrays, d_source_functions):
+        """
+        a_energy = 0.0137 * (a_s1/g1 + a_s2/g2)
+        return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_na22) - 0.5*(a_energy-511.)**2/s2_width_na22**2)
+    
+    
+    
+    
+    def ln_posterior(self, a_parameters, d_s1_s2_arrays, d_source_functions):
         prev_index = 0
-        cur_index = 3
-        g1, g2, w_value = a_parameters[prev_index:cur_index]
+        cur_index = 4
+        g1, eta, gas_gain, w_value = a_parameters[prev_index:cur_index]
         prev_index = cur_index
 
 
@@ -407,24 +484,14 @@ def fit_anticorrelation(d_files, batch_mode=False):
 
         if 'cs137' in d_source_functions:
             # need -1 since have to feed in the estimate
-            cur_index += d_source_functions['cs137']['ln_prior'].__code__.co_argcount
+            cur_index += 1
             d_source_functions['cs137']['pars'] = a_parameters[prev_index:cur_index]
             prev_index = cur_index
 
         if 'na22' in d_source_functions:
             # need -1 since have to feed in the estimate
-            cur_index += d_source_functions['na22']['ln_prior'].__code__.co_argcount
+            cur_index += 1
             d_source_functions['na22']['pars'] = a_parameters[prev_index:cur_index]
-            prev_index = cur_index
-
-        if 'bkg' in d_source_functions:
-            cur_index += d_source_functions['bkg']['ln_prior'].__code__.co_argcount
-            d_source_functions['bkg']['pars'] = a_parameters[prev_index:cur_index]
-            prev_index = cur_index
-
-        if 'co57' in d_source_functions:
-            cur_index += d_source_functions['co57']['ln_prior'].__code__.co_argcount
-            d_source_functions['co57']['pars'] = a_parameters[prev_index:cur_index]
             prev_index = cur_index
 
 
@@ -432,13 +499,10 @@ def fit_anticorrelation(d_files, batch_mode=False):
         #print a_parameters
 
         tot_ln_likelihood = 0
-        tot_ln_likelihood += ln_prior_g1_g2(g1, g2)
-
-        if len(d_source_functions) == 1:
-            tot_ln_likelihood += ln_prior_w_normal(w_value)
-        else:
-            tot_ln_likelihood += ln_prior_w_normal(w_value)
-            #tot_ln_likelihood += ln_prior_w_uniform(w_value)
+        tot_ln_likelihood += self.ln_prior_between_zero_and_one(g1)
+        tot_ln_likelihood += self.ln_prior_between_zero_and_one(eta)
+        tot_ln_likelihood += self.ln_prior_gas_gain(gas_gain)
+        tot_ln_likelihood += self.ln_prior_w_normal(w_value)
 
         if not np.isfinite(tot_ln_likelihood):
             return -np.inf
@@ -452,7 +516,7 @@ def fit_anticorrelation(d_files, batch_mode=False):
                 #print 'new iteration'
                 #print tot_ln_likelihood
                 #print d_source_functions[source]['ln_likelihood'](d_s1_s2_arrays[source]['S1'], d_s1_s2_arrays[source]['S2'], g1, g2, w_value, *d_source_functions[source]['pars'])
-                tot_ln_likelihood += d_source_functions[source]['ln_likelihood'](d_s1_s2_arrays[source]['S1'], d_s1_s2_arrays[source]['S2'], g1, g2, w_value, *d_source_functions[source]['pars'])
+                tot_ln_likelihood += d_source_functions[source]['ln_likelihood'](d_s1_s2_arrays[source]['S1'], d_s1_s2_arrays[source]['S2'], g1, eta, gas_gain, w_value, *d_source_functions[source]['pars'])
                 #print tot_ln_likelihood
             #print 'end call'
             if np.isfinite(tot_ln_likelihood):
@@ -464,269 +528,222 @@ def fit_anticorrelation(d_files, batch_mode=False):
 
 
 
-    # independent of energies looked at
-    num_walkers = 1024
-    num_steps = 200
-    num_dim = 3
-    starting_values = [g1_test, g2_test, 13.7]
-    par_names = ['g1', 'g2', 'w_value']
 
 
-    # add in contributions that depend on the files
-    for source in l_acceptable_energies:
-        if source in d_files:
-            num_dim += d_source_functions[source]['ln_prior'].__code__.co_argcount
-            starting_values += d_source_functions[source]['par_guesses']
-            par_names += d_source_functions[source]['ln_prior'].__code__.co_varnames
-            #if source == 'cs137' or source=='na22':
-            #	num_dim -= 2
-            #	par_names = par_names[:-2]
+    def run_mcmc(self, num_walkers, num_steps, threads=1):
 
-    # randomize the start location around the guesses
-    starting_pos = [(np.random.randn(num_dim)*starting_values)*(0.01) + starting_values for i in xrange(num_walkers)]
+        l_value_guesses = [0.13, 0.97, 21.5, 13.7, 33, 25]
+        l_std_guesses = [0.01, 0.01, 0.5, 0.4, 3, 3]
+        l_par_names = ['g1', 'eta', 'gas_gain', 'w_value', 'cs137_stdev', 'na22_stdev']
 
-    #print starting_values
+        if not os.path.exists(self.s_directory_save_name):
+            os.makedirs(self.s_directory_save_name)
+        
+        num_dim = len(l_value_guesses)
+        
+        
+        loaded_prev_sampler = False
+        try:
+            # two things will fail potentially
+            # 1. open if file doesn't exist
+            # 2. posWalkers load since initialized to None
 
-    sampler = emcee.EnsembleSampler(num_walkers, num_dim, ln_posterior, threads=1, kwargs={'d_s1_s2_arrays':d_s1_s2_arrays, 'd_source_functions':d_source_functions})
+            with open(self.s_directory_save_name + self.s_dict_filename, 'r') as f_prev_sampler:
 
-    with click.progressbar(sampler.sample(starting_pos, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+                d_sampler = pickle.load(f_prev_sampler)
+                prevSampler = d_sampler[num_walkers][-1]
+
+
+                # need to load in weird way bc can't pickle
+                # ensembler object
+                a_starting_pos = prevSampler['_chain'][:,-1,:]
+                random_state = prevSampler['_random']
+            loaded_prev_sampler = True
+            print '\nSuccessfully loaded previous chain!\n'
+        except:
+            print '\nCould not load previous sampler or none existed - starting new sampler.\n'
+
+        if not loaded_prev_sampler:
+
+            a_starting_pos = emcee.utils.sample_ball(l_value_guesses, l_std_guesses, size=num_walkers)
+
+            random_state = None
+
+            # create file if it doesn't exist
+            if not os.path.exists(self.s_directory_save_name + self.s_dict_filename):
+                with open(self.s_directory_save_name + self.s_dict_filename, 'w') as f_prev_sampler:
+                    d_sampler = {}
+
+                    d_sampler[num_walkers] = []
+
+                    pickle.dump(d_sampler, f_prev_sampler)
+            else:
+                with open(self.s_directory_save_name + self.s_dict_filename, 'r') as f_prev_sampler:
+                    d_sampler = pickle.load(f_prev_sampler)
+                with open(self.s_directory_save_name + self.s_dict_filename, 'w') as f_prev_sampler:
+
+                    d_sampler[num_walkers] = []
+
+                    pickle.dump(d_sampler, f_prev_sampler)
+        
+        
+        
+        
+
+        #print a_starting_pos
+
+        #sampler = emcee.EnsembleSampler(num_walkers, num_dim, ln_posterior, threads=threads)
+        sampler = emcee.DESampler(num_walkers, num_dim, self.ln_posterior, threads=threads, autoscale_gamma=True, args=[self.d_s1_s2_arrays, self.d_source_functions])
+        
+        print '\n\nBeginning MCMC sampler\n\n'
+        print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (num_walkers, num_steps, num_walkers*num_steps)
+        start_time_mcmc = time.time()
+
+        with click.progressbar(sampler.sample(a_starting_pos, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
             for pos, lnprob, state in mcmc_sampler:
                 pass
 
-    samples = sampler.chain[:, -10:, :].reshape((-1, num_dim))
+        total_time_mcmc = (time.time() - start_time_mcmc) / 3600.
+        print '\n\n%d function calls took %.2f hours.\n\n' % (num_walkers*num_steps, total_time_mcmc)
 
-    #print samples
-    fig = corner.corner(samples, labels=par_names, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_kwargs={"fontsize": 12})
-    a_means_g1_g2 = np.mean(samples, axis=0)[:2]
-    a_cov_matrix_g1_g2 = np.cov(samples.T)[:2,:2]
 
-    a_means_g1_g2 = list(a_means_g1_g2)
-    a_cov_matrix_g1_g2 = list(a_cov_matrix_g1_g2)
-    for i in xrange(2):
-        a_cov_matrix_g1_g2[i] = list(a_cov_matrix_g1_g2[i])
+        dictionary_for_sampler = sampler.__dict__
+        dictionary_for_sampler = {'_chain':dictionary_for_sampler['_chain'], '_random':dictionary_for_sampler['_random']}
+        if 'lnprobfn' in dictionary_for_sampler:
+            del dictionary_for_sampler['lnprobfn']
+        if 'pool' in dictionary_for_sampler:
+            del dictionary_for_sampler['pool']
 
-    print a_means_g1_g2
-    # [0.12961637894547148, 20.88715549107226]
-    print a_cov_matrix_g1_g2
-    # [[3.6039167387306653e-06, 0.00057442202683395834], [0.00057442202683395834, 0.093143781598001851]]
 
-    if not os.path.exists(directory_save_name):
-        os.makedirs(directory_save_name)
-    fig.savefig(directory_save_name + base_save_name + 'corner.png')
+        with open(self.s_directory_save_name + self.s_dict_filename, 'r') as f_prev_sampler:
+            d_sampler = pickle.load(f_prev_sampler)
+        #f_prev_sampler.close()
 
-    distance_from_median = 34.
+        f_prev_sampler = open(self.s_directory_save_name + self.s_dict_filename, 'w')
 
-    g1_low, g1_median, g1_high = np.percentile(samples[:, 0], [50.-distance_from_median, 50., 50.+distance_from_median])
-    g1_low = g1_median - g1_low
-    g1_high = g1_high - g1_median
+        d_sampler[num_walkers].append(dictionary_for_sampler)
 
-    g2_low, g2_median, g2_high = np.percentile(samples[:, 1], [50.-distance_from_median, 50., 50.+distance_from_median])
-    g2_low = g2_median - g2_low
-    g2_high = g2_high - g2_median
+        pickle.dump(d_sampler, f_prev_sampler)
+        f_prev_sampler.close()
 
-    w_low, w_median, w_high = np.percentile(samples[:, 2], [50.-distance_from_median, 50., 50.+distance_from_median])
-    w_low = w_median - w_low
-    w_high = w_high - w_median
 
-    #d_energy_information[source]['peaks']
 
-    c_s1_s2 = Canvas(900, 700)
 
-    s1_num_bins = 50
-    s1_low = 200
-    s1_high = 4000
 
-    s2_num_bins = 50
-    s2_low = 100e3
-    s2_high = 900e3
 
-    for index_2d_hists, source in enumerate(d_energy_information):
-        d_energy_information[source]['hist_s1_s2'] = Hist2D(s1_num_bins, s1_low, s1_high, s2_num_bins, s2_low, s2_high, name='hist_s1_s2_%s' % (source), title='S1 and S2 after CES Cut')
-        d_energy_information[source]['hist_s1_s2'].SetColor(d_energy_information[source]['color'])
-        d_energy_information[source]['hist_s1_s2'].SetMarkerSize(0)
-        d_energy_information[source]['hist_s1_s2'].SetStats(0)
+    def draw_anticorrelation_plots(self, num_walkers, num_steps_to_include):
+        
+        l_par_names = ['g1', 'eta', 'gas_gain', 'w_value', 'cs137_stdev', 'na22_stdev']
+        num_dim = len(l_par_names)
+        
+        sPathToFile = self.s_directory_save_name + self.s_dict_filename
+        
+        if os.path.exists(sPathToFile):
+            dSampler = pickle.load(open(sPathToFile, 'r'))
+            l_chains = []
+            for sampler in dSampler[num_walkers]:
+                l_chains.append(sampler['_chain'])
 
-        a_temp = np.column_stack([d_s1_s2_arrays[source]['S1'], d_s1_s2_arrays[source]['S2']])
-        d_energy_information[source]['hist_s1_s2'].fill_array(a_temp)
+            a_sampler = np.concatenate(l_chains, axis=1)
 
-        if index_2d_hists == 0:
-            d_energy_information[source]['hist_s1_s2'].Draw()
+            print 'Successfully loaded sampler!'
         else:
-            d_energy_information[source]['hist_s1_s2'].Draw('same')
-
-        source_slope = -g2_median / g1_median
-        source_intercept = d_energy_information[source]['peaks'] * g2_median / (w_median/1000.)
-
-        d_energy_information[source]['f_ac_pol1'] = root.TF1('f_ac_pol1_%s' % (source), 'pol1', s1_low, s1_high)
-        d_energy_information[source]['f_ac_pol1'].SetParameters(source_intercept, source_slope)
-        d_energy_information[source]['f_ac_pol1'].SetLineColor(root.kBlack)
-        d_energy_information[source]['f_ac_pol1'].Draw('same')
-
-        c_s1_s2.Update()
-
-    tpt_ac = root.TPaveText(.65,.7,.85,.85,'blNDC')
-    tpt_ac.AddText('g_{1} = %.3f^{+%.3f}_{-%.3f} #frac{PE}{photon}' % (g1_median, g1_high, g1_low))
-    tpt_ac.AddText('g_{2} = %.2f^{+%.2f}_{-%.2f} #frac{PE}{electron}' % (g2_median, g2_high, g2_low))
-    tpt_ac.AddText('w = %.2f^{+%.2f}_{-%.2f} #frac{eV}{quanta}' % (w_median, w_high, w_low))
-    tpt_ac.SetTextColor(root.kBlack)
-    tpt_ac.SetFillStyle(0)
-    tpt_ac.SetBorderSize(0)
-    tpt_ac.Draw('same')
-    c_s1_s2.Update()
-
-    neriX_analysis.save_plot(directory_save_name, c_s1_s2, base_save_name + 's1_s2')
-
-    # ------------------------------------------
-    # ------------------------------------------
-    # Perform second round of fitting to
-    # determine resolution
-    # ------------------------------------------
-    # ------------------------------------------
-
-    for source in d_energy_information:
-        d_energy_information[source]['canvas_final_spec'] = Canvas(width=900, height=700, name='cCES_final_%s' % (source))
-        d_energy_information[source]['canvas_final_spec'].SetGridx()
-        d_energy_information[source]['canvas_final_spec'].SetGridy()
-
-        d_energy_information[source]['hist_final_spec'] = Hist(d_energy_information[source]['num_bins'], 0, d_energy_information[source]['ub_ces'], name='hCES_final_%s' % (source), title='%s Energy Spectrum' % (source), drawstyle='hist')
-        d_energy_information[source]['combined_tree'].Draw('%f*(S1/%f + S2/%f)>>hCES_final_%s' % (w_median/1000., g1_median, g2_median, source))
-
-        d_energy_information[source]['hist_final_spec'].SetStats(0)
-        d_energy_information[source]['hist_final_spec'].Draw()
-        d_energy_information[source]['canvas_final_spec'].Update()
-
-
-        if source == 'cs137':
-            d_energy_information[source]['func_final_spec'] = root.TF1('fGausCES_final_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )' % (d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES']), d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-
-            d_energy_information[source]['func_final_spec'].SetParameters(d_energy_information[source]['func'].GetParameter(0), d_energy_information[source]['func'].GetParameter(1), d_energy_information[source]['func'].GetParameter(2), d_energy_information[source]['func'].GetParameter(3), d_energy_information[source]['func'].GetParameter(4))
-            d_energy_information[source]['func_final_spec'].SetParLimits(0, 1, 1e8)
-            d_energy_information[source]['func_final_spec'].SetParLimits(1, 0, 1)
-            d_energy_information[source]['func_final_spec'].SetParLimits(2, 50, 1000)
-            d_energy_information[source]['func_final_spec'].SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func_final_spec'].SetParLimits(4, 10, 100)
-
-        elif source == 'na22':
-            d_energy_information[source]['func_final_spec'] = root.TF1('fGausCES_final_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )' % (d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES']), d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func_final_spec'].SetParameters(1000, 0.7, 170, 511, 20)
-            d_energy_information[source]['func_final_spec'].SetParLimits(0, 1, 1e8)
-            d_energy_information[source]['func_final_spec'].SetParLimits(1, 0, 1)
-            d_energy_information[source]['func_final_spec'].SetParLimits(2, 10, 500)
-            d_energy_information[source]['func_final_spec'].SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            d_energy_information[source]['func_final_spec'].SetParLimits(4, 10, 100)
-        elif source == 'bkg':
-            print 'Not ready!!'
+            print sPathToFile
+            print 'Could not find file!'
             sys.exit()
-            """
-            d_energy_information[source]['func_final_spec'] = root.TF1('fGausCES_final_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2]) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )', d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            fGausCES.SetParameters(1000, 0.5, 100, 500, 511, 50)
-            fGausCES.SetParLimits(0, 1, 1e8)
-            fGausCES.SetParLimits(1, 0, 1)
-            fGausCES.SetParLimits(2, 10, 500)
-            fGausCES.SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            fGausCES.SetParLimits(4, 10, 100)
-            """
-        elif source == 'co57':
-            print 'Not ready!!'
-            sys.exit()
-            """
-            d_energy_information[source]['func_final_spec'] = root.TF1('fGausCES_final_%s' % (source), '[0]*( [1]/[2]*exp(-x/[2]) + (1.-[1])/(2*3.141592)^0.5/[4]*exp(-0.5*pow((x-[3])/[4], 2)) )', d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            fGausCES.SetParameters(1000, 0.5, 100, 500, 511, 50)
-            fGausCES.SetParLimits(0, 1, 1e8)
-            fGausCES.SetParLimits(1, 0, 1)
-            fGausCES.SetParLimits(2, 10, 500)
-            fGausCES.SetParLimits(3, d_energy_information[source]['lbCES'], d_energy_information[source]['ubCES'])
-            fGausCES.SetParLimits(4, 10, 100)
-            """
+        
+        a_sampler = a_sampler[:, -num_steps_to_include:, :num_dim].reshape((-1, num_dim))
+        
+        print 'Starting corner plot...\n'
+        start_time = time.time()
+        fig = corner.corner(a_sampler, labels=l_par_names, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+        print 'Corner plot took %.3f minutes.\n\n' % ((time.time()-start_time)/60.)
+        
+        if not os.path.exists(self.s_directory_save_name):
+            os.makedirs(self.s_directory_save_name)
+
+        fig.savefig(self.s_directory_save_name + self.s_base_save_name + 'corner.png')
+        
+        try:
+            print emcee.autocorr.integrated_time(np.mean(a_sampler, axis=0), axis=0,
+                                        low=10, high=None, step=1, c=2,
+                                        fast=False)
+        except:
+            print 'Chain too short to find autocorrelation time!'
 
 
+        distance_from_median = 34.
 
-        d_energy_information[source]['hist_final_spec'].Fit(d_energy_information[source]['func_final_spec'], 'LR')
-        d_energy_information[source]['func_final_spec'].Draw('same')
+        g1_low, g1_median, g1_high = np.percentile(a_sampler[:, 0], [50.-distance_from_median, 50., 50.+distance_from_median])
+        g1_low = g1_median - g1_low
+        g1_high = g1_high - g1_median
 
+        eta_low, eta_median, eta_high = np.percentile(a_sampler[:, 1], [50.-distance_from_median, 50., 50.+distance_from_median])
+        eta_low = eta_median - eta_low
+        eta_high = eta_high - eta_median
+        
+        gas_gain_low, gas_gain_median, gas_gain_high = np.percentile(a_sampler[:, 2], [50.-distance_from_median, 50., 50.+distance_from_median])
+        gas_gain_low = gas_gain_median - gas_gain_low
+        gas_gain_high = gas_gain_high - gas_gain_median
 
-        # find resolution from fit
-        mean_peak = d_energy_information[source]['func_final_spec'].GetParameter(3)
-        mean_peak_uncertainty = d_energy_information[source]['func_final_spec'].GetParError(3)
-        width_peak = d_energy_information[source]['func_final_spec'].GetParameter(4)
-        width_peak_uncertainty = d_energy_information[source]['func_final_spec'].GetParError(4)
-        resolution_peak = width_peak / mean_peak
-        resolution_peak_uncertainty = abs(resolution_peak) * ( (mean_peak_uncertainty/mean_peak)**2 + (width_peak_uncertainty/width_peak)**2 )**0.5
-
-        # create TPT for plot showing the resolution
-        d_energy_information[source]['tpt_final_spec'] = root.TPaveText(.55,.6,.85,.85,'blNDC')
-        d_energy_information[source]['tpt_final_spec'].AddText('R_{%s} = %.2e #pm %.2e' % (source, resolution_peak, resolution_peak_uncertainty))
-        d_energy_information[source]['tpt_final_spec'].SetTextColor(root.kRed)
-        d_energy_information[source]['tpt_final_spec'].SetFillStyle(0)
-        d_energy_information[source]['tpt_final_spec'].SetBorderSize(0)
-        d_energy_information[source]['tpt_final_spec'].Draw('same')
-
-
-        d_energy_information[source]['canvas_final_spec'].Update()
-
-        neriX_analysis.save_plot(directory_save_name, d_energy_information[source]['canvas_final_spec'], '%s_ces_spectrum' % (source))
-
-
+        w_low, w_median, w_high = np.percentile(a_sampler[:, 3], [50.-distance_from_median, 50., 50.+distance_from_median])
+        w_low = w_median - w_low
+        w_high = w_high - w_median
+        
+        cs_res_low, cs_res_median, cs_res_high = np.percentile(a_sampler[:, 3], [50.-distance_from_median, 50., 50.+distance_from_median])
+        cs_res_low = cs_res_median - cs_res_low
+        cs_res_high = cs_res_high - cs_res_median
+        
+        na_res_low, na_res_median, na_res_high = np.percentile(a_sampler[:, 3], [50.-distance_from_median, 50., 50.+distance_from_median])
+        na_res_low = na_res_median - na_res_low
+        na_res_high = na_res_high - na_res_median
 
 
+        lb_s1, ub_s1 = 1000, 3500
+        lb_s2, ub_s2 = 250e3, 900e3
 
-    raw_input('press enter')
+        x_line_s1 = np.linspace(lb_s1, ub_s1)
+        y_line_cs137 = (self.d_energy_information['cs137']['peaks'] * eta_median*gas_gain_median / (w_median/1000.)) - ((eta_median*gas_gain_median)/g1_median)*x_line_s1
+        y_line_na22 = (self.d_energy_information['na22']['peaks'] * eta_median*gas_gain_median / (w_median/1000.)) - ((eta_median*gas_gain_median)/g1_median)*x_line_s1
 
+        f1, ax1 = plt.subplots(1)
+        ax1.hist2d(np.concatenate((self.d_s1_s2_arrays['cs137']['S1'], self.d_s1_s2_arrays['na22']['S1'])), np.concatenate((self.d_s1_s2_arrays['cs137']['S2'], self.d_s1_s2_arrays['na22']['S2'])), bins=(80, 80), range=[[lb_s1, ub_s1], [lb_s2, ub_s2]])
+        ax1.plot(x_line_s1, y_line_cs137, color='r', linestyle='--')
+        ax1.plot(x_line_s1, y_line_na22, color='magenta', linestyle='--')
+
+        ax1.set_title(r'Anticorrelation of S1 and S2')
+        ax1.set_xlabel('S1 [PE]')
+        ax1.set_ylabel('S2 [PE]')
+
+        f1.savefig(self.s_directory_save_name + self.s_base_save_name + 's1_s2.png')
+
+        d_results = {'g1':{'median':g1_median, 'p_one_sig':g1_high, 'm_one_sig':g1_low},
+                     'eta':{'median':eta_median, 'p_one_sig':eta_high, 'm_one_sig':eta_low},
+                     'gas_gain':{'median':gas_gain_median, 'p_one_sig':gas_gain_high, 'm_one_sig':gas_gain_low},
+                     'w':{'median':w_median, 'p_one_sig':w_high, 'm_one_sig':w_low},
+                     'cs_res':{'median':cs_res_median, 'p_one_sig':cs_res_high, 'm_one_sig':cs_res_low},
+                     'na_res':{'median':na_res_median, 'p_one_sig':na_res_high, 'm_one_sig':na_res_low}}
+
+        pickle.dump(d_results, open(self.s_directory_save_name + self.s_base_save_name + 'results.p', 'w'))
 
 
 
 
 if __name__ == '__main__':
-
     d_files = {}
+    
+    #root.SetBatch(1)
 
 
     d_files['cs137'] = []
-    #d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
-    #d_files['cs137'].append(['nerix_160411_0612', 'nerix_160411_0644', 'nerix_160411_0712', 'nerix_160411_0739', 'nerix_160411_0925'])
-    d_files['cs137'].append(['nerix_160418_1026', 'nerix_160418_1052', 'nerix_160418_1120', 'nerix_160418_1145', 'nerix_160418_1210'])
-    #d_files['cs137'].append(['nerix_160425_1206', 'nerix_160425_1206', 'nerix_160425_1327', 'nerix_160425_1355', 'nerix_160425_1442'])
+    d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
     
-    #d_files['cs137'].append(['nerix_160531_1144', 'nerix_160531_1234', 'nerix_160531_1303', 'nerix_160425_1355', 'nerix_160531_1331'])
-    #d_files['cs137'].append(['nerix_160606_1155', 'nerix_160606_1225', 'nerix_160606_1254', 'nerix_160606_1347', 'nerix_160606_1421'])
-    
-    #d_files['cs137'].append(['nerix_160801_1145', 'nerix_160801_1300', 'nerix_160801_1328', 'nerix_160801_1356', 'nerix_160801_1424'])
+    d_files['na22'] = []
+    d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
 
-    #d_files['cs137'].append(['nerix_160803_1453', 'nerix_160803_1715', 'nerix_160803_1813', 'nerix_160804_0659', 'nerix_160804_0722'])
-    #d_files['cs137'].append(['nerix_160804_0949', 'nerix_160804_1035', 'nerix_160804_1125', 'nerix_160804_1205', 'nerix_160804_1248'])
-    #d_files['cs137'].append(['nerix_160804_1355', 'nerix_160804_1419', 'nerix_160804_1440', 'nerix_160804_1457'])
-    #d_files['cs137'].append(['nerix_160808_0625', 'nerix_160808_0701', 'nerix_160808_0712', 'nerix_160808_0724', 'nerix_160808_0736'])
-    #d_files['cs137'].append(['nerix_160808_0921', 'nerix_160808_0932', 'nerix_160808_0943', 'nerix_160808_0953', 'nerix_160808_1004'])
+    test = fit_anticorrelation(d_files)
+    test.run_mcmc(128, 500)
+    test.draw_anticorrelation_plots(128, 100)
 
-    """
-    lFiles.append(['nerix_160411_0612', 'nerix_160411_0644', 'nerix_160411_0712', 'nerix_160411_0739', 'nerix_160411_0925'])
-    lFiles.append(['nerix_160418_1026', 'nerix_160418_1052', 'nerix_160418_1120', 'nerix_160418_1145', 'nerix_160418_1210'])
-    lFiles.append(['nerix_160425_1206', 'nerix_160425_1234', 'nerix_160425_1327', 'nerix_160425_1355', 'nerix_160425_1442'])
-    lFiles.append(['nerix_160502_1059', 'nerix_160502_1134', 'nerix_160502_1208', 'nerix_160502_1234', 'nerix_160502_1302'])
-    lFiles.append(['nerix_160509_1157', 'nerix_160509_1226', 'nerix_160509_1252', 'nerix_160509_1320', 'nerix_160509_1350'])
-    lFiles.append(['nerix_160516_1226', 'nerix_160516_1255', 'nerix_160516_1322', 'nerix_160516_1351', 'nerix_160516_1418'])
-
-
-    # not time corrected
-    #lFiles = ['nerix_160523_1215', 'nerix_160523_1242', 'nerix_160523_1308', 'nerix_160523_1337', 'nerix_160523_1405']
-    #lFiles = ['nerix_160531_1144', 'nerix_160531_1234', 'nerix_160531_1303', 'nerix_160531_1331', 'nerix_160531_1357']
-    #lFiles = ['nerix_160606_1155', 'nerix_160606_1225', 'nerix_160606_1254', 'nerix_160606_1347', 'nerix_160606_1421']
-    #lFiles = ['', '', '', '', '']
-
-    #lFiles = ['nerix_160606_1155', 'nerix_160606_1225', 'nerix_160606_1254', 'nerix_160606_1347', 'nerix_160606_1421']
-
-    """
-
-    #d_files['na22'] = []
-    #d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
-
-    #d_files['bkg'] = []
-    #d_files['bkg'].append(['nerix_160404_1802', 'nerix_160405_0034', 'nerix_160405_0625', 'nerix_160405_0737', 'nerix_160405_0915'])
-
-    #d_files['co57'] = []
-    #d_files['co57'].append(['nerix_160802_0944', 'nerix_160802_1015', 'nerix_160802_1048', 'nerix_160802_1135', 'nerix_160802_1206'])
-
-
-    fit_anticorrelation(d_files)
 
 

@@ -1,251 +1,434 @@
+#!/usr/bin/python
+import pickle
+#print pickle.Pickler.dispatch
+import dill
+#print pickle.Pickler.dispatch
+
 import ROOT as root
-from rootpy.plotting import Canvas, Hist
-from rootpy.io import File, root_open
-import neriX_analysis
-import neriX_datasets
 import sys, os
+
+import matplotlib
+matplotlib.use('QT4Agg')
+import matplotlib.pyplot as plt
+
+from rootpy.plotting import root2matplotlib as rplt
+
+import emcee, corner, click
+import neriX_analysis, neriX_datasets, neriX_config
+from rootpy.plotting import Hist2D, Hist, Legend, Canvas
+from rootpy.tree import Tree
+from rootpy.io import File
 import numpy as np
-from scipy import stats
+import tqdm, time, copy_reg, types, pickle
+from root_numpy import tree2array, array2tree
+import scipy.optimize as op
+import scipy.special
+import scipy.misc
+import scipy.stats
 
-#print '\n\n\n\nBatch mode on.\n\n\n\n\n'
-#gROOT.SetBatch(True)
+import pandas as pd
 
+#print pickle.Pickler.dispatch
 
-def mpe_fitting(filename, run, num_photons, use_ideal=True):
+"""
+def _pickle_method(method):
+    print method.__dict__
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
+    return _unpickle_method, (func_name, obj, cls)
 
-    run_number = int(run)
-
-    if filename[-5:] == '.root':
-        filename = filename[:-5]
-
-    sDataPath = '/Users/Matt/Desktop/Xenon/neriX/data/run_%d/%s.root' % (run_number, filename)
-
-    sPathToSaveOutput = './results/run_' + str(run_number) + '/' + filename
-    aColors = [4, 2, 8, 7, 5, 9] + [4, 2, 8, 7, 5, 9]
-    max_num_events = 200000
-
-    bkg_mean_low = -5e5
-    bkg_mean_high = 5e5
-    bkg_width_low = 1e4
-    bkg_width_high = 1e6
-    spe_mean_low = 2e5
-    spe_mean_high = 2e6
-    spe_width_low = 1e5
-    spe_width_high = 1.5e6
-
-    mpe_par_guesses = [50000, 0, 3e5, 8e5, 5e5]
-
-
-    par_names = ['p0_ampl', 'mean_bkg', 'width_bkg', 'mean_spe', 'width_spe'] + ['p%d_ampl' % (i + 1) for i in xrange(num_photons)]
-
-
-    # 50 bins used previously
-    mpe_spec_binning = [100, -1.5e6, 4e6]
-
-    file_mpe = File(sDataPath, 'read')
-
-    if use_ideal:
-        l_mpe_fit_func = ['[%d]*exp(-0.5/%.1f*((x - %.1f*[3])/[4])**2)' % (iElectron + 4, iElectron, iElectron) for iElectron in xrange(1, num_photons + 1)]
-    else:
-        l_mpe_fit_func = ['[%d]*exp(-0.5*((x - %.1f*[3] - [1])/(%.1f*[4]**2 + [2]**2)**0.5)**2)' % (iElectron + 4, iElectron, iElectron) for iElectron in xrange(1, num_photons + 1)]
-
-    h_mpe_spec = Hist(*mpe_spec_binning, name='h_mpe_spec', title='h_mpe_spec')
-    h_mpe_spec.SetMarkerSize(0)
-
-    c1 = Canvas()
-
-    tree_mpe = file_mpe.T0
-    tree_mpe.Draw('SingleIntegral[16]', hist=h_mpe_spec)
-    h_mpe_spec.Draw()
-
-    s_bkg = '[0]*exp(-0.5*((x - [1])/[2])**2)'
-    s_fit_mpe = '(%s) + (%s)' % (s_bkg, ' + '.join(l_mpe_fit_func))
-    print 'Fit function: %s' % s_fit_mpe
-    fit_mpe = root.TF1('fit_mpe', s_fit_mpe, *mpe_spec_binning[1:])
-    fit_mpe.SetLineColor(46)
-    fit_mpe.SetLineStyle(2)
-    fit_mpe.SetLineWidth(3)
-
-
-    h_mpe_spec.GetXaxis().SetTitle('Integrated Charge [e-]')
-    h_mpe_spec.GetYaxis().SetTitle('Counts')
-    h_mpe_spec.GetYaxis().SetTitleOffset(1.4)
-    h_mpe_spec.SetStats(0)
-
-    fit_mpe.SetParLimits(0, 0, max_num_events)
-    fit_mpe.SetParLimits(1, bkg_mean_low, bkg_mean_high)
-    fit_mpe.SetParLimits(2, bkg_width_low, bkg_width_high)
-    fit_mpe.SetParLimits(3, spe_mean_low, spe_mean_high)
-    fit_mpe.SetParLimits(4, spe_width_low, spe_width_high)
-
-    for i, guess in enumerate(mpe_par_guesses):
-        fit_mpe.SetParameter(i, guess)
-
-    for i in xrange(len(par_names)):
-        fit_mpe.SetParName(i, par_names[i])
-
-    for photon in xrange(num_photons):
-        fit_mpe.SetParLimits(5 + photon, 0, max_num_events)
-
-    fitResult = h_mpe_spec.Fit('fit_mpe', 'SL')
-
-
-    # draw individual peaks
-    s_gaussian = '[0]*exp(-0.5/%.1f*((x - %.1f*[1])/[2])**2)'
-    l_functions = []
-    l_individual_integrals = [0. for i in xrange(num_photons+1)]
-    for i in xrange(num_photons + 1):
-        l_functions.append(root.TF1('peak_%d' % i, '[0]*exp(-0.5*((x - [1])/[2])**2)', *mpe_spec_binning[1:]))
-
-        # set parameters
-        if i == 0:
-            ampl = fit_mpe.GetParameter(0)
-            mean = fit_mpe.GetParameter(1)
-            width = fit_mpe.GetParameter(2)
-            l_functions[i].SetParameters(ampl, mean, width)
+def _unpickle_method(func_name, obj, cls):
+    for cls in cls.mro():
+        try:
+            func = cls.__dict__[func_name]
+        except KeyError:
+            pass
         else:
-            ampl = fit_mpe.GetParameter(i+4)
-            if use_ideal:
-                mean = fit_mpe.GetParameter(3) * i
-                width = fit_mpe.GetParameter(4)*i**0.5
-            else:
-                mean = fit_mpe.GetParameter(3)*i + fit_mpe.GetParameter(1)
-                width = (fit_mpe.GetParameter(4)**2*i + fit_mpe.GetParameter(2)**2)**0.5
-
-            l_functions[i].SetParameters(ampl, mean, width)
-
-        l_individual_integrals[i] = ampl*width*(2*3.1415)**0.5
-        l_functions[i].SetLineColor(aColors[i])
-        l_functions[i].Draw('same')
-
-
-    print np.asarray(l_individual_integrals) / sum(l_individual_integrals)
-
-    mean_from_spe_bkg = l_individual_integrals[1] / l_individual_integrals[0]
-    print 'Mean from SPE and bkg peak: %.2f' % mean_from_spe_bkg
-    if num_photons > 2:
-        print 'P(2) / P(0) using above mean = %.2f' % (mean_from_spe_bkg**2/2.)
-        print 'P(2) / P(0) from data = %.2f' % (l_individual_integrals[2] / l_individual_integrals[0])
-
-    c1.Update()
-
-    fitStatus = fitResult.CovMatrixStatus()
-    if fitStatus != 3:
-        neriX_analysis.failure_message('Fit failed, please adjust guesses and try again.')
-        fit_successful = False
-    else:
-        neriX_analysis.success_message('Fit successful, please copy output to appropriate files.')
-        fit_successful = True
-
-    #if not os.path.exists(sPathToSaveOutput):
-    #    os.makedirs(sPathToSaveOutput)
-
-    fitter = root.TVirtualFitter.Fitter(fit_mpe)
-    amin = np.asarray([0], dtype=np.float64)
-    dum1 = np.asarray([0], dtype=np.float64)
-    dum2 = np.asarray([0], dtype=np.float64)
-    dum3 = np.asarray([0], dtype=np.int32)
-    dum4 = np.asarray([0], dtype=np.int32)
-
-    fitter.GetStats(amin, dum1, dum2, dum3, dum4)
-
-
-    print '\n\namin for %d photons: %f\n\n' % (num_photons, amin)
-
-
-    raw_input('Press enter to continue...')
-    return (0,0,0)
-
-    sFileName = current_analysis.get_filename_no_ext()
-
-    c1.SaveAs(sPathToSaveOutput + '/gas_gain_' + sFileName + '.png')
-    c1.SaveAs(sPathToSaveOutput + '/gas_gain_' + sFileName + '.C')
-
-    OutputFile = open(sPathToSaveOutput + '/gas_gain_' + sFileName[:-5] + '.txt', 'w')
-    OutputFile.write(
-        '#anode\tcathode\t\ttop_eff_thresh\ttop_eff_thresh_err\ttop_eff_rolloff\ttop_eff_rolloff_err\ttop_mu\ttop_mu_err\ttop_width\ttop_width_err\tbottom_eff_thresh\tbottom_eff_thresh_err\tbottom_eff_rolloff\tbottom_eff_rolloff_err\tbottom_mu\tbottom_mu_err\tbottom_width\tbottom_width_err\n')
-    OutputFile.write('%f\t%f\t' % (neriX_datasets.run_files[current_analysis.get_run()][sFileName + '.root'][0],
-                                   neriX_datasets.run_files[current_analysis.get_run()][sFileName + '.root'][1]))
-    OutputFile.write(
-        '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 6), FitS2TopBottom.GetParError(iNumElectrons + 6)))
-    OutputFile.write(
-        '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 7), FitS2TopBottom.GetParError(iNumElectrons + 7)))
-    OutputFile.write(
-        '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 4), FitS2TopBottom.GetParError(iNumElectrons + 4)))
-    OutputFile.write(
-        '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 5), FitS2TopBottom.GetParError(iNumElectrons + 5)))
-    OutputFile.write(
-        '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 2), FitS2TopBottom.GetParError(iNumElectrons + 2)))
-    OutputFile.write(
-        '%f\t%f\t' % (FitS2TopBottom.GetParameter(iNumElectrons + 3), FitS2TopBottom.GetParError(iNumElectrons + 3)))
-    OutputFile.write('%f\t%f\t' % (FitS2TopBottom.GetParameter(0), FitS2TopBottom.GetParError(0)))
-    OutputFile.write('%f\t%f' % (FitS2TopBottom.GetParameter(1), FitS2TopBottom.GetParError(1)))
-    OutputFile.close()
-
-    # make string for dictionary
-    sForDictionary = '\'num_electrons\':%d, \'fd_fixed\':%s, \'fit_successful\':%s, ' % (
-    num_electrons, fd_fixed, fit_successful)
-    for i in xrange(len(par_names)):
-        sForDictionary += '\'%s\':%.5f, \'%s_err\':%.5f, ' % (
-        par_names[i], FitS2TopBottom.GetParameter(i), par_names[i], FitS2TopBottom.GetParError(i))
-
-    sForDictionary += '\'Chi2\':%.1f, \'NDF\':%d, \'ln(L)\':%.3f' % (
-    FitS2TopBottom.GetChisquare(), FitS2TopBottom.GetNDF(), -amin / 2.)
-
-    string_to_return = 'gas_gain_results[%d][\'%s\'] = {%s}' % (
-    current_analysis.get_run(), current_analysis.get_filename_no_ext(), sForDictionary)
-
-    forTextFile = ''
-    if fit_successful:
-        forTextFile = '%s\t%d\t%.3f\t%.3f\t%.2f\t%.2f\t%.2f\t%.2f\n' % (
-        current_analysis.get_filename_no_ext(), current_analysis.get_timestamp(), current_analysis.get_anode_setting(),
-        current_analysis.get_cathode_setting(), FitS2TopBottom.GetParameter(0), FitS2TopBottom.GetParError(0),
-        FitS2TopBottom.GetParameter(1), FitS2TopBottom.GetParError(1))
-
-    file_mpe.close()
-    del current_analysis
-    return string_to_return, -amin / 2., forTextFile
-
-
-lFiles = ['nerix_151201_1048']
-
-lNumPhotons = [1, 2, 3, 4, 5, 6, 7, 8]
-
-sForFile = ''
-sForTextFile = ''
-
-for file in lFiles:
-    lLnlikelihoods = [0 for i in xrange(len(lNumPhotons))]
-    lStrings = [0 for i in xrange(len(lNumPhotons))]
-    for i, num_photons in enumerate(lNumPhotons):
-        print '\n\n\nStarting %s with %d electrons.\n\n\n' % (file, lNumPhotons[i])
-        lStrings[i], lLnlikelihoods[i], forTextFile = mpe_fitting(file, 15, num_photons, use_ideal=False)
-
-    # find first step with p-value > 0.05 and take previous
-
-    # ex:
-    # 2->3: p < 0.05
-    # 3->4: p > 0.05 - STOP!
-    # use 3 electrons
-
-    for i in xrange(len(lNumPhotons) - 1):
-        testStat = -2 * (lLnlikelihoods[i] - lLnlikelihoods[i + 1])
-        pValue = 1 - stats.chi2.cdf(testStat, 1)
-        indexToUse = i
-        if pValue > 0.05:
             break
+    return func.__get__(obj, cls)
 
-    # run one more time to save image of "correct"
-    # number of electrons
-    dummy1, dummy2, forTextFile = mpe_fitting(file, 15, num_photons, use_ideal=False)
+copy_reg.pickle(types.FunctionType, _pickle_method, _unpickle_method)
+"""
 
-    sForTextFile += forTextFile
+def reduce_method(m):
+    return (getattr, (m.__self__, m.__func__.__name__))
 
-    sSingleFile = lStrings[indexToUse]
-    sForFile += '# %s\n%s\n\n\n' % (file, sSingleFile)
+#print pickle.Pickler.dispatch
 
-print sForFile
+def save_function(self, obj):
+    # Save functions by value if they are defined interactively
+    if obj.__module__ == '__main__' or obj.func_name == '<lambda>':
+        args = (obj.func_code, obj.func_globals, obj.func_name, obj.func_defaults, obj.func_closure)
+        self.save_reduce(types.FunctionType, args, obj=obj)
+    else:
+        pickle.Pickler.save_global(self, obj)
+pickle.Pickler.dispatch[types.FunctionType] = save_function
 
-print '\n\n\nCopy and paste into text file\n\n\n'
 
-print sForTextFile
+
+#print pickle.Pickler.dispatch
+
+class fit_mpe:
+    def __init__(self, d_files, pmt_channel=17):
+
+        self.d_files = d_files
+        self.l_voltage_settings = [800, 750, 700, 650, 600, 550, 500]
+        self.l_percentiles = [5, 95]
+        
+        self.channel_number = pmt_channel
+        self.parameter_to_examine = 'SingleIntegral[%d]' % (self.channel_number - 1)
+        
+        self.spe_gain_value = 9.35e5
+        self.spe_gain_uncertainty = 6.83e5
+        
+        self.d_fit_files = {}
+        for voltage_setting in self.l_voltage_settings:
+            self.d_fit_files[voltage_setting] = {}
+            self.d_fit_files[voltage_setting]['name'] = self.d_files[voltage_setting]
+            self.d_fit_files[voltage_setting]['file'] = File(neriX_config.pathToData + 'run_16/' + self.d_fit_files[voltage_setting]['name'] + '.root')
+            self.d_fit_files[voltage_setting]['tree'] = self.d_fit_files[voltage_setting]['file'].T0
+        
+            self.d_fit_files[voltage_setting]['a_sig'] = tree2array(self.d_fit_files[voltage_setting]['tree'], branches=self.parameter_to_examine)
+            
+            # put arrays into dataframe
+            self.d_fit_files[voltage_setting]['df'] = pd.DataFrame({'sig':self.d_fit_files[voltage_setting]['a_sig']})
+            
+            # make cut at 20th and 80th percentile
+            self.d_fit_files[voltage_setting]['l_percentiles'] = np.percentile(self.d_fit_files[voltage_setting]['a_sig'], self.l_percentiles)
+            self.d_fit_files[voltage_setting]['df'] = self.d_fit_files[voltage_setting]['df'][(self.d_fit_files[voltage_setting]['df']['sig'] > self.d_fit_files[voltage_setting]['l_percentiles'][0]) & (self.d_fit_files[voltage_setting]['df']['sig'] < self.d_fit_files[voltage_setting]['l_percentiles'][1])]
+            
+            self.d_fit_files[voltage_setting]['sig_mean_value'] = np.mean(self.d_fit_files[voltage_setting]['df']['sig'])
+            self.d_fit_files[voltage_setting]['sig_mean_uncertainty'] = np.var(self.d_fit_files[voltage_setting]['df']['sig'])**0.5/float(len(self.d_fit_files[voltage_setting]['df']['sig']))**0.5
+            
+        
+            #print self.d_fit_files[voltage_setting]['df'].head()
+            #print len(self.d_fit_files[voltage_setting]['df'])
+            #print self.d_fit_files[voltage_setting]['sig_mean_value'], self.d_fit_files[voltage_setting]['sig_mean_uncertainty']
+            #print self.d_fit_files[voltage_setting]['a_sig']
+        
+
+        self.timestamp = self.d_fit_files[800]['name'][6:12]
+        self.s_base_save_name = 'mpe_fit'
+        self.dict_filename = 'sampler_dictionary.p'
+        self.s_directory_save_name = 'results/%s/' % (self.timestamp)
+        self.a_free_par_guesses = [self.d_fit_files[voltage_setting]['sig_mean_value'], 11.4]
+        self.a_free_par_std_guesses = [self.d_fit_files[voltage_setting]['sig_mean_uncertainty'], 0.5]
+        self.a_free_par_names = ['mpe_gain_800V', 'gain_power']
+        
+
+        
+        
+
+
+
+    def prior_between_0_and_1(self, parameter_to_examine):
+        if 0 < parameter_to_examine < 1:
+            return 0
+        else:
+            return -np.inf
+
+
+
+    def prior_greater_than_0(self, parameter_to_examine):
+        if parameter_to_examine > 0:
+            return 0
+        else:
+            return -np.inf
+
+
+
+    def prior_mpe_gain_800(self, gain):
+        return scipy.stats.norm.logpdf(gain, self.d_fit_files[800]['sig_mean_value'], self.d_fit_files[800]['sig_mean_uncertainty'])
+
+
+
+    def prior_mpe_power(self, power):
+        if 10 < power < 13:
+            return 0
+        else:
+            return -np.inf
+
+
+    def mpe_ln_likelihood(self, a_parameters):
+        mpe_gain_800, mpe_power = a_parameters
+
+        ln_prior = 0
+        ln_likelihood = 0
+
+        ln_prior += self.prior_mpe_power(mpe_power)
+        ln_prior += self.prior_mpe_gain_800(mpe_gain_800)
+        
+        
+        if not np.isfinite(ln_prior):
+            return -np.inf
+
+        for voltage_setting in self.l_voltage_settings:
+            expected_gain = mpe_gain_800*np.power(float(voltage_setting)/800., mpe_power)
+            ln_likelihood += scipy.stats.norm.logpdf(expected_gain, self.d_fit_files[voltage_setting]['sig_mean_value'], self.d_fit_files[voltage_setting]['sig_mean_uncertainty'])
+
+
+        return ln_likelihood + ln_prior
+        
+        
+        
+        
+    def run_mpe_mcmc(self, num_walkers=16, num_steps=1000, threads=1):
+        
+        l_value_guesses = self.a_free_par_guesses
+        l_std_guesses = self.a_free_par_std_guesses
+        l_par_names = self.a_free_par_names
+
+        
+        
+        
+        if not os.path.exists(self.s_directory_save_name):
+            os.makedirs(self.s_directory_save_name)
+        num_dim = len(l_value_guesses)
+        
+        
+        loaded_prev_sampler = False
+        try:
+            # two things will fail potentially
+            # 1. open if file doesn't exist
+            # 2. posWalkers load since initialized to None
+
+            with open(self.s_directory_save_name + self.dict_filename, 'r') as f_prev_sampler:
+
+                d_sampler = pickle.load(f_prev_sampler)
+                prevSampler = d_sampler[num_walkers][-1]
+
+
+                # need to load in weird way bc can't pickle
+                # ensembler object
+                a_starting_pos = prevSampler['_chain'][:,-1,:]
+                random_state = prevSampler['_random']
+            loaded_prev_sampler = True
+            print '\nSuccessfully loaded previous chain!\n'
+        except:
+            print '\nCould not load previous sampler or none existed - starting new sampler.\n'
+
+        if not loaded_prev_sampler:
+
+            a_starting_pos = emcee.utils.sample_ball(l_value_guesses, l_std_guesses, size=num_walkers)
+
+            random_state = None
+
+            # create file if it doesn't exist
+            if not os.path.exists(self.s_directory_save_name + self.dict_filename):
+                with open(self.s_directory_save_name + self.dict_filename, 'w') as f_prev_sampler:
+                    d_sampler = {}
+
+                    d_sampler[num_walkers] = []
+
+                    pickle.dump(d_sampler, f_prev_sampler)
+            else:
+                with open(self.s_directory_save_name + self.dict_filename, 'r') as f_prev_sampler:
+                    d_sampler = pickle.load(f_prev_sampler)
+                with open(self.s_directory_save_name + self.dict_filename, 'w') as f_prev_sampler:
+
+                    d_sampler[num_walkers] = []
+
+                    pickle.dump(d_sampler, f_prev_sampler)
+        
+        
+
+
+
+        #sampler = emcee.EnsembleSampler(num_walkers, num_dim, self.gas_gain_ln_likelihood, threads=threads)
+        sampler = emcee.DESampler(num_walkers, num_dim, self.mpe_ln_likelihood, threads=threads, autoscale_gamma=True)
+        
+        print '\n\nBeginning MCMC sampler\n\n'
+        print '\nNumber of walkers * number of steps = %d * %d = %d function calls\n' % (num_walkers, num_steps, num_walkers*num_steps)
+        start_time_mcmc = time.time()
+
+        with click.progressbar(sampler.sample(a_starting_pos, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+            for pos, lnprob, state in mcmc_sampler:
+                pass
+
+        total_time_mcmc = (time.time() - start_time_mcmc) / 60.
+        print '\n\n%d function calls took %.2f minutes.\n\n' % (num_walkers*num_steps, total_time_mcmc)
+
+
+        dictionary_for_sampler = sampler.__dict__
+        if 'lnprobfn' in dictionary_for_sampler:
+            del dictionary_for_sampler['lnprobfn']
+        if 'pool' in dictionary_for_sampler:
+            del dictionary_for_sampler['pool']
+
+        with open(self.s_directory_save_name + self.dict_filename, 'r') as f_prev_sampler:
+            d_sampler = pickle.load(f_prev_sampler)
+        #f_prev_sampler.close()
+
+        f_prev_sampler = open(self.s_directory_save_name + self.dict_filename, 'w')
+
+        d_sampler[num_walkers].append(sampler.__dict__)
+
+        pickle.dump(d_sampler, f_prev_sampler)
+        f_prev_sampler.close()
+
+
+
+    def draw_mpe_corner_plot(self, num_walkers, num_steps_to_include):
+        
+        l_labels_for_corner_plot = self.a_free_par_names
+        num_dim = len(l_labels_for_corner_plot)
+        
+        sPathToFile = self.s_directory_save_name + self.dict_filename
+        
+        if os.path.exists(sPathToFile):
+            dSampler = pickle.load(open(sPathToFile, 'r'))
+            l_chains = []
+            for sampler in dSampler[num_walkers]:
+                l_chains.append(sampler['_chain'])
+
+            a_sampler = np.concatenate(l_chains, axis=1)
+
+            print 'Successfully loaded sampler!'
+        else:
+            print sPathToFile
+            print 'Could not find file!'
+            sys.exit()
+        
+        a_sampler = a_sampler[:, -num_steps_to_include:, :num_dim].reshape((-1, num_dim))
+        
+        print 'Starting corner plot...\n'
+        start_time = time.time()
+        fig = corner.corner(a_sampler, labels=l_labels_for_corner_plot, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 12})
+        print 'Corner plot took %.3f minutes.\n\n' % ((time.time()-start_time)/60.)
+        
+        if not os.path.exists(self.s_directory_save_name):
+            os.makedirs(self.s_directory_save_name)
+
+        fig.savefig(self.s_directory_save_name + self.s_base_save_name + '_corner.png')
+        
+        try:
+            print emcee.autocorr.integrated_time(np.mean(a_sampler, axis=0), axis=0,
+                                        low=10, high=None, step=1, c=2,
+                                        fast=False)
+        except:
+            print 'Chain too short to find autocorrelation time!'
+
+
+
+
+    def draw_best_fit_on_hist(self, num_walkers, num_steps_to_include):
+        sPathToFile = self.s_directory_save_name + self.dict_filename
+        
+        if os.path.exists(sPathToFile):
+            dSampler = pickle.load(open(sPathToFile, 'r'))
+            l_chains = []
+            for sampler in dSampler[num_walkers]:
+                l_chains.append(sampler['_chain'])
+
+            a_sampler = np.concatenate(l_chains, axis=1)
+
+            print 'Successfully loaded sampler!'
+        else:
+            print sPathToFile
+            print 'Could not find file!'
+            sys.exit()
+        
+        num_dim = len(self.a_free_par_guesses)
+        a_sampler = a_sampler[:, -num_steps_to_include:, :num_dim].reshape((-1, num_dim))
+        
+        a_means = np.mean(a_sampler, axis=0)
+        a_cov = np.cov(a_sampler.T)
+        
+        #print a_means
+        #print a_cov
+        
+        
+        a_medians = np.percentile(a_sampler, 50., axis=0)
+        gain_800V_minus_one_sigma, gain_800V_median, gain_800V_plus_one_sigma = np.percentile(a_sampler[:,0], [16., 50, 84.])
+        power_minus_one_sigma, power_median, power_plus_one_sigma = np.percentile(a_sampler[:,1], [16., 50, 84.])
+        #print a_medians
+        
+        f1, (ax1) = plt.subplots(1)
+        
+        l_gains = [0. for i in xrange(len(self.l_voltage_settings))]
+        l_gain_uncertainties = [0. for i in xrange(len(self.l_voltage_settings))]
+        for i, voltage_setting in enumerate(self.l_voltage_settings):
+            l_gains[i] = self.d_fit_files[voltage_setting]['sig_mean_value']
+            l_gain_uncertainties[i] = self.d_fit_files[voltage_setting]['sig_mean_uncertainty']
+        
+        x_lb = min(self.l_voltage_settings)*0.95
+        x_ub = max(self.l_voltage_settings)*1.05
+        
+        
+        # draw confidence band
+        def pyfunc_power_law(voltage, gain_800V, power):
+            return gain_800V*np.power((voltage/800.), power)
+        
+        a_band_x_values, a_band_y_values, a_band_y_err_low, a_band_y_err_high = neriX_analysis.create_1d_fit_confidence_band(pyfunc_power_law, a_means, a_cov, x_lb, x_ub)
+        
+        
+        x_line = np.linspace(x_lb, x_ub, 50)
+        y_line = a_means[0]*np.power(x_line/800., a_means[1])
+    
+        ax1.errorbar(self.l_voltage_settings, l_gains, yerr=l_gain_uncertainties, color='b', marker='.', linestyle='')
+        ax1.plot(x_line, y_line, color='purple', linestyle='--')
+        
+        ax1.fill_between(a_band_x_values, a_band_y_values-a_band_y_err_low, a_band_y_values+a_band_y_err_high, facecolor='purple', alpha=0.2)
+        
+        #ax1.set_yscale('log', nonposx='clip')
+        ax1.set_title('PMT Power Law - %s' % (self.timestamp))
+        ax1.set_xlabel(r'PMT Voltage [V]')
+        ax1.set_ylabel(r'PMT Signal [$e^-$]')
+        
+        ax1.set_yscale('log', nonposy='clip')
+        ax1.set_xlim(x_lb, x_ub)
+        
+        s_formula = r'$g(V) = g(800V)(\frac{V}{800V})^{\beta}$'
+        s_gain = r'$g(800V)=%.2e^{+%.2e}_{-%.2e} [e^-]$' % (gain_800V_median, gain_800V_plus_one_sigma-gain_800V_median, gain_800V_median-gain_800V_minus_one_sigma)
+        s_power = r'$\beta=%.2f^{+%.2e}_{-%.2e}$' % (power_median, power_plus_one_sigma-power_median, power_median-power_minus_one_sigma)
+        ax1.text(0.3, 0.8, s_formula + '\n' + s_gain + '\n' + s_power, ha='center', va='center', transform=ax1.transAxes)
+    
+        #plt.show()
+        f1.savefig(self.s_directory_save_name + self.s_base_save_name + '_fit.png')
+    
+
+
+
+    def differential_evolution_minimizer(self, a_bounds, maxiter=250, tol=0.05, popsize=15, polish=False):
+        def neg_log_likelihood_diff_ev(a_guesses):
+            return -self.gas_gain_ln_likelihood(a_guesses)
+        print '\n\nStarting differential evolution minimizer...\n\n'
+        result = op.differential_evolution(neg_log_likelihood_diff_ev, a_bounds, disp=True, maxiter=maxiter, tol=tol, popsize=popsize, polish=polish)
+        print result
+
+
+
+
+
+if __name__ == '__main__':
+    
+    d_files = {800:'nerix_160404_1014',
+               750:'nerix_160404_1015',
+               700:'nerix_160404_1016',
+               650:'nerix_160404_1017',
+               600:'nerix_160404_1018',
+               550:'nerix_160404_1019',
+               500:'nerix_160404_1020'}
+    
+    
+    """
+    d_files = {800:'nerix_160411_1205',
+               750:'nerix_160411_1206',
+               700:'nerix_160411_1207',
+               650:'nerix_160411_1208',
+               600:'nerix_160411_1209',
+               550:'nerix_160411_1210',
+               500:'nerix_160411_1211'}
+    """
+    
+
+    test = fit_mpe(d_files)
+
+
+    test.run_mpe_mcmc(num_walkers=16, num_steps=1000, threads=1)
+    test.draw_mpe_corner_plot(num_walkers=16, num_steps_to_include=300)
+    test.draw_best_fit_on_hist(num_walkers=16, num_steps_to_include=300)
+
+
+
