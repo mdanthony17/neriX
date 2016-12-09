@@ -7,8 +7,8 @@ import dill
 import fit_mpe
 
 num_walkers = 16
-num_steps = 5000
-num_steps_to_include = 1000
+num_steps = 10000
+num_steps_to_include = 2000
 
 
 l_datasets = []

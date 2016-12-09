@@ -23,7 +23,7 @@ NNNI-1
 I-1
 I0
 tp10
-bS' Q3\xf9\xc5\x9a\xd9?'
+bS'@\x9f\x14"5\x04\xda?'
 p11
 tp12
 Rp13
@@ -31,7 +31,7 @@ sS'median'
 p14
 g4
 (g8
-S'b\x8c\xa7#\xfee+@'
+S'\xd3\x05o\x9f\x1fi+@'
 p15
 tp16
 Rp17
@@ -39,7 +39,7 @@ sS'p_one_sig'
 p18
 g4
 (g8
-S'@\x812\xa15\\\xd9?'
+S' \x9dJC\xacq\xd9?'
 p19
 tp20
 Rp21
@@ -49,21 +49,21 @@ p22
 g3
 g4
 (g8
-S'\x00R6\x9e\xca\xba<?'
+S'\x00{\x14\x9d\x91c:?'
 p24
 tp25
 Rp26
 sg14
 g4
 (g8
-S'\r\xad\x99\x9a\xf8\x94\xc0?'
+S'\x19\xf8\x11\xd7e\x02\xbe?'
 p27
 tp28
 Rp29
 sg18
 g4
 (g8
-S'\x00\x8a\xba\x02\x8b\xbb=?'
+S'\x00\xf1\xe7,\xf9p:?'
 p30
 tp31
 Rp32
@@ -73,21 +73,21 @@ p33
 g3
 g4
 (g8
-S' Q3\xf9\xc5\x9a\xd9?'
+S'@\x9f\x14"5\x04\xda?'
 p35
 tp36
 Rp37
 sg14
 g4
 (g8
-S'b\x8c\xa7#\xfee+@'
+S'\xd3\x05o\x9f\x1fi+@'
 p38
 tp39
 Rp40
 sg18
 g4
 (g8
-S'@\x812\xa15\\\xd9?'
+S' \x9dJC\xacq\xd9?'
 p41
 tp42
 Rp43
@@ -97,21 +97,21 @@ p44
 g3
 g4
 (g8
-S' $=\\\xe9R\x96?'
+S'\x80\xd6\x0fm1\x9f\x95?'
 p46
 tp47
 Rp48
 sg14
 g4
 (g8
-S'\xa1\x0bh\xe5\xd0\xff\xee?'
+S'cA\x9c \x10Y\xec?'
 p49
 tp50
 Rp51
 sg18
 g4
 (g8
-S'`Q\xcf\x8f\xb8~\x93?'
+S'\x80$\xa2!\x835\x97?'
 p52
 tp53
 Rp54
@@ -121,21 +121,21 @@ p55
 g3
 g4
 (g8
-S' Q3\xf9\xc5\x9a\xd9?'
+S'@\x9f\x14"5\x04\xda?'
 p57
 tp58
 Rp59
 sg14
 g4
 (g8
-S'b\x8c\xa7#\xfee+@'
+S'\xd3\x05o\x9f\x1fi+@'
 p60
 tp61
 Rp62
 sg18
 g4
 (g8
-S'@\x812\xa15\\\xd9?'
+S' \x9dJC\xacq\xd9?'
 p63
 tp64
 Rp65
@@ -145,21 +145,21 @@ p66
 g3
 g4
 (g8
-S'@\x1e\xed\x9f\x80~\xda?'
+S'\xe0(\x92\xf0\x0f\x11\xe1?'
 p68
 tp69
 Rp70
 sg14
 g4
 (g8
-S'\x96Fe\xde\x1d_5@'
+S'B\x84n\x8a)H5@'
 p71
 tp72
 Rp73
 sg18
 g4
 (g8
-S'\x80\xb8o\xcc\xeef\xdf?'
+S'\x00\xe8eg\xd5\x9b\xe0?'
 p74
 tp75
 Rp76

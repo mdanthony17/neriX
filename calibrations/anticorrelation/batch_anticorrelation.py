@@ -35,9 +35,10 @@ l_files.append({'cs137':[['nerix_160502_1059', 'nerix_160502_1134', 'nerix_16050
 
 
 # done
+"""
 l_files.append({'cs137':[['nerix_160509_1157', 'nerix_160509_1226', 'nerix_160509_1252', 'nerix_160509_1320', 'nerix_160509_1350']],
                 'na22':[['nerix_160509_1419', 'nerix_160509_1448', 'nerix_160509_1515', 'nerix_160509_1544', 'nerix_160509_1619']]})
-
+"""
 
 # done
 l_files.append({'cs137':[['nerix_160516_1226', 'nerix_160516_1255', 'nerix_160516_1322', 'nerix_160516_1351', 'nerix_160516_1418']],
@@ -73,9 +74,10 @@ l_files.append({'cs137':[['nerix_160705_1205', 'nerix_160705_1232', 'nerix_16070
                 'na22':[['nerix_160705_1423', 'nerix_160705_1454', 'nerix_160705_1523', 'nerix_160705_1553', 'nerix_160705_1623']]})
 
 # done
+"""
 l_files.append({'cs137':[['nerix_160711_1021', 'nerix_160711_1050', 'nerix_160711_1120', 'nerix_160711_1150', 'nerix_160711_1219']],
                 'na22':[['nerix_160711_1253', 'nerix_160711_1333', 'nerix_160711_1402', 'nerix_160711_1448', 'nerix_160711_1519']]})
-
+"""
 
 # below are outside coincidence time period
 """

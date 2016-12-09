@@ -79,6 +79,7 @@ class fit_anticorrelation():
                 sys.exit()
 
         correction_factor = self.get_correction_factor()
+        #print correction_factor
         
 
         s1_par = 'cpS1sTotBottom[0]/%f' % correction_factor
@@ -103,6 +104,9 @@ class fit_anticorrelation():
         self.base_save_name = 'ac_'
         
         self.d_files = d_files
+        
+        # save the yield information for the source
+        d_yield_information = {}
 
         for dummy_index, source in enumerate(d_files):
             self.base_save_name += '%s_' % source
@@ -181,12 +185,13 @@ class fit_anticorrelation():
                 
                 """
                 c_test = Canvas()
-                h_test = Hist2D(40, 500, 5000, 40, 3e5, 9e5)
-                current_analysis.Draw('cpS1sTotBottom[0]:ctS2sTotBottom[0]', hist=h_test)
+                h_test = Hist2D(40, 0, 5000, 40, 0, 8e5)
+                current_analysis.Draw('%s:%s' % (s1_par, s2_par), hist=h_test)
                 h_test.Draw('colz')
                 c_test.Update()
                 raw_input()
                 """
+                
 
                 if cur_index == 0:
                     if len(files_at_setting) == 1:
@@ -196,12 +201,20 @@ class fit_anticorrelation():
             
                     if not os.path.exists(self.s_directory_save_name):
                         os.makedirs(self.s_directory_save_name)
+            
+                    self.d_energy_information[source]['d_arrays_difft_voltages'] = {}
 
 
                 for j in xrange(len(list(files_at_setting))):
                     #print s1_par, s2_par
                     current_tree = tree2array(current_analysis.get_T1(j), [s1_par, s2_par], selection=current_analysis.get_cuts())
+                    #print current_tree.dtype.names
                     current_tree.dtype.names = column_names
+                    
+                    # add to dictionary of trees to look at individual spectra
+                    self.d_energy_information[source]['d_arrays_difft_voltages'][current_analysis.get_cathode_setting()] = current_tree
+                    
+                    #print current_tree.dtype.names
                     column_dtype = current_tree.dtype
                     for i, column_name in enumerate(current_tree.dtype.names):
                         l_columns[i] = np.append(l_columns[i], current_tree[column_name])
@@ -218,8 +231,8 @@ class fit_anticorrelation():
             # ---------- MAKE CES CUT ----------
 
             # no time correction: 0.08, 14.
-            g1_test = 0.1308 #0.12
-            g2_test = 0.978*21.46 #28.
+            g1_test = 0.118 #0.1308 #0.12
+            g2_test = 0.9*21.29 #28.
 
             self.d_energy_information[source]['canvas'] = Canvas(width=900, height=700, name='cCES')
             self.d_energy_information[source]['canvas'].SetGridx()
@@ -376,6 +389,86 @@ class fit_anticorrelation():
 
 
             self.d_s1_s2_arrays[source] = tree2array(self.d_energy_information[source]['combined_tree'], ['S1', 'S2'], selection='(%s) && (%s)' % (sCES_arr, s_orth_cut))
+            
+            s1_min = min(self.d_s1_s2_arrays[source]['S1'])
+            s1_max = max(self.d_s1_s2_arrays[source]['S1'])
+            s1_mean = np.mean(self.d_s1_s2_arrays[source]['S1'])
+        
+            s2_min = min(self.d_s1_s2_arrays[source]['S2'])
+            s2_max = max(self.d_s1_s2_arrays[source]['S2'])
+            s2_mean = np.mean(self.d_s1_s2_arrays[source]['S2'])
+            
+            # ellipse for 2d fit
+            s_ellipse = '[0]*exp( -0.5 * (pow( (( (x-[1])*cos( [2] ) - (y-[3])*sin( [2] ) ) /([4])) , 2. )+pow(  ((x-[1])*sin( [2] ) + (y-[3])*cos( [2] )) /([5]) , 2.)) ) '
+            
+            # dictionary to pickle
+            d_yield_information[source] = {}
+            
+            
+            for cathode_setting in [0.345, 1.054, 2.356]:
+                d_yield_information[source][cathode_setting] = {}
+                
+                
+                
+                current_tree = array2tree(self.d_energy_information[source]['d_arrays_difft_voltages'][cathode_setting])
+                
+                #h_current_s1 = Hist(40, s1_min, s1_max, name='h_current_s1')
+                #current_tree.Draw('S1>>h_current_s1', '(%s) && (%s)' % (sCES_arr, s_orth_cut), '')
+                
+                if source == 'cs137':
+                    if cathode_setting == 0.345:
+                        trial_s1_mean = 2500
+                        trial_s2_mean = 550e3
+                    elif cathode_setting == 1.054:
+                        trial_s1_mean = 2200
+                        trial_s2_mean = 590e3
+                    else:
+                        trial_s1_mean = 1850
+                        trial_s2_mean = 620e3
+                elif source == 'na22':
+                    if cathode_setting == 0.345:
+                        trial_s1_mean = 1900
+                        trial_s2_mean = 410e3
+                    elif cathode_setting == 1.054:
+                        trial_s1_mean = 1650
+                        trial_s2_mean = 440e3
+                    else:
+                        trial_s1_mean = 1450
+                        trial_s2_mean = 460e3
+                
+            
+            
+                h_current = Hist2D(40, s1_min, s1_max, 40, s2_min, s2_max, name='h_current')
+                current_tree.Draw('S2:S1>>h_current', '(%s) && (%s)' % (sCES_arr, s_orth_cut), '')
+                
+                f_current = root.TF2('f_current', s_ellipse, s1_min, s1_max, s2_min, s2_max)
+                #print trial_s1_mean, trial_s2_mean
+                #print s1_mean, s2_mean
+                
+                f_current.SetParameters(30, trial_s1_mean, -3e-3, trial_s2_mean, trial_s1_mean*0.1, trial_s2_mean*0.1)
+                f_current.SetParLimits(1, 0.8*trial_s1_mean, 1.2*trial_s1_mean)
+                f_current.SetParLimits(3, 0.8*trial_s2_mean, 1.2*trial_s2_mean)
+                
+                h_current.Fit('f_current', 'MELL')
+                
+                d_yield_information[source][cathode_setting]['s1_mean_value'] = f_current.GetParameter(1)
+                d_yield_information[source][cathode_setting]['s1_mean_unc'] = f_current.GetParError(1)
+                
+                d_yield_information[source][cathode_setting]['s2_mean_value'] = f_current.GetParameter(3)
+                d_yield_information[source][cathode_setting]['s2_mean_unc'] = f_current.GetParError(3)
+                
+                
+                """
+                c_test = Canvas()
+                h_current.SetStats(0)
+                h_current.Draw('colz')
+                c_test.Update()
+                raw_input()
+                """
+        
+        
+                
+                
     
     
             if 'cs137' in d_files:
@@ -392,7 +485,7 @@ class fit_anticorrelation():
                 self.d_source_functions['na22']['ln_prior'] = self.ln_prior_greater_than_zero
                 self.d_source_functions['na22']['ln_likelihood'] = self.ln_likelihood_na22
                 
-        
+        pickle.dump(d_yield_information, open('%syield_info.pkl' % (self.s_directory_save_name), 'w'))
 
 
 
@@ -400,8 +493,14 @@ class fit_anticorrelation():
     def get_correction_factor(self):
         # should eventually read from file Zach gives
         # or better yet just be a constant
-        correction_factor = 1.07
-        neriX_analysis.warning_message('Using hard coded correction: %.2e' % correction_factor)
+        #correction_factor = 1.07
+        #neriX_analysis.warning_message('Using hard coded correction: %.2e' % correction_factor)
+        
+        # correction factor = 1. / (gain_in_processing / (800V_gain / rel_gain_530V_800V))
+        new_gain_at_voltage = 9.35e5 * 0.00953
+        new_gain_at_voltage *= (1.48e6 / 9.35e5) # because cpS1/S2 has correction already
+        correction_factor = 1. / (1.18e4 / new_gain_at_voltage)
+        
         return correction_factor
     
     
@@ -532,7 +631,7 @@ class fit_anticorrelation():
 
     def run_mcmc(self, num_walkers, num_steps, threads=1):
 
-        l_value_guesses = [0.13, 0.97, 21.5, 13.7, 33, 25]
+        l_value_guesses = [0.12, 0.90, 21.5, 13.7, 33, 25]
         l_std_guesses = [0.01, 0.01, 0.5, 0.4, 3, 3]
         l_par_names = ['g1', 'eta', 'gas_gain', 'w_value', 'cs137_stdev', 'na22_stdev']
 

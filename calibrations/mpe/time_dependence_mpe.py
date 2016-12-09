@@ -26,14 +26,19 @@ import scipy.optimize as op
 import scipy.special
 import scipy.misc
 
+from sklearn import neighbors
+from sklearn import grid_search
+from sklearn import preprocessing
 
-num_steps_to_include = 500
-num_dim = 2
+
+num_steps_to_include = 600
 num_walkers = 16
 
-index_bot_mean = 0
-index_bot_width = 1
 l_percentiles = [16., 50., 84.]
+l_par_names = ['mpe_gain_800V', 'gain_power'] + ['pol_par0', 'pol_par1', 'pol_par2']
+l_colors = ['b', 'r', 'magenta', 'g', 'orange', 'black']
+
+num_dim = len(l_par_names)
 
 s_time_dependence_plots_dir = './time_dependence/'
 if not os.path.exists(s_time_dependence_plots_dir):
@@ -49,20 +54,79 @@ for dir_name in l_dir_names:
     if dir_name[:2] == '16':
         l_timestamps.append(dir_name)
 
-
 d_mpe = {}
-d_mpe['l_gain_800V_value'] = []
-d_mpe['l_gain_800V_uncertainty'] = []
-d_mpe['l_power_value'] = []
-d_mpe['l_power_uncertainty'] = []
+d_run_avg_fits = {}
 
 l_time = []
 l_datetime = []
 
 
 
+# relative gains for 530V and 610V
+d_rel_gains = {}
+d_rel_gains['l_rel_gain_530V_mean'] = []
+d_rel_gains['l_rel_gain_530V_std'] = []
+d_rel_gains['l_rel_gain_610V_mean'] = []
+d_rel_gains['l_rel_gain_610V_std'] = []
+
+def produce_rel_gains_530V_610V(a_samples):
+    num_pts = a_samples.shape[0]
+    
+    a_rel_gain_530V = np.zeros(num_pts)
+    a_rel_gain_610V = np.zeros(num_pts)
+    for i in xrange(num_pts):
+        eff_530V = max(min(a_samples[i,2] + a_samples[i,3]*530. + a_samples[i,4]*530.**2., 1), 0)
+        a_rel_gain_530V[i] = (530./800.)**a_samples[i,1] * eff_530V
+
+        eff_610V = max(min(a_samples[i,2] + a_samples[i,3]*610. + a_samples[i,4]*610.**2., 1), 0)
+        a_rel_gain_610V[i] = (610./800.)**a_samples[i,1] * eff_610V
+
+    return np.mean(a_rel_gain_530V), np.std(a_rel_gain_530V), np.mean(a_rel_gain_610V), np.std(a_rel_gain_610V)
+
+
+for i, par_name in enumerate(l_par_names):
+    d_run_avg_fits[par_name] = {}
+    d_run_avg_fits[par_name]['l_median'] = []
+    d_run_avg_fits[par_name]['l_median_minus_one_sigma'] = []
+    d_run_avg_fits[par_name]['l_median_plus_one_sigma'] = []
+    d_run_avg_fits[par_name]['color'] = l_colors[i]
+
+d_run_avg_fits['mpe_gain_800V']['title'] = r'$g(800V)$'
+d_run_avg_fits['mpe_gain_800V']['units'] = r'$[e^-]$'
+d_run_avg_fits['mpe_gain_800V']['axis_title'] = d_run_avg_fits['mpe_gain_800V']['title'] + ' ' + d_run_avg_fits['mpe_gain_800V']['units']
+d_run_avg_fits['mpe_gain_800V']['guess'] = 1.5e9
+
+d_run_avg_fits['gain_power']['title'] = r'Power Law'
+d_run_avg_fits['gain_power']['units'] = r''
+d_run_avg_fits['gain_power']['axis_title'] = d_run_avg_fits['gain_power']['title']
+d_run_avg_fits['gain_power']['guess'] = 9.56
+
+d_run_avg_fits['pol_par0']['title'] = r'Efficiency Polynomial Par 0'
+d_run_avg_fits['pol_par0']['units'] = r''
+d_run_avg_fits['pol_par0']['axis_title'] = d_run_avg_fits['pol_par0']['title']
+d_run_avg_fits['pol_par0']['guess'] = 7.4e-1
+
+d_run_avg_fits['pol_par1']['title'] = r'Efficiency Polynomial Par 1'
+d_run_avg_fits['pol_par1']['units'] = r'$[\frac{1}{V}]$'
+d_run_avg_fits['pol_par1']['axis_title'] = d_run_avg_fits['pol_par1']['title'] + ' ' + d_run_avg_fits['pol_par1']['units']
+d_run_avg_fits['pol_par1']['guess'] = -2e-3
+
+d_run_avg_fits['pol_par2']['title'] = r'Efficiency Polynomial Par 2'
+d_run_avg_fits['pol_par2']['units'] = r'$[\frac{1}{V^2}]$'
+d_run_avg_fits['pol_par2']['axis_title'] = d_run_avg_fits['pol_par2']['title'] + ' ' + d_run_avg_fits['pol_par2']['units']
+d_run_avg_fits['pol_par2']['guess'] = 2.94e-6
+
+
+
+
 for timestamp in l_timestamps:
+    d_mpe[timestamp] = {}
+
     s_path_to_chain = './results/%s/sampler_dictionary.p' % (timestamp)
+    s_path_to_kde = './results/%s/kde/' % (timestamp)
+    
+    if not os.path.exists(s_path_to_kde):
+        os.makedirs(s_path_to_kde)
 
     if os.path.exists(s_path_to_chain):
         d_sampler = pickle.load(open(s_path_to_chain, 'r'))
@@ -87,34 +151,100 @@ for timestamp in l_timestamps:
     a_sampler = a_sampler[:, -num_steps_to_include:, :num_dim].reshape((-1, num_dim))
 
 
-    # check that chain is long enough
-    if a_sampler.shape[0] < num_steps_to_include:
-        print '\nChain not long enough for %s\n\n' % (filename)
-        continue
+    # check if we need to make the kde or just load it
+    # only make KDE for eta and gas gain
+    if not os.path.exists('%skde.p' % (s_path_to_kde)):
 
-    d_mpe['l_gain_800V_value'].append(np.mean(a_sampler[:,0]))
-    d_mpe['l_gain_800V_uncertainty'].append(np.var(a_sampler[:,0])**0.5)
-    d_mpe['l_power_value'].append(np.mean(a_sampler[:,1]))
-    d_mpe['l_power_uncertainty'].append(np.var(a_sampler[:,1])**0.5)
+        # have to scale first since dimensions span three
+        # orders of magnitude!
+        scaler = preprocessing.StandardScaler()
+        scaler.fit(a_sampler)
+        a_scaled_samples = scaler.transform(a_sampler)
+        
+        #print a_sampler[:,1:3]
+        #print a_scaled_samples
+
+        # find the best fit bandwith since this allows us
+        # to play with bias vs variance
+        grid = grid_search.GridSearchCV(neighbors.KernelDensity(), {'bandwidth':np.linspace(0.01, 2., 20)}, cv=4, verbose=1, n_jobs=4)
+        print '\nDetermining best bandwidth...\n'
+        grid.fit(a_scaled_samples)
+
+        kde = neighbors.KernelDensity(**grid.best_params_)
+        kde.fit(a_scaled_samples)
+        a_test = kde.sample(3000)
+        a_test_transformed = scaler.inverse_transform(a_test)
+        
+        # make corner plot for comparison
+        fig = corner.corner(a_test_transformed, labels=l_par_names, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+        fig.savefig('%scorner_kde.png' % (s_path_to_kde))
+
+        pickle.dump(kde, open('%skde.p' % (s_path_to_kde), 'w'))
+        pickle.dump(scaler, open('%sscaler.p' % (s_path_to_kde), 'w'))
+
+
+    d_mpe[timestamp]['kde'] = pickle.load(open('%skde.p' % (s_path_to_kde), 'r'))
+    d_mpe[timestamp]['scaler'] = pickle.load(open('%sscaler.p' % (s_path_to_kde), 'r'))
+
+
+    # run though a_sampler to get rel gains at 530V and 610V
+    current_530V_mean, current_530V_std, current_610V_mean, current_610V_std = produce_rel_gains_530V_610V(a_sampler)
+    #print current_530V_mean, current_530V_std, current_610V_mean, current_610V_std
+    d_rel_gains['l_rel_gain_530V_mean'].append(current_530V_mean)
+    d_rel_gains['l_rel_gain_530V_std'].append(current_530V_std)
+    d_rel_gains['l_rel_gain_610V_mean'].append(current_610V_mean)
+    d_rel_gains['l_rel_gain_610V_std'].append(current_610V_std)
+
+
+    for i, par_name in enumerate(l_par_names):
+        current_low, current_median, current_high = np.percentile(a_sampler[:, i], l_percentiles)
+        d_run_avg_fits[par_name]['l_median'].append(current_median)
+        d_run_avg_fits[par_name]['l_median_minus_one_sigma'].append(current_low)
+        d_run_avg_fits[par_name]['l_median_plus_one_sigma'].append(current_high)
 
 
     l_time.append(neriX_analysis.convert_name_to_unix_time('nerix_%s_1200' % (timestamp)))
     l_datetime.append(datetime.datetime.fromtimestamp(l_time[-1]))
 
 
-
-d_mpe['l_gain_800V_value'] = np.asarray(d_mpe['l_gain_800V_value'])
-d_mpe['l_gain_800V_uncertainty'] = np.asarray(d_mpe['l_gain_800V_uncertainty'])
-d_mpe['l_power_value'] = np.asarray(d_mpe['l_power_value'])
-d_mpe['l_power_uncertainty'] = np.asarray(d_mpe['l_power_uncertainty'])
-l_time = np.asarray(l_time)
-
+# convert lists to numpy arrays
+for par_name in l_par_names:
+    d_run_avg_fits[par_name]['l_median'] = np.asarray(d_run_avg_fits[par_name]['l_median'])
+    d_run_avg_fits[par_name]['l_median_minus_one_sigma'] = np.asarray(d_run_avg_fits[par_name]['l_median_minus_one_sigma'])
+    d_run_avg_fits[par_name]['l_median_plus_one_sigma'] = np.asarray(d_run_avg_fits[par_name]['l_median_plus_one_sigma'])
 
 
-# likelihood function should be the integral
-# of the integral of two gaussians sharing one variable
-# the first gaussian should be the trial gaussian
-# the second gaussian should be the point with statistical uncertainty
+
+d_rel_gains['l_rel_gain_530V_mean'] = np.asarray(d_rel_gains['l_rel_gain_530V_mean'])
+d_rel_gains['l_rel_gain_530V_std'] = np.asarray(d_rel_gains['l_rel_gain_530V_std'])
+d_rel_gains['l_rel_gain_610V_mean'] = np.asarray(d_rel_gains['l_rel_gain_610V_mean'])
+d_rel_gains['l_rel_gain_610V_std'] = np.asarray(d_rel_gains['l_rel_gain_610V_std'])
+
+
+
+
+start_time = np.min(l_datetime) - datetime.timedelta(days=5)
+stop_time = np.max(l_datetime) + datetime.timedelta(days=5)
+start_time = mdates.date2num(start_time)
+stop_time = mdates.date2num(stop_time)
+points_for_lines = 50
+
+
+
+def ln_likelihood_kde_posterior(a_parameters, d_mpe):
+    tot_ln_likelihood = 0
+    
+    for filename in d_mpe:
+        a_parameters_scaled = d_mpe[filename]['scaler'].transform(a_parameters)
+        #print a_parameters_scaled
+        tot_ln_likelihood += d_mpe[filename]['kde'].score(a_parameters_scaled)
+
+    if not np.isfinite(tot_ln_likelihood):
+        return -np.inf
+    else:
+        return tot_ln_likelihood
+
+
 
 def ln_likelihood_gaussian_uncertainty_on_pts(a_parameters, a_means, a_stds):
     fit_mean, fit_std = a_parameters
@@ -128,69 +258,18 @@ def ln_likelihood_gaussian_uncertainty_on_pts(a_parameters, a_means, a_stds):
 
 
 
+# ------------------------------------------------
+# ------------------------------------------------
+#  Fit individual parameters
+# ------------------------------------------------
+# ------------------------------------------------
 
-"""
-def neg_log_likelihood_means_diff_ev(a_guesses):
-    return -ln_likelihood_gaussian_uncertainty_on_pts(l_gas_gain_mean_median, l_gas_gain_mean_mad, *a_guesses)
 
-def neg_log_likelihood_widths_diff_ev(a_guesses):
-    return -ln_likelihood_gaussian_uncertainty_on_pts(l_gas_gain_width_median, l_gas_gain_width_mad, *a_guesses)
-
-a_bounds = [(10, 20), (1e-3, 5)]
-result_mean = op.differential_evolution(neg_log_likelihood_means_diff_ev, a_bounds, disp=True, maxiter=100, tol=0.01, polish=True)
-print result_mean
-"""
-
+# common parameters and objects
 
 num_steps = 2000
 steps_to_keep = 1000
 
-l_guesses_mean = [1.5e9, 1.3e7]
-l_stds_mean = [3e8, 3e6]
-l_labels_mean = ['mean_of_gain_800V', 'std_of_gain_800V']
-a_starting_pos_mean = emcee.utils.sample_ball(l_guesses_mean, l_stds_mean, size=num_walkers)
-
-l_guesses_width = [11.45, 5.5e-2]
-l_stds_width = [0.3, 1e-2]
-l_labels_width = ['mean_of_power', 'std_of_power']
-a_starting_pos_width = emcee.utils.sample_ball(l_guesses_width, l_stds_width, size=num_walkers)
-
-
-d_mpe['sampler_gain_800V'] = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_mpe['l_gain_800V_value'], d_mpe['l_gain_800V_uncertainty']])
-
-with click.progressbar(d_mpe['sampler_gain_800V'].sample(a_starting_pos_mean, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
-    for pos, lnprob, state in mcmc_sampler:
-        pass
-
-d_mpe['a_samples_gain_800V'] = d_mpe['sampler_gain_800V'].chain[:, -steps_to_keep:, :2].reshape((-1, 2))
-
-d_mpe['mean_for_gain_800V'], d_mpe['std_for_gain_800V'] = np.percentile(d_mpe['a_samples_gain_800V'], 50., axis=0)
-
-
-
-
-d_mpe['sampler_power'] = emcee.DESampler(num_walkers, 2, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_mpe['l_power_value'], d_mpe['l_power_uncertainty']])
-
-with click.progressbar(d_mpe['sampler_power'].sample(a_starting_pos_width, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
-    for pos, lnprob, state in mcmc_sampler:
-        pass
-
-d_mpe['a_samples_power'] = d_mpe['sampler_power'].chain[:, -steps_to_keep:, :2].reshape((-1, 2))
-
-d_mpe['mean_for_power'], d_mpe['std_for_power'] = np.percentile(d_mpe['a_samples_power'], 50., axis=0)
-
-
-# make corner plots for each fit
-d_mpe['fig_for_gain_800V'] = corner.corner(d_mpe['a_samples_gain_800V'], labels=l_labels_mean, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
-d_mpe['fig_for_gain_800V'].savefig('%sposterior_gain_800V.png' % (s_time_dependence_plots_dir))
-
-d_mpe['fig_for_power'] = corner.corner(d_mpe['a_samples_power'], labels=l_labels_width, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize":8})
-d_mpe['fig_for_power'].savefig('%sposterior_power.png' % (s_time_dependence_plots_dir))
-
-
-
-fig1, ax1 = plt.subplots(1)
-fig2, ax2 = plt.subplots(1)
 points_for_lines = 50
 
 start_time = min(l_datetime) - datetime.timedelta(days=1)
@@ -198,49 +277,173 @@ stop_time = max(l_datetime) + datetime.timedelta(days=1)
 start_time = mdates.date2num(start_time)
 stop_time = mdates.date2num(stop_time)
 
-l_legend_handles = []
-
 x_line = np.linspace(start_time, stop_time, points_for_lines)
 x_line = mdates.num2date(x_line)
 
-y_line_gain_800V_mean = np.asarray([d_mpe['mean_for_gain_800V'] for i in xrange(points_for_lines)])
-y_line_gain_800V_lb = np.asarray([d_mpe['mean_for_gain_800V']-d_mpe['std_for_gain_800V'] for i in xrange(points_for_lines)])
-y_line_gain_800V_ub = np.asarray([d_mpe['mean_for_gain_800V']+d_mpe['std_for_gain_800V'] for i in xrange(points_for_lines)])
-
-y_line_power_mean = np.asarray([d_mpe['mean_for_power'] for i in xrange(points_for_lines)])
-y_line_power_lb = np.asarray([d_mpe['mean_for_power']-d_mpe['std_for_power'] for i in xrange(points_for_lines)])
-y_line_power_ub = np.asarray([d_mpe['mean_for_power']+d_mpe['std_for_power'] for i in xrange(points_for_lines)])
 
 
-ax1.errorbar(l_datetime, d_mpe['l_gain_800V_value'], yerr=d_mpe['l_gain_800V_uncertainty'], color='b', marker='o', linestyle='')
-ax1.plot(x_line, y_line_gain_800V_mean, color='b', linestyle='--')
-ax1.fill_between(x_line, y_line_gain_800V_lb, y_line_gain_800V_ub, color='b', alpha=0.2)
-
-ax2.errorbar(l_datetime, d_mpe['l_power_value'], yerr=d_mpe['l_power_uncertainty'], color='b', marker='o', linestyle='')
-ax2.plot(x_line, y_line_power_mean, color='b', linestyle='--')
-ax2.fill_between(x_line, y_line_power_lb, y_line_power_ub, color='b', alpha=0.2)
 
 
-s_gain_800V = r'PMT Gain at 800 V = %.2e +/- %.2e [$e^{-}$]' % (d_mpe['mean_for_gain_800V'], d_mpe['std_for_gain_800V'])
-s_power = r'Power = %.2e +/- %.2e' % (d_mpe['mean_for_power'],  d_mpe['std_for_power'])
 
-ax1.text(0.5, 0.9, s_gain_800V, ha='center', va='center', transform=ax1.transAxes)
-ax2.text(0.5, 0.9, s_power, ha='center', va='center', transform=ax2.transAxes)
+"""
 
 
-#ax1.legend(handles=l_legend_handles, title='Cathode Voltages')
-ax1.set_title('PMT Gain at 800 V - Run 16 Average')
-ax1.set_ylabel(r'PMT Gain at 800 V [$e^-$]')
-#ax1.set_ylim(12.8, 15)
-fig1.autofmt_xdate()
 
-#ax2.legend(handles=l_legend_handles, title='Cathode Voltages')
-ax2.set_title('Power in PMT Power Law - Run 16 Average')
-ax2.set_ylabel('Power')
-ax2.set_ylim(11.38, 11.50)
-fig2.autofmt_xdate()
+l_guesses_mean = []
+l_guesses_std = []
+for par_name in l_par_names:
+    l_guesses_mean.append(d_run_avg_fits[par_name]['guess'])
+    l_guesses_std.append(d_run_avg_fits[par_name]['guess']*0.05)
+
+a_starting_pos = emcee.utils.sample_ball(l_guesses_mean, l_guesses_std, size=num_walkers)
 
 
-fig1.savefig('%ssummary_gain_800V.png' % (s_time_dependence_plots_dir))
-fig2.savefig('%ssummary_power.png' % (s_time_dependence_plots_dir))
-#plt.show()
+run_avg_sampler = emcee.DESampler(num_walkers, num_dim, ln_likelihood_kde_posterior, threads=1, autoscale_gamma=True, args=[d_mpe])
+
+with click.progressbar(run_avg_sampler.sample(a_starting_pos, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+    for pos, lnprob, state in mcmc_sampler:
+        pass
+
+run_avg_samples = run_avg_sampler.chain[:, -steps_to_keep:, :num_dim].reshape((-1, num_dim))
+
+fig_corner = corner.corner(run_avg_samples, labels=l_par_names, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+fig_corner.savefig('%scorner_time_dependence_run_avg.png' % (s_time_dependence_plots_dir))
+
+
+for i, par_name in enumerate(l_par_names):
+    d_run_avg_fits[par_name]['run_avg_median_minus_one_sigma'], d_run_avg_fits[par_name]['run_avg_median'], d_run_avg_fits[par_name]['run_avg_median_plus_one_sigma'] = np.percentile(run_avg_samples[:,i], l_percentiles)
+    #print d_run_avg_fits[par_name]['run_avg_median_minus_one_sigma'], d_run_avg_fits[par_name]['run_avg_median'], d_run_avg_fits[par_name]['run_avg_median_plus_one_sigma']
+
+
+
+
+for i, par_name in enumerate(l_par_names):
+
+    d_run_avg_fits[par_name]['fig'], d_run_avg_fits[par_name]['ax'] = plt.subplots(1)
+
+    y_line_median = np.asarray([d_run_avg_fits[par_name]['run_avg_median'] for j in xrange(points_for_lines)])
+    y_line_median_minus_one_sigma = np.asarray([d_run_avg_fits[par_name]['run_avg_median_minus_one_sigma'] for j in xrange(points_for_lines)])
+    y_line_median_plus_one_sigma = np.asarray([d_run_avg_fits[par_name]['run_avg_median_plus_one_sigma'] for j in xrange(points_for_lines)])
+
+    d_run_avg_fits[par_name]['ax'].errorbar(l_datetime, d_run_avg_fits[par_name]['l_median'], yerr=[d_run_avg_fits[par_name]['l_median'] - d_run_avg_fits[par_name]['l_median_minus_one_sigma'], d_run_avg_fits[par_name]['l_median_plus_one_sigma'] - d_run_avg_fits[par_name]['l_median']], color=d_run_avg_fits[par_name]['color'], linestyle='')
+    
+    d_run_avg_fits[par_name]['ax'].plot(x_line, y_line_median, color=d_run_avg_fits[par_name]['color'], linestyle='--')
+    
+    #print x_line, y_line_median_minus_one_sigma, y_line_median_plus_one_sigma
+    d_run_avg_fits[par_name]['ax'].fill_between(x_line, y_line_median_minus_one_sigma, y_line_median_plus_one_sigma, color=d_run_avg_fits[par_name]['color'], alpha=0.2)
+    
+    s_fit = d_run_avg_fits[par_name]['title']
+    s_fit += ' = $%.3e^{+%.3e}_{-%.3e}$ ' % (d_run_avg_fits[par_name]['run_avg_median'], abs(d_run_avg_fits[par_name]['run_avg_median']-d_run_avg_fits[par_name]['run_avg_median_plus_one_sigma']), abs(d_run_avg_fits[par_name]['run_avg_median']-d_run_avg_fits[par_name]['run_avg_median_minus_one_sigma']))
+    s_fit += d_run_avg_fits[par_name]['units']
+    #print s_fit
+    
+    d_run_avg_fits[par_name]['ax'].text(0.5, 0.9, s_fit, ha='center', va='center', transform=d_run_avg_fits[par_name]['ax'].transAxes)
+
+    d_run_avg_fits[par_name]['fig'].savefig('%ssummary_%s.png' % (s_time_dependence_plots_dir, par_name))
+
+"""
+# ------------------------------------------------
+# ------------------------------------------------
+#  Fit relative gains
+# ------------------------------------------------
+# ------------------------------------------------
+
+num_dim = 2
+
+#print d_rel_gains['l_rel_gain_530V_mean']
+#print d_rel_gains['l_rel_gain_610V_mean']
+
+
+
+
+# BEGIN WITH 530 V
+
+rel_gain_530V_mean_guess = 9.4e-3
+rel_gain_530V_std_guess = 1e-4
+
+
+a_starting_pos_rel_gain_530V = emcee.utils.sample_ball([rel_gain_530V_mean_guess, rel_gain_530V_std_guess], [rel_gain_530V_mean_guess*0.1, rel_gain_530V_std_guess*0.1], size=num_walkers)
+
+rel_gain_530V_sampler = emcee.DESampler(num_walkers, num_dim, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_rel_gains['l_rel_gain_530V_mean'], d_rel_gains['l_rel_gain_530V_std']])
+
+with click.progressbar(rel_gain_530V_sampler.sample(a_starting_pos_rel_gain_530V, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+    for pos, lnprob, state in mcmc_sampler:
+        pass
+
+rel_gain_530V_samples = rel_gain_530V_sampler.chain[:, -steps_to_keep:, :num_dim].reshape((-1, num_dim))
+
+fig_corner_rel_gain_530V = corner.corner(rel_gain_530V_samples, labels=['Relative Gain at 530V Mean', 'Relative Gain at 530V Std'], quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+fig_corner_rel_gain_530V.savefig('%scorner_time_dependence_rel_gain_530V.png' % (s_time_dependence_plots_dir))
+
+run_avg_rel_gain_530V_mean, run_avg_rel_gain_530V_std = np.percentile(rel_gain_530V_samples[:,0], 50), np.percentile(rel_gain_530V_samples[:,1], 50)
+
+
+fig_530V, ax_530V = plt.subplots(1)
+
+y_line_rel_gain_530V_mean = np.asarray([run_avg_rel_gain_530V_mean for j in xrange(points_for_lines)])
+y_line_rel_gain_530V_mean_minus_one_sigma = np.asarray([run_avg_rel_gain_530V_mean - run_avg_rel_gain_530V_std for j in xrange(points_for_lines)])
+y_line_rel_gain_530V_mean_plus_one_sigma = np.asarray([run_avg_rel_gain_530V_mean + run_avg_rel_gain_530V_std for j in xrange(points_for_lines)])
+
+ax_530V.errorbar(l_datetime, d_rel_gains['l_rel_gain_530V_mean'], yerr=d_rel_gains['l_rel_gain_530V_std'], color='b', linestyle='', marker='.')
+
+ax_530V.plot(x_line, y_line_rel_gain_530V_mean, color='b', linestyle='--')
+ax_530V.fill_between(x_line, y_line_rel_gain_530V_mean_minus_one_sigma, y_line_rel_gain_530V_mean_plus_one_sigma, color='b', alpha=0.2)
+
+s_fit = r'$\frac{g(530V)}{g(800V)} = %.3e \pm %.3e$' % (run_avg_rel_gain_530V_mean, run_avg_rel_gain_530V_std)
+
+ax_530V.text(0.5, 0.9, s_fit, ha='center', va='center', transform=ax_530V.transAxes)
+
+ax_530V.set_title('Relative Gain at 530V - Run 16 Average')
+ax_530V.set_ylabel(r'$\frac{g(530V)}{g(800V)}$', labelpad=-3)
+fig_530V.autofmt_xdate()
+
+fig_530V.savefig('%ssummary_rel_gain_530V.png' % (s_time_dependence_plots_dir))
+
+
+
+
+
+
+# CONTINUE WITH 610V
+
+rel_gain_610V_mean_guess = 4.44e-3
+rel_gain_610V_std_guess = 4e-5
+
+a_starting_pos_rel_gain_610V = emcee.utils.sample_ball([rel_gain_610V_mean_guess, rel_gain_610V_std_guess], [rel_gain_610V_mean_guess*0.1, rel_gain_610V_std_guess*0.1], size=num_walkers)
+
+rel_gain_610V_sampler = emcee.DESampler(num_walkers, num_dim, ln_likelihood_gaussian_uncertainty_on_pts, threads=1, autoscale_gamma=True, args=[d_rel_gains['l_rel_gain_610V_mean'], d_rel_gains['l_rel_gain_610V_std']])
+
+with click.progressbar(rel_gain_610V_sampler.sample(a_starting_pos_rel_gain_610V, iterations=num_steps, ), length=num_steps) as mcmc_sampler:
+    for pos, lnprob, state in mcmc_sampler:
+        pass
+
+rel_gain_610V_samples = rel_gain_610V_sampler.chain[:, -steps_to_keep:, :num_dim].reshape((-1, num_dim))
+
+fig_corner_rel_gain_610V = corner.corner(rel_gain_610V_samples, labels=['Relative Gain at 610V Mean', 'Relative Gain at 610V Std'], quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 8})
+fig_corner_rel_gain_610V.savefig('%scorner_time_dependence_rel_gain_610V.png' % (s_time_dependence_plots_dir))
+
+run_avg_rel_gain_610V_mean, run_avg_rel_gain_610V_std = np.percentile(rel_gain_610V_samples[:,0], 50), np.percentile(rel_gain_610V_samples[:,1], 50)
+
+
+fig_610V, ax_610V = plt.subplots(1)
+
+y_line_rel_gain_610V_mean = np.asarray([run_avg_rel_gain_610V_mean for j in xrange(points_for_lines)])
+y_line_rel_gain_610V_mean_minus_one_sigma = np.asarray([run_avg_rel_gain_610V_mean - run_avg_rel_gain_610V_std for j in xrange(points_for_lines)])
+y_line_rel_gain_610V_mean_plus_one_sigma = np.asarray([run_avg_rel_gain_610V_mean + run_avg_rel_gain_610V_std for j in xrange(points_for_lines)])
+
+ax_610V.errorbar(l_datetime, d_rel_gains['l_rel_gain_610V_mean'], yerr=d_rel_gains['l_rel_gain_610V_std'], color='b', linestyle='', marker='.')
+
+ax_610V.plot(x_line, y_line_rel_gain_610V_mean, color='b', linestyle='--')
+ax_610V.fill_between(x_line, y_line_rel_gain_610V_mean_minus_one_sigma, y_line_rel_gain_610V_mean_plus_one_sigma, color='b', alpha=0.2)
+
+s_fit = r'$\frac{g(610V)}{g(800V)} = %.3e \pm %.3e$' % (run_avg_rel_gain_610V_mean, run_avg_rel_gain_610V_std)
+
+ax_610V.text(0.5, 0.9, s_fit, ha='center', va='center', transform=ax_610V.transAxes)
+
+ax_610V.set_title('Relative Gain at 610V - Run 16 Average')
+ax_610V.set_ylabel(r'$\frac{g(610V)}{g(800V)}$', labelpad=-3)
+fig_610V.autofmt_xdate()
+
+fig_610V.savefig('%ssummary_rel_gain_610V.png' % (s_time_dependence_plots_dir))
+
+

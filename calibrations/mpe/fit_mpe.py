@@ -112,9 +112,9 @@ class fit_mpe:
         self.s_base_save_name = 'mpe_fit'
         self.dict_filename = 'sampler_dictionary.p'
         self.s_directory_save_name = 'results/%s/' % (self.timestamp)
-        self.a_free_par_guesses = [self.d_fit_files[voltage_setting]['sig_mean_value'], 11.4]
-        self.a_free_par_std_guesses = [self.d_fit_files[voltage_setting]['sig_mean_uncertainty'], 0.5]
-        self.a_free_par_names = ['mpe_gain_800V', 'gain_power']
+        self.a_free_par_guesses = [self.d_fit_files[800]['sig_mean_value'], 10.24] + [1.98e-1, 4.15e-4, 7.25e-7]
+        self.a_free_par_std_guesses = [self.d_fit_files[800]['sig_mean_uncertainty'], 0.05] + [1.98e-2, 4.15e-5, 7.25e-8]
+        self.a_free_par_names = ['mpe_gain_800V', 'gain_power'] + ['pol_par0', 'pol_par1', 'pol_par2']
         
 
         
@@ -124,6 +124,14 @@ class fit_mpe:
 
     def prior_between_0_and_1(self, parameter_to_examine):
         if 0 < parameter_to_examine < 1:
+            return 0
+        else:
+            return -np.inf
+
+
+
+    def prior_between_minus_1_and_1(self, parameter_to_examine):
+        if -1 < parameter_to_examine < 1:
             return 0
         else:
             return -np.inf
@@ -144,27 +152,39 @@ class fit_mpe:
 
 
     def prior_mpe_power(self, power):
-        if 10 < power < 13:
+        if 8 < power < 13:
             return 0
         else:
             return -np.inf
 
 
     def mpe_ln_likelihood(self, a_parameters):
-        mpe_gain_800, mpe_power = a_parameters
+        mpe_gain_800, mpe_power, pol_par0, pol_par1, pol_par2 = a_parameters
+        #print a_parameters
 
         ln_prior = 0
         ln_likelihood = 0
 
         ln_prior += self.prior_mpe_power(mpe_power)
         ln_prior += self.prior_mpe_gain_800(mpe_gain_800)
+        ln_prior += self.prior_between_minus_1_and_1(pol_par0)
+        ln_prior += self.prior_between_minus_1_and_1(pol_par1)
+        ln_prior += self.prior_between_minus_1_and_1(pol_par2)
+        
         
         
         if not np.isfinite(ln_prior):
             return -np.inf
 
         for voltage_setting in self.l_voltage_settings:
+            efficiency = max(min(pol_par0 + pol_par1*float(voltage_setting) + pol_par2*float(voltage_setting)**2, 1), 0)
             expected_gain = mpe_gain_800*np.power(float(voltage_setting)/800., mpe_power)
+            #print voltage_setting, float(voltage_setting)/800.
+            #print expected_gain, efficiency, self.d_fit_files[voltage_setting]['sig_mean_value']
+            
+            #print voltage_setting, pol_par0 + pol_par1*float(voltage_setting) + pol_par2*float(voltage_setting)**2, expected_gain, self.d_fit_files[voltage_setting]['sig_mean_value']
+            #print max(min(pol_par0 + pol_par1*float(voltage_setting) + pol_par2*float(voltage_setting)**2, 1.), 0.)
+            expected_gain *= efficiency
             ln_likelihood += scipy.stats.norm.logpdf(expected_gain, self.d_fit_files[voltage_setting]['sig_mean_value'], self.d_fit_files[voltage_setting]['sig_mean_uncertainty'])
 
 
@@ -342,9 +362,14 @@ class fit_mpe:
         a_medians = np.percentile(a_sampler, 50., axis=0)
         gain_800V_minus_one_sigma, gain_800V_median, gain_800V_plus_one_sigma = np.percentile(a_sampler[:,0], [16., 50, 84.])
         power_minus_one_sigma, power_median, power_plus_one_sigma = np.percentile(a_sampler[:,1], [16., 50, 84.])
+        pol_par0_minus_one_sigma, pol_par0_median, pol_par0_plus_one_sigma = np.percentile(a_sampler[:,2], [16., 50, 84.])
+        pol_par1_minus_one_sigma, pol_par1_median, pol_par1_plus_one_sigma = np.percentile(a_sampler[:,3], [16., 50, 84.])
+        pol_par2_minus_one_sigma, pol_par2_median, pol_par2_plus_one_sigma = np.percentile(a_sampler[:,4], [16., 50, 84.])
+        
         #print a_medians
         
         f1, (ax1) = plt.subplots(1)
+        f2, (ax2) = plt.subplots(1)
         
         l_gains = [0. for i in xrange(len(self.l_voltage_settings))]
         l_gain_uncertainties = [0. for i in xrange(len(self.l_voltage_settings))]
@@ -357,14 +382,23 @@ class fit_mpe:
         
         
         # draw confidence band
-        def pyfunc_power_law(voltage, gain_800V, power):
-            return gain_800V*np.power((voltage/800.), power)
+        def pyfunc_power_law(voltage, gain_800V, power, pol_par0, pol_par1, pol_par2):
+            return gain_800V*np.power((voltage/800.), power) * max(min(pol_par0 + pol_par1*voltage + pol_par2*voltage**2, 1), 0)
         
         a_band_x_values, a_band_y_values, a_band_y_err_low, a_band_y_err_high = neriX_analysis.create_1d_fit_confidence_band(pyfunc_power_law, a_means, a_cov, x_lb, x_ub)
         
-        
         x_line = np.linspace(x_lb, x_ub, 50)
-        y_line = a_means[0]*np.power(x_line/800., a_means[1])
+        y_line = a_means[0]*np.power(x_line/800., a_means[1])*np.maximum(np.minimum(a_means[2] + a_means[3]*x_line + a_means[4]*x_line**2, [1 for i in xrange(len(x_line))]), [0 for i in xrange(len(x_line))])
+        
+        
+        def pyfunc_eff(voltage, pol_par0, pol_par1, pol_par2):
+            return max(min(pol_par0 + pol_par1*voltage + pol_par2*voltage**2, 1), 0)
+        
+        a_band_x_eff_values, a_band_y_eff_values, a_band_y_eff_err_low, a_band_y_eff_err_high = neriX_analysis.create_1d_fit_confidence_band(pyfunc_eff, a_means[2:], a_cov[2:,2:], x_lb, x_ub)
+        y_eff_line = np.maximum(np.minimum(a_means[2] + a_means[3]*x_line + a_means[4]*x_line**2, [1 for i in xrange(len(x_line))]), [0 for i in xrange(len(x_line))])
+        
+        
+        
     
         ax1.errorbar(self.l_voltage_settings, l_gains, yerr=l_gain_uncertainties, color='b', marker='.', linestyle='')
         ax1.plot(x_line, y_line, color='purple', linestyle='--')
@@ -379,20 +413,46 @@ class fit_mpe:
         ax1.set_yscale('log', nonposy='clip')
         ax1.set_xlim(x_lb, x_ub)
         
-        s_formula = r'$g(V) = g(800V)(\frac{V}{800V})^{\beta}$'
+        
+        
+        
+        ax2.plot(x_line, y_eff_line, color='red', linestyle='--')
+        
+        ax2.fill_between(a_band_x_eff_values, a_band_y_eff_values-a_band_y_eff_err_low, a_band_y_eff_values+a_band_y_eff_err_high, facecolor='red', alpha=0.2)
+        
+        #ax2.set_yscale('log', nonposx='clip')
+        ax2.set_title('First Dynode Collection Efficiency - %s' % (self.timestamp))
+        ax2.set_xlabel(r'PMT Voltage [V]')
+        ax2.set_ylabel(r'Efficiency')
+        
+        #ax2.set_yscale('log', nonposy='clip')
+        ax2.set_xlim(x_lb, x_ub)
+        ax2.set_ylim(0, 1.05)
+        
+        
+        
+        
+        
+        
+        s_formula = r'$g(V) = g(800V)(\frac{V}{800V})^{\beta} \dot Eff$'
+        s_eff = '$Eff = \gamma_0 + \gamma_1V + \gamma_2V^2$'
+        s_eff_values = '$\gamma_0=%.2e^{+%.2e}_{-%.2e} [e^-]$\n' % (pol_par0_median, pol_par0_plus_one_sigma, pol_par0_minus_one_sigma)
+        s_eff_values += '$\gamma_1=%.2e^{+%.2e}_{-%.2e} [e^-]$\n' % (pol_par1_median, pol_par1_plus_one_sigma, pol_par1_minus_one_sigma)
+        s_eff_values += '$\gamma_2=%.2e^{+%.2e}_{-%.2e} [e^-]$' % (pol_par2_median, pol_par2_plus_one_sigma, pol_par2_minus_one_sigma)
         s_gain = r'$g(800V)=%.2e^{+%.2e}_{-%.2e} [e^-]$' % (gain_800V_median, gain_800V_plus_one_sigma-gain_800V_median, gain_800V_median-gain_800V_minus_one_sigma)
         s_power = r'$\beta=%.2f^{+%.2e}_{-%.2e}$' % (power_median, power_plus_one_sigma-power_median, power_median-power_minus_one_sigma)
-        ax1.text(0.3, 0.8, s_formula + '\n' + s_gain + '\n' + s_power, ha='center', va='center', transform=ax1.transAxes)
+        ax1.text(0.3, 0.75, s_formula + '\n' + s_eff + '\n' + s_gain + '\n' + s_power + '\n' + s_eff_values, ha='center', va='center', transform=ax1.transAxes)
     
         #plt.show()
-        f1.savefig(self.s_directory_save_name + self.s_base_save_name + '_fit.png')
+        f1.savefig(self.s_directory_save_name + self.s_base_save_name + '_power_law.png')
+        f2.savefig(self.s_directory_save_name + self.s_base_save_name + '_efficiency.png')
     
 
 
 
     def differential_evolution_minimizer(self, a_bounds, maxiter=250, tol=0.05, popsize=15, polish=False):
         def neg_log_likelihood_diff_ev(a_guesses):
-            return -self.gas_gain_ln_likelihood(a_guesses)
+            return -self.mpe_ln_likelihood(a_guesses)
         print '\n\nStarting differential evolution minimizer...\n\n'
         result = op.differential_evolution(neg_log_likelihood_diff_ev, a_bounds, disp=True, maxiter=maxiter, tol=tol, popsize=popsize, polish=polish)
         print result
@@ -402,7 +462,7 @@ class fit_mpe:
 
 
 if __name__ == '__main__':
-    
+    """
     d_files = {800:'nerix_160404_1014',
                750:'nerix_160404_1015',
                700:'nerix_160404_1016',
@@ -410,9 +470,9 @@ if __name__ == '__main__':
                600:'nerix_160404_1018',
                550:'nerix_160404_1019',
                500:'nerix_160404_1020'}
-    
-    
     """
+    
+    
     d_files = {800:'nerix_160411_1205',
                750:'nerix_160411_1206',
                700:'nerix_160411_1207',
@@ -420,15 +480,23 @@ if __name__ == '__main__':
                600:'nerix_160411_1209',
                550:'nerix_160411_1210',
                500:'nerix_160411_1211'}
-    """
+    
     
 
     test = fit_mpe(d_files)
 
+    #test.mpe_ln_likelihood(test.a_free_par_guesses)
 
-    test.run_mpe_mcmc(num_walkers=16, num_steps=1000, threads=1)
-    test.draw_mpe_corner_plot(num_walkers=16, num_steps_to_include=300)
-    test.draw_best_fit_on_hist(num_walkers=16, num_steps_to_include=300)
+    """
+    a_bounds = [(1.47e9, 1.49e9), (9.5, 11.49), (0.08, 0.2), (4e-4, 5.9e-4), (4.5e-7, 1e-6)]
+    test.differential_evolution_minimizer(a_bounds)
+    """
+    
+    
+    test.run_mpe_mcmc(num_walkers=16, num_steps=10000, threads=1)
+    test.draw_mpe_corner_plot(num_walkers=16, num_steps_to_include=2000)
+    test.draw_best_fit_on_hist(num_walkers=16, num_steps_to_include=2000)
+
 
 
 
