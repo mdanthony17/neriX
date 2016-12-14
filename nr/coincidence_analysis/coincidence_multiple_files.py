@@ -150,7 +150,7 @@ print '\nNo TOF cut!\n'
 #current_analysis.add_cut('%s < 10 && %s < 900' % (s1Branch, s2Branch))
 #current_analysis.add_cut('(%s > %f && %s < %f) && (%s > %f && %s < %f)' % (s1Branch, 6, s1Branch, 9, s2Branch, 800, s2Branch, 900))
 
-current_analysis.get_lT1()[0].Scan('EventId:S1sTotBottom[]:S1IntegralBeforeLiqSci[0]:S1IntegralBeforeLiqSciHeight[0]:S2sTotBottom[0]:S1sPeak[]:S1IntegralBeforeLiqSciPeak[0]:S2sPeak[0]', current_analysis.get_cuts())
+#current_analysis.get_lT1()[0].Scan('EventId:S1sTotBottom[]:S1IntegralBeforeLiqSci[0]:S1IntegralBeforeLiqSciHeight[0]:S2sTotBottom[0]:S1sPeak[]:S1IntegralBeforeLiqSciPeak[0]:S2sPeak[0]', current_analysis.get_cuts())
 
 
 print '\nCreating S1 vs S2 Histogram.\n'

@@ -4,6 +4,7 @@
 /er/
 nr/coincidence_fitting/simulated_data/
 nr/pf_efficiency/nerix_111111_1112.root
+calibrations/anticorrelation/results/
 nr.zip
 nr/coincidence_fitting/neriX_simulation_config.py
 nr/coincidence_fitting/neriX_simulation_config.pyc

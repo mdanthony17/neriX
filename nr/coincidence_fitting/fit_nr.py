@@ -342,7 +342,7 @@ class fit_nr(object):
                                            6200:17.50} # actual energies that degree corresponds to
 
         self.name_notes = name_notes
-        self.path_to_coincidence_data = '%s/../analysis/full_angle_files/' % (neriX_simulation_config.path_to_this_module)
+        self.path_to_coincidence_data = '%s/../coincidence_analysis/results/' % (neriX_simulation_config.path_to_this_module)
         self.path_to_energy_spectra = '%s/simulated_data/' % (neriX_simulation_config.path_to_this_module)
         self.path_to_reduced_energy_spectra = '%s/reduced_simulation_data/' % (neriX_simulation_config.path_to_this_module)
 
@@ -362,6 +362,13 @@ class fit_nr(object):
         # get all degrees and cathode settings and sort
         self.l_degree_settings_in_use = sorted(d_coincidence_data['degree_settings'])
         self.l_cathode_settings_in_use = sorted(d_coincidence_data['cathode_settings'])
+        
+        
+        self.l_s1_settings = [20, 0, 20]
+        self.l_s2_settings = [20, 0, 2000]
+        self.l_log_settings = [20, 1, 3.5]
+        
+        
 
         for cathode_setting in self.l_cathode_settings_in_use:
             self.d_coincidence_data_information[cathode_setting] = {}
@@ -369,23 +376,29 @@ class fit_nr(object):
                 self.d_coincidence_data_information[cathode_setting][degree_setting] = {}
 
                 # add basic information to dictionary
-                self.d_coincidence_data_information[cathode_setting][degree_setting]['file'] = File('%sresults_%.3fkV_%ddeg.root' % (self.path_to_coincidence_data, cathode_setting, degree_setting), 'read')
-                self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hS1
-                self.d_coincidence_data_information[cathode_setting][degree_setting]['s2_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hS2
-                self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_s2_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hS1S2
-                self.d_coincidence_data_information[cathode_setting][degree_setting]['log_s2_s1_hist'] = self.d_coincidence_data_information[cathode_setting][degree_setting]['file'].hLogS2S1
+                #self.d_coincidence_data_information[cathode_setting][degree_setting]['file'] = File('%s%.3fkV_%ddeg/s1_s2.pkl' % (self.path_to_coincidence_data, cathode_setting, degree_setting), 'read')
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2'] = pickle.load(open('%s%.3fkV_%ddeg/s1_s2.pkl' % (self.path_to_coincidence_data, cathode_setting, degree_setting), 'r'))
+                
+                
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_hist'] = Hist(*self.l_s1_settings, name='hS1')
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_hist'].fill_array(self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s1'])
+                
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['s2_hist'] = Hist(*self.l_s2_settings, name='hS2')
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['s2_hist'].fill_array(self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s2'])
+                
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_s2_hist'] = Hist2D(*(self.l_s1_settings+self.l_s2_settings), name='hS1S2')
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['s1_s2_hist'].fill_array(np.asarray([self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s1'], self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s2']]).T)
+                
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['log_s2_s1_hist'] = Hist2D(*(self.l_s1_settings+self.l_log_settings), name='hLogS2S1')
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['log_s2_s1_hist'].fill_array(np.asarray([self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s1'], np.log10(self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s2']/self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s1'])]).T)
+                
+                self.d_coincidence_data_information[cathode_setting][degree_setting]['num_data_pts'] = len(self.d_coincidence_data_information[cathode_setting][degree_setting]['d_s1_s2']['s1'])
+                
                 self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'] = neriX_analysis.convert_2D_hist_to_matrix(self.d_coincidence_data_information[cathode_setting][degree_setting]['log_s2_s1_hist'], dtype=np.float32)
-                self.d_coincidence_data_information[cathode_setting][degree_setting]['num_data_pts'] = np.sum(self.d_coincidence_data_information[cathode_setting][degree_setting]['a_log_s2_s1'])
 
-        # grab S1, S2, and log settings of any histogram
-        # since they should all be the same
-        h_first_s1 = self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['s1_hist']
-        h_first_s2 = self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['s2_hist']
-        h_first_log_s2_s1 = self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['log_s2_s1_hist']
 
-        self.l_s1_settings = [h_first_s1.GetNbinsX(), h_first_s1.GetXaxis().GetXmin(), h_first_s1.GetXaxis().GetXmax()]
-        self.l_s2_settings = [h_first_s2.GetNbinsX(), h_first_s2.GetXaxis().GetXmin(), h_first_s2.GetXaxis().GetXmax()]
-        self.l_log_settings = [h_first_log_s2_s1.nbins(1), h_first_log_s2_s1.GetYaxis().GetXmin(), h_first_log_s2_s1.GetYaxis().GetXmax()]
+
+
 
 
         # define bin edges for use in MC
@@ -446,37 +459,37 @@ class fit_nr(object):
 
         neriX_analysis.warning_message('Detector parameters hard-coded')
 
-        self.l_means_g1_g2 = [0.12961637894547148, 20.88715549107226]
-        self.l_cov_matrix_g1_g2 = [[3.6039167387306653e-06, 0.00057442202683395834], [0.00057442202683395834, 0.093143781598001851]]
+        self.g1_value = 0.117
+        self.g1_uncertainty = 0.002
+        
+        self.w_value = 13.7
+        self.w_value_uncertainty = 0.08
+        
+        self.extraction_efficiency_value = 0.895
+        self.extraction_efficiency_uncertainty = 0.002
 
-        self.gas_gain_value = 21.85
-        self.gas_gain_uncertainty = 0.3
+        self.gas_gain_value = 21.2
+        self.gas_gain_uncertainty = 0.04
 
-        self.gas_gain_width = 9.2
-        self.gas_gain_width_uncertainty = 0.3
+        self.gas_gain_width = 8.01
+        self.gas_gain_width_uncertainty = 0.29
 
-        self.spe_res_value = 0.66
-        self.spe_res_uncertainty = 0.2
+        self.spe_res_value = 0.59
+        self.spe_res_uncertainty = 0.0056
 
         self.l_means_pf_stdev_pars = [0.014673497158526188, 0.5284272187436192, 4.3229124008196411]
         self.l_cov_matrix_pf_stdev_pars = [[9.4927705182690691e-10, 2.352933249729148e-08, -2.4920029049639913e-07], [2.352933249729148e-08, 4.8381636138100317e-06, -1.7993529191388666e-05], [-2.4920029049639913e-07, -1.7993529191388666e-05, 0.00013121519103705991]]
 
-        #self.l_means_pf_eff_pars = [1.96178522, 0.46718076]
-        #self.l_cov_matrix_pf_eff_pars = [[7.58956686e-05, 9.78759376e-07], [9.78759376e-07, 2.79732862e-05]]
-        self.l_means_pf_eff_pars = [3.09977598, 0.7398706]
+        self.l_means_pf_eff_pars = [3.09977598,  0.7398706] #[1.96178522,  0.46718076]
         self.l_cov_matrix_pf_eff_pars = [[1.88474706e-04, 4.67178803e-06], [4.67178803e-06, 7.54638566e-05]]
 
         # only for producing initial distribution
         # NOT FOR LIKELIHOOD
-        self.l_means_s1_eff_pars = [0.1, 0.1]
-        self.l_cov_matrix_s1_eff_pars = [[.3**2, 0], [0, .1**2]]
+        #self.l_means_s1_eff_pars = [0.1, 0.1]
+        #self.l_cov_matrix_s1_eff_pars = [[.3**2, 0], [0, .1**2]]
 
-        self.l_means_s2_eff_pars = [100, 394]
-        self.l_cov_matrix_s2_eff_pars = [[ 42**2, 0], [0, 53.7**2]]
-        neriX_analysis.warning_message('S2 trigger parameters are placeholders - need to reanalyze and get covariance matrix!')
-
-        self.w_value = 13.7
-        self.w_uncertainty = 0.4
+        self.l_means_s2_eff_pars = [110.02657201, 375.86306321]
+        self.l_cov_matrix_s2_eff_pars = [[464.38711103, 151.68557669], [151.68557669, 535.59339378]]
 
         # below are the NEST values for the Lindhard model
         self.nest_lindhard_model = {}
@@ -505,7 +518,7 @@ class fit_nr(object):
         if fit_type == 's':
             self.ln_likelihood_function = self.ln_likelihood_full_matching_single_energy
             self.ln_likelihood_function_wrapper = self.wrapper_ln_likelihood_full_matching_single_energy
-            self.num_dimensions = 19
+            self.num_dimensions = 20
             self.gpu_function_name = 'gpu_full_observables_production_with_log_hist_single_energy'
             self.directory_name = 'single_energy'
 
@@ -711,32 +724,32 @@ class fit_nr(object):
 
 
 
-
-    def get_g1_g2_default(self, g1, g2):
-        return multivariate_normal.pdf([g1, g2], self.l_means_g1_g2, self.l_cov_matrix_g1_g2), g1, g2
-
-
+    def get_g1_default(self, g1_value):
+        return norm.pdf(g1_value, self.g1_value, self.g1_uncertainty), g1_value
+    
+    
+    def get_extraction_efficiency_default(self, extraction_efficiency_value):
+        return norm.pdf(extraction_efficiency_value, self.extraction_efficiency_value, self.extraction_efficiency_uncertainty), extraction_efficiency_value
 
 
     # get likelihood and gas gain given random variable (nuissance parameter)
     # gasGainRV should be normally distributed
-    def get_gas_gain_default(self, gasGainRV):
-        return norm.pdf(gasGainRV), self.gas_gain_value + (gasGainRV*self.gas_gain_uncertainty)
+    def get_gas_gain_default(self, gas_gain_mean):
+        return norm.pdf(gas_gain_mean, self.gas_gain_value, self.gas_gain_uncertainty), gas_gain_mean
 
 
     # get likelihood and gas gain width given random variable (nuissance parameter)
     # gasGainWidthRV should be normally distributed
-    def get_gas_gain_width_default(self, gasGainWidthRV):
-        return norm.pdf(gasGainWidthRV), self.gas_gain_width + (gasGainWidthRV*self.gas_gain_width_uncertainty)
+    def get_gas_gain_width_default(self, gas_gain_width_value):
+        return norm.pdf(gas_gain_width_value, self.gas_gain_width, self.gas_gain_width_uncertainty), gas_gain_width_value
 
 
     # get likelihood and spe res width given random variable (nuissance parameter)
     # gasGainWidthRV should be normally distributed
-    def get_spe_res_default(self, speResRV):
-        return norm.pdf(speResRV), self.spe_res_value + (speResRV*self.spe_res_uncertainty)
+    def get_spe_res_default(self, spe_res):
+        return norm.pdf(spe_res, self.spe_res_value, self.spe_res_uncertainty), spe_res
 
 
-    # get likelihood and s1 efficiency parameters given random variable (nuissance parameter)
     def get_pf_eff_default(self, pf_eff_par0, pf_eff_par1):
         return multivariate_normal.pdf([pf_eff_par0, pf_eff_par1], self.l_means_pf_eff_pars, self.l_cov_matrix_pf_eff_pars), pf_eff_par0, pf_eff_par1
 
@@ -794,8 +807,8 @@ class fit_nr(object):
     
     # get likelihood and w-value given random variable (nuissance parameter)
     # w_value_rv should be normally distributed
-    def get_w_value_default(self, w_value_rv):
-        return norm.pdf(w_value_rv), self.w_value + (w_value_rv*self.w_uncertainty)
+    def get_w_value_default(self, w_value):
+        return norm.pdf(w_value, self.w_value, self.w_value_uncertainty), w_value
 
 
 
@@ -950,7 +963,7 @@ class fit_nr(object):
 
 
 
-    def ln_likelihood_full_matching_single_energy(self, py, qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_rv, g2_value, gas_gain_rv, gas_gain_width_rv, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_gpu_local_info, draw_fit=False):
+    def ln_likelihood_full_matching_single_energy(self, py, qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, scale_par, d_gpu_local_info, draw_fit=False):
 
 
 
@@ -982,16 +995,19 @@ class fit_nr(object):
 
 
         # priors of detector variables
-        current_likelihood, g1_value, g2_value = self.get_g1_g2_default(g1_value, g2_value)
+        current_likelihood, g1_value = self.get_g1_default(g1_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+        
+        current_likelihood, extraction_efficiency = self.get_extraction_efficiency_default(extraction_efficiency_value)
         prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 
-        current_likelihood, spe_res = self.get_spe_res_default(spe_res_rv)
+        current_likelihood, spe_res = self.get_spe_res_default(spe_res_value)
         prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 
-        current_likelihood, gas_gain_value = self.get_gas_gain_default(gas_gain_rv)
+        current_likelihood, gas_gain_value = self.get_gas_gain_default(gas_gain_mean_value)
         prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 
-        current_likelihood, gas_gain_width = self.get_gas_gain_width_default(gas_gain_width_rv)
+        current_likelihood, gas_gain_width = self.get_gas_gain_width_default(gas_gain_width_value)
         prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
 
 
@@ -1004,8 +1020,6 @@ class fit_nr(object):
 
         current_ln_likelihood, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.get_pf_stdev_default(pf_stdev_par0, pf_stdev_par1, pf_stdev_par2)
         prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_ln_likelihood)
-
-        extraction_efficiency = g2_value / float(gas_gain_value)
 
 
         # if prior is -inf then don't bother with MC
@@ -1068,7 +1082,7 @@ class fit_nr(object):
         #a_s1_s2_mc = np.multiply(a_s1_s2_mc, np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc)
 
         # if making PDF rather than scaling for rate
-        scale_par = float(self.num_mc_events) / sum_mc
+        scale_par *= float(self.num_mc_events) / sum_mc
 
         a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['num_data_pts']/float(self.num_mc_events))
 
@@ -1167,7 +1181,7 @@ class fit_nr(object):
 
         flat_s1_log_data = np.asarray(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'].flatten(), dtype=np.float32)
         flat_s1_log_mc = np.asarray(a_s1_s2_mc.flatten(), dtype=np.float32)
-        logLikelihoodMatching = c_log_likelihood(flat_s1_log_data, flat_s1_log_mc, len(flat_s1_log_data), int(self.num_mc_events), scale_par, int(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['num_data_pts']), 0.95)
+        logLikelihoodMatching = c_log_likelihood(flat_s1_log_data, flat_s1_log_mc, len(flat_s1_log_data), int(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['num_data_pts']), 0.95)
         
         total_ln_likelihood = logLikelihoodMatching + prior_ln_likelihood
 
@@ -2013,8 +2027,8 @@ class fit_nr(object):
 
     def differential_evolution_minimizer_free_pars(self, a_bounds, maxiter=250, tol=0.05, popsize=15):
         def neg_log_likelihood_diff_ev(a_guesses):
-            a_guesses = list(a_guesses) + [test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
-            return -self.gpu_pool.map(self.wrapper_ln_likelihood_full_matching_multiple_energies_lindhard_model, [a_guesses])[0]
+            a_guesses = list(a_guesses[:-1]) + [test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0] + [a_guesses[-1]]
+            return -self.gpu_pool.map(self.wrapper_ln_likelihood_full_matching_single_energy, [a_guesses])[0]
         print '\n\nStarting differential evolution minimizer...\n\n'
         result = optimize.differential_evolution(neg_log_likelihood_diff_ev, a_bounds, disp=True, maxiter=maxiter, tol=tol, popsize=popsize)
         print result
@@ -2024,7 +2038,7 @@ class fit_nr(object):
     def suppress_likelihood(self, iterations=200):
 
         if self.fit_type == 's':
-            a_free_par_guesses = [9.0, 6.0, 0.1, 0.1, self.l_means_g1_g2[0], 0., 20.89, 0.5, 0., self.l_means_pf_eff_pars[0], self.l_means_pf_eff_pars[1], self.l_means_s2_eff_pars[0], self.l_means_s2_eff_pars[1], self.l_means_pf_stdev_pars[0], self.l_means_pf_stdev_pars[1], self.l_means_pf_stdev_pars[2], 0, 0, 0]
+            a_free_par_guesses = [6.5, 7.0, 0.2, 0.2, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.85]
         elif self.fit_type == 'm':
             a_free_par_guesses = [3, 4, 5, 6, 7, 8, 9, 7, 6.5, 6, 6, 5.5, 5.5, 5., 0.1, 0.1, self.l_means_g1_g2[0], 0., 20.89, 0.5, 0., self.l_means_pf_eff_pars[0], self.l_means_pf_eff_pars[1], self.l_means_s2_eff_pars[0], self.l_means_s2_eff_pars[1], self.l_means_pf_stdev_pars[0], self.l_means_pf_stdev_pars[1], self.l_means_pf_stdev_pars[2], 0, 0, 0]
             #a_free_par_guesses = list(self.a_nest_photon_yields) + list(self.a_nest_charge_yields) + [0.1, 0.1, self.l_means_g1_g2[0], 0., 20.89, 0.5, 0., self.l_means_pf_eff_pars[0], self.l_means_pf_eff_pars[1], self.l_means_s2_eff_pars[0], self.l_means_s2_eff_pars[1], self.l_means_pf_stdev_pars[0], self.l_means_pf_stdev_pars[1], self.l_means_pf_stdev_pars[2], 0, 0, 0]
@@ -2063,19 +2077,22 @@ if __name__ == '__main__':
     # d_coincidence_data['cathode_settings'] = [0.345, 1.054, ...]
     # d_coincidence_data['cathode_settings'] = [4.5]
 
-    """
+
     d_coincidence_data = {}
-    d_coincidence_data['degree_settings'] = [5300]
-    d_coincidence_data['cathode_settings'] = [0.345]
+    d_coincidence_data['degree_settings'] = [2300]
+    d_coincidence_data['cathode_settings'] = [1.054]
 
-    test = fit_nr('s', d_coincidence_data, num_mc_events=5e5, num_gpus=1)
-    #test.suppress_likelihood()
-    l_test_parameters_single_energy = [10.0, 5.4, 0.31, 0.02, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0]
-    test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_single_energy, [l_test_parameters_single_energy])
+    test = fit_nr('s', d_coincidence_data, num_mc_events=1e5, num_gpus=1)
+    test.suppress_likelihood()
+    
+    #ln_likelihood_full_matching_single_energy(self, py, qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_gpu_local_info, draw_fit=False):
+    
+    l_test_parameters_single_energy = [6.5, 7.0, 0.2, 0.2, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.85]
+    #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_single_energy, [l_test_parameters_single_energy])
 
-    #a_free_par_bounds = [(0.,20.), (0, 20.), (0.01, 0.5), (0.01, 0.5)]
-    #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
-    """
+    a_free_par_bounds = [(0.,20.), (0, 20.), (0.01, 0.5), (0.01, 0.5), (0, 1.2)]
+    test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
+    
     
     d_coincidence_data = {}
     d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300]
@@ -2091,7 +2108,7 @@ if __name__ == '__main__':
     #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
     """
     
-
+    """
     test = fit_nr('ml', d_coincidence_data, num_mc_events=2e5, num_gpus=2)
     #test.suppress_likelihood()
     #l_test_parameters_multiple_energies_lindhard_model = [0, 1.240, 0.0472, 239, 0.01385, 0.0620, 0.1394, 3.3, 1.14, 0.31, 0.02, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
@@ -2103,6 +2120,8 @@ if __name__ == '__main__':
     
     
     #test.run_mcmc(num_steps=50, num_walkers=128)
+    """
+    
     
     test.close_workers()
 
