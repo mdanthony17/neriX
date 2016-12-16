@@ -110,7 +110,7 @@ fig_kde, ax_kde = plt.subplots(1)
 a_counts, kde_s1_x_edges, kde_s2_edges, dummy3 = ax_kde.hist2d(a_test_transformed[:,0], a_test_transformed[:,1], bins=[kde_nb, kde_nb], range=[[s1_min, s1_max], [s2_min, s2_max]], weights=a_weights)
 
 
-"""
+
 a_counts.shape
 
 a_kde_s1_bin_edges = np.linspace(s1_min, s1_max, kde_nb+1)
@@ -129,7 +129,7 @@ a_kde_s2_y_values = np.sum(a_counts, axis=0)
 a_kde_s2_x_values, a_kde_s2_y_values, a_kde_s2_x_err_low, a_kde_s2_x_err_high, a_kde_s2_y_err_low, a_kde_s2_y_err_high = neriX_analysis.prepare_hist_arrays_for_plotting(a_kde_s2_y_values, a_kde_s2_bin_edges)
 
 ax_s2.errorbar(a_kde_s2_x_values, a_kde_s2_y_values, xerr=[a_kde_s2_x_err_low, a_kde_s2_x_err_high], yerr=[a_kde_s2_y_err_low, a_kde_s2_y_err_high], marker='.', color='b', linestyle='')
-"""
+
 
 
 

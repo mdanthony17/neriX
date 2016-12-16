@@ -364,7 +364,7 @@ class fit_nr(object):
         self.l_cathode_settings_in_use = sorted(d_coincidence_data['cathode_settings'])
         
         
-        self.l_s1_settings = [20, 0, 20]
+        self.l_s1_settings = [30, 0, 30]
         self.l_s2_settings = [20, 0, 2000]
         self.l_log_settings = [20, 1, 3.5]
         
@@ -838,6 +838,14 @@ class fit_nr(object):
 
 
 
+    def get_prior_log_likelihood_scale(self, scale):
+        if scale < 0. or scale > 1.:
+            return -np.inf
+        else:
+            return 0
+
+
+
     def get_prior_log_likelihood_resolution(self, intrinsicResolution):
         if intrinsicResolution < 0 or intrinsicResolution > 1.5:
             return -np.inf
@@ -987,6 +995,8 @@ class fit_nr(object):
         # priors of resolutions
         prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s1)
         prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s2)
+        
+        prior_ln_likelihood += self.get_prior_log_likelihood_scale(scale_par)
 
 
         # get exciton to ion prior
@@ -1086,6 +1096,7 @@ class fit_nr(object):
 
         a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['num_data_pts']/float(self.num_mc_events))
 
+        # likelihood for single energy
         if draw_fit:
 
             f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
@@ -1156,8 +1167,8 @@ class fit_nr(object):
             g_s2_mc.SetLineColor(root.kBlue)
             g_s2_mc.SetFillStyle(3005)
 
-            g_s2_data.SetTitle('S2 Comparison')
-            g_s2_data.GetXaxis().SetTitle('S2 [PE]')
+            g_s2_data.SetTitle('Log(S2/S1) Comparison')
+            g_s2_data.GetXaxis().SetTitle('Log(S2/S1)')
             g_s2_data.GetYaxis().SetTitle('Counts')
 
             g_s2_data.SetLineColor(root.kRed)
@@ -1336,7 +1347,7 @@ class fit_nr(object):
 
             a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][degree_setting]['num_data_pts']/float(self.num_mc_events))
 
-            if not draw_fit:
+            if draw_fit:
 
                 f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
 
@@ -1743,7 +1754,7 @@ class fit_nr(object):
     def initial_positions_for_ensemble(self, a_free_parameters, num_walkers):
     
         if self.fit_type == 's':
-            l_par_names = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
+            l_par_names = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'scale']
         elif self.fit_type == 'm':
             l_par_names = ['a_py', 'a_qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
         elif self.fit_type == 'ml':
@@ -1782,10 +1793,10 @@ class fit_nr(object):
                 d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields, 2*num_yields)])
         
             elif par_name == 'py':
-                d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields)])
+                d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.05*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields)])
 
             elif par_name == 'qy':
-                d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.3*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields, 2*num_yields)])
+                d_variable_arrays[par_name] = np.asarray([np.random.normal(a_free_parameters[i], 0.05*np.asarray(a_free_parameters[i]), size=num_walkers) for i in xrange(num_yields, 2*num_yields)])
 
             elif par_name == 'w_value_rv':
                 # special case since w_value is an RV
@@ -1816,15 +1827,30 @@ class fit_nr(object):
                 d_variable_arrays[par_name] = np.random.normal(a_free_parameters[8], a_free_parameters[8]*0.3, size=num_walkers)
 
             elif par_name == 'intrinsic_res_s1':
-                d_variable_arrays[par_name] = np.random.normal(a_free_parameters[num_yields+0], .04, size=num_walkers)
+                d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+0], .04, size=num_walkers)
 
             elif par_name == 'intrinsic_res_s2':
-                d_variable_arrays[par_name] = np.random.normal(a_free_parameters[num_yields+1], .04, size=num_walkers)
+                d_variable_arrays[par_name] = np.random.normal(a_free_parameters[2*num_yields+1], .04, size=num_walkers)
 
 
-            # handle g1 and g2 with g1 only
             elif par_name == 'g1_value':
-                d_variable_arrays['g1_value'], d_variable_arrays['g2_value'] = np.random.multivariate_normal(self.l_means_g1_g2, self.l_cov_matrix_g1_g2, size=num_walkers).T
+                d_variable_arrays['g1_value'] = np.random.multivariate_normal([self.g1_value], [[self.g1_uncertainty**2 * 0.2]], size=num_walkers).T
+                
+                
+            elif par_name == 'extraction_efficiency_value':
+                d_variable_arrays['extraction_efficiency_value'] = np.random.multivariate_normal([self.extraction_efficiency_value], [[self.extraction_efficiency_uncertainty**2 * 0.2]], size=num_walkers).T
+            
+            
+            elif par_name == 'spe_res_value':
+                d_variable_arrays['spe_res_value'] = np.random.multivariate_normal([self.spe_res_value], [[self.spe_res_uncertainty**2 * 0.2]], size=num_walkers).T
+                
+            
+            elif par_name == 'gas_gain_mean_value':
+                d_variable_arrays['gas_gain_mean_value'] = np.random.multivariate_normal([self.gas_gain_value], [[self.gas_gain_uncertainty**2 * 0.2]], size=num_walkers).T
+            
+            
+            elif par_name == 'gas_gain_width_value':
+                d_variable_arrays['gas_gain_width_value'] = np.random.multivariate_normal([self.gas_gain_width], [[self.gas_gain_width_uncertainty**2 * 0.2]], size=num_walkers).T
 
 
             # catch both parameters of s1 efficiency prior
@@ -1843,6 +1869,9 @@ class fit_nr(object):
 
             elif par_name == 'pf_stdev_par0':
                 d_variable_arrays['pf_stdev_par0'], d_variable_arrays['pf_stdev_par1'], d_variable_arrays['pf_stdev_par2'] = np.random.multivariate_normal(self.l_means_pf_stdev_pars, self.l_cov_matrix_pf_stdev_pars, size=num_walkers).T
+
+            elif par_name == 'scale':
+                d_variable_arrays[par_name] = np.random.normal(a_free_parameters[-1], .02, size=num_walkers)
 
 
 
@@ -1924,9 +1953,27 @@ class fit_nr(object):
 
         if not loaded_prev_sampler:
 
-            if self.fit_type == 's' and self.num_dimensions == 19:
-                a_free_parameter_guesses = [9., 6., 0.25, 0.05]
-            
+            if self.fit_type == 's' and self.num_dimensions == 20:
+                degree_setting = self.l_degree_settings_in_use[0]
+                
+                if degree_setting == 2300:
+                    a_free_parameter_guesses = [6.11, 5.85, 0.59, 0.50, 0.85]
+                    # [ 6.11096578,  5.84766797,  0.58868599,  0.50847736,  0.84976045] # 2300
+                elif degree_setting == 3000:
+                    a_free_parameter_guesses = [6.74, 6.43, 0.7, 0.4, 0.94]
+                    # [ 6.74601019,  6.43335508,  0.7066108 ,  0.39358813,  0.94179317] # 3000
+                elif degree_setting == 3500:
+                    a_free_parameter_guesses = [7.92, 5.95, 0.27, 0.20, 0.93]
+                    # [ 7.92369679,  5.95931414,  0.27572547,  0.20437643,  0.93433192] # 3500
+                elif degree_setting == 4500:
+                    a_free_parameter_guesses = [8.28, 5.38, 0.42, 0.26, 0.97]
+                    # [ 8.27951943,  5.38374496,  0.41698755,  0.26408332,  0.99296654] # 4500
+                elif degree_setting == 5300:
+                    a_free_parameter_guesses = [9.40, 6.02, 0.29, 0.05, 0.95]
+                    # [ 9.40354227,  6.02138495,  0.29411508,  0.03643363,  0.95049631] # 5300
+                else:
+                    a_free_parameter_guesses = [8., 6., 0.25, 0.25, 0.95]
+
             elif self.fit_type == 'm':
                 a_free_parameter_guesses = [7 for i in xrange(len(self.a_spline_energies))] + [6 for i in xrange(len(self.a_spline_energies))] + [0.25, 0.05]
                 
@@ -1978,8 +2025,11 @@ class fit_nr(object):
         start_time_mcmc = time.time()
 
         with click.progressbar(sampler.sample(p0=starting_pos, iterations=num_steps, rstate0=random_state, thin=thin), length=num_steps) as mcmc_sampler:
-            for pos, lnprob, state in mcmc_sampler:
-                pass
+            for i, l_iterator_values in enumerate(mcmc_sampler):
+                if (i != 0 and (i % 25) == 0) or (i == 3):
+                    index_max_flattened = np.argmax(sampler.lnprobability[:, :i].flatten())
+                    flat_chain = sampler.chain[:, :i, :].reshape(-1, num_dim)
+                    self.suppress_likelihood(iterations=200, a_free_par_guesses=flat_chain[index_max_flattened, :])
 
         total_time_mcmc = (time.time() - start_time_mcmc) / 3600.
 
@@ -2035,34 +2085,39 @@ class fit_nr(object):
 
 
 
-    def suppress_likelihood(self, iterations=200):
+    def suppress_likelihood(self, iterations=200, a_free_par_guesses=None):
+    
+        # reset variables in case this is not the first time run
+        self.b_suppress_likelihood = False
+        self.ll_suppression_factor = 1.
 
-        if self.fit_type == 's':
+        if self.fit_type == 's' and a_free_par_guesses == None:
             a_free_par_guesses = [6.5, 7.0, 0.2, 0.2, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.85]
-        elif self.fit_type == 'm':
+        elif self.fit_type == 'm' and a_free_par_guesses == None:
             a_free_par_guesses = [3, 4, 5, 6, 7, 8, 9, 7, 6.5, 6, 6, 5.5, 5.5, 5., 0.1, 0.1, self.l_means_g1_g2[0], 0., 20.89, 0.5, 0., self.l_means_pf_eff_pars[0], self.l_means_pf_eff_pars[1], self.l_means_s2_eff_pars[0], self.l_means_s2_eff_pars[1], self.l_means_pf_stdev_pars[0], self.l_means_pf_stdev_pars[1], self.l_means_pf_stdev_pars[2], 0, 0, 0]
             #a_free_par_guesses = list(self.a_nest_photon_yields) + list(self.a_nest_charge_yields) + [0.1, 0.1, self.l_means_g1_g2[0], 0., 20.89, 0.5, 0., self.l_means_pf_eff_pars[0], self.l_means_pf_eff_pars[1], self.l_means_s2_eff_pars[0], self.l_means_s2_eff_pars[1], self.l_means_pf_stdev_pars[0], self.l_means_pf_stdev_pars[1], self.l_means_pf_stdev_pars[2], 0, 0, 0]
-        elif self.fit_type == 'ml':
+        elif self.fit_type == 'ml' and a_free_par_guesses == None:
             a_free_par_guesses = [0, 1.240, 0.0472, 239, 0.01385, 0.0620, 0.1394, 3.3, 1.14] + [0.25, 0.05] + [self.l_means_g1_g2[0], 0., 20.89, 0.5, 0., self.l_means_pf_eff_pars[0], self.l_means_pf_eff_pars[1], self.l_means_s2_eff_pars[0], self.l_means_s2_eff_pars[1], self.l_means_pf_stdev_pars[0], self.l_means_pf_stdev_pars[1], self.l_means_pf_stdev_pars[2]]
         
-        
-        else:
-            print 'Need to setup for fit type %s' % (self.fit_type)
-            sys.exit()
-
+        #print a_free_par_guesses
         l_parameters = [a_free_par_guesses for i in xrange(iterations)]
         l_log_likelihoods = self.gpu_pool.map(self.ln_likelihood_function_wrapper, l_parameters)
         #print l_log_likelihoods
 
-        var_ll = np.std(l_log_likelihoods)
+        std_ll = np.std(l_log_likelihoods)
 
-        print 'Standard deviation for %.3e MC iterations is %f' % (self.num_mc_events, var_ll)
-        print 'Will scale LL such that variance is 0.1'
+        print 'Standard deviation for %.3e MC iterations is %f' % (self.num_mc_events, std_ll)
+        print 'Will scale LL such that stdev is 0.1'
 
-        self.b_suppress_likelihood = True
-        self.ll_suppression_factor = var_ll / 0.1
+        if std_ll < 0.1:
+            self.b_suppress_likelihood = True
+            self.ll_suppression_factor = 1.
+            print 'Standard deviation already small so not supressing\n\n'
+        else:
+            self.b_suppress_likelihood = True
+            self.ll_suppression_factor = std_ll / 0.1
+            print 'LL suppression factor: %f\n' % self.ll_suppression_factor
 
-        print 'LL suppression factor: %f\n' % self.ll_suppression_factor
 
 
 
@@ -2079,19 +2134,26 @@ if __name__ == '__main__':
 
 
     d_coincidence_data = {}
-    d_coincidence_data['degree_settings'] = [2300]
+    d_coincidence_data['degree_settings'] = [4500]
     d_coincidence_data['cathode_settings'] = [1.054]
 
-    test = fit_nr('s', d_coincidence_data, num_mc_events=1e5, num_gpus=1)
+    test = fit_nr('s', d_coincidence_data, num_mc_events=1e7, num_gpus=3)
     test.suppress_likelihood()
     
     #ln_likelihood_full_matching_single_energy(self, py, qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_gpu_local_info, draw_fit=False):
     
-    l_test_parameters_single_energy = [6.5, 7.0, 0.2, 0.2, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.85]
+    # 2300: [6.11, 5.85, 0.59, 0.50, 0.85]
+    # 3000: [6.74, 6.43, 0.7, 0.4, 0.94]
+    # 3500: [7.92, 5.95, 0.27, 0.20, 0.93]
+    # 4500: [8.28, 5.38, 0.42, 0.26, 0.99]
+    # 5300: [9.40, 6.02, 0.29, 0.05, 0.95]
+    #l_test_parameters_single_energy = [9.40, 6.02, 0.29, 0.05, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.95]
     #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_single_energy, [l_test_parameters_single_energy])
 
-    a_free_par_bounds = [(0.,20.), (0, 20.), (0.01, 0.5), (0.01, 0.5), (0, 1.2)]
-    test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
+    #a_free_par_bounds = [(0.,20.), (0, 20.), (0.01, 0.5), (0.01, 0.5), (0, 1.2)]
+    #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
+    
+    test.run_mcmc(num_steps=50, num_walkers=256)
     
     
     d_coincidence_data = {}

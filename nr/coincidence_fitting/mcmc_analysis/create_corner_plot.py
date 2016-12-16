@@ -2,11 +2,17 @@
 import sys, array, os
 sys.path.insert(0, '..')
 
+import matplotlib
+matplotlib.use('QT4Agg')
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.patches as mpatches
+
 import ROOT as root
 from rootpy.plotting import Hist, Hist2D, Canvas, Legend
 import neriX_simulation_config
 import numpy as np
-import corner, time
+import corner, time, tqdm
 import cPickle as pickle
 
 if len(sys.argv) != 4:
@@ -35,8 +41,8 @@ elif fit_type == 'm':
 elif fit_type == 'ml':
     directory_descriptor = 'multiple_energies_lindhard_model'
 
-#l_degree_settings_in_use = [3500]
-l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300]
+l_degree_settings_in_use = [4500]
+#l_degree_settings_in_use = [2300, 3000, 3500, 4500, 5300]
 
 s_degree_settings = ''
 for degree_setting in l_degree_settings_in_use:
@@ -58,7 +64,7 @@ if os.path.exists(sPathToFile):
     for sampler in dSampler[num_walkers]:
         l_chains.append(sampler['_chain'])
 
-    aSampler = np.concatenate(l_chains, axis=1)
+    a_full_sampler = np.concatenate(l_chains, axis=1)
 
     print 'Successfully loaded sampler!'
 else:
@@ -69,26 +75,84 @@ else:
 
 
 if fit_type == 's':
-    numDim = 19
-    lLabelsForCorner = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
+    numDim = 20
+    l_labels = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res', 'extraction_efficiency', 'gas_gain', 'gas_gain_width', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'scale']
 elif fit_type == 'm':
     numDim = 31
     
     l_py = ['py_%d' % (i) for i in xrange(7)]
     l_qy = ['qy_%d' % (i) for i in xrange(7)]
     
-    lLabelsForCorner = l_py + l_qy + ['intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
+    l_labels = l_py + l_qy + ['intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv']
 elif fit_type == 'ml':
     numDim = 23
-    lLabelsForCorner = ['w_value_rv', 'alpha', 'zeta', 'beta', 'gamma', 'delta', 'kappa', 'eta', 'lambda', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2']
+    l_labels = ['w_value_rv', 'alpha', 'zeta', 'beta', 'gamma', 'delta', 'kappa', 'eta', 'lambda', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_rv', 'g2_value', 'gas_gain_rv', 'gas_gain_width_rv', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2']
 
-num_steps = 500
+num_steps = 1000
 
-samples = aSampler[:, -num_steps:, :].reshape((-1, numDim))
+
+samples = a_full_sampler[:, -num_steps:, :].reshape((-1, numDim))
 start_time = time.time()
 print 'Starting corner plot...\n'
-fig = corner.corner(samples, labels=lLabelsForCorner, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 12})
+fig = corner.corner(samples, labels=l_labels, quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt='.3e', title_kwargs={"fontsize": 12})
 print 'Corner plot took %.3f minutes.\n\n' % ((time.time()-start_time)/60.)
+
+
+# as a test reduce chain size
+#a_full_sampler = a_full_sampler[:, :int(a_full_sampler.shape[1]/2), :]
+
+tot_number_events = a_full_sampler.shape[1]
+batch_size = int(tot_number_events/40)
+num_batches = int(tot_number_events/batch_size/2)
+d_gr_stats = {}
+
+l_free_pars = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'scale']
+l_colors = ['b', 'r', 'g', 'y', 'm']
+
+for par_name in l_labels:
+    d_gr_stats[par_name] = [0 for i in xrange(num_batches)]
+
+l_size_for_test = [2*i*batch_size for i in xrange(num_batches)]
+
+# calculate Gelman-Rubin statistic
+print '\nCalculating Gelman-Rubin Statistic for each parameter...\n'
+for i in tqdm.tqdm(xrange(numDim)):
+    par_name = l_labels[i]
+    for j in xrange(1, num_batches+1):
+        #print tot_number_events, 2*j*batch_size
+        num_events_in_batch = float(j*batch_size)
+    
+        a_sampler = a_full_sampler[:, j*batch_size:2*j*batch_size, i]
+        #print a_sampler[0,:]
+        #print np.var(a_sampler[0,:], ddof=1)
+        
+        a_means = np.mean(a_sampler, axis=1)
+        a_vars = np.var(a_sampler, axis=1, ddof=1)
+        mean_of_means = np.mean(a_means)
+        #print len(a_vars), a_vars
+        #print num_walkers, np.sum(a_vars), mean_of_means
+        b_ = num_events_in_batch/(num_walkers-1.) * np.sum((a_means-mean_of_means)**2)
+        w_ = 1./(num_walkers) * np.sum(a_vars)
+        var_p = (num_events_in_batch-1)/num_events_in_batch*w_ + b_/num_events_in_batch
+        v_ = var_p + b_/(num_events_in_batch*num_walkers)
+        rg_stat = (v_/w_)**0.5
+        
+        #print num_events_in_batch, b_, w_, var_p, v_
+        
+        d_gr_stats[par_name][j-1] = rg_stat
+        #print 'G-R statistic for %s in batch %d: %.3f\n' % (l_labels[i], j, rg_stat)
+
+
+f_gr, a_gr = plt.subplots(1)
+l_legend_handles = []
+for i, par_name in enumerate(l_free_pars):
+    current_handle, = a_gr.plot(l_size_for_test, d_gr_stats[par_name], color=l_colors[i], linestyle='-', label=par_name)
+    l_legend_handles.append(current_handle)
+
+a_gr.plot(l_size_for_test, [1.1 for i in xrange(len(l_size_for_test))], linestyle='--', color='black')
+a_gr.set_ylim([0, 10])
+a_gr.legend(handles=l_legend_handles, loc='best')
+
 
 # path for save
 sPathForSave = './'
@@ -99,6 +163,7 @@ if not os.path.exists(sPathForSave):
     os.makedirs(sPathForSave)
 
 fig.savefig('%s%s_corner_plot_%s.png' % (sPathForSave, fit_type, dir_specifier_name))
+f_gr.savefig('%s%s_gr_statistic_%s.png' % (sPathForSave, fit_type, dir_specifier_name))
 
 
 
