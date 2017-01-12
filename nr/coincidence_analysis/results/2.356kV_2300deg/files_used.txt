@@ -1,0 +1,13 @@
+nerix_160425_1729
+nerix_160426_1746
+nerix_160426_1843
+nerix_160427_1729
+nerix_160428_1318
+nerix_160429_1500
+nerix_160429_1651
+nerix_160430_1209
+nerix_160501_1049
+
+
+
+(EventId != -1) && ((R > 0) && (R < 0.85)) && ( Alt$(S2sTotBottom[1], -1) < 50 ) && ( s2asym > -0.9*exp(-cpS2sTotBottom[0]/400.)-0.05 && s2asym < -0.5*exp(-cpS2sTotBottom[0]/400.)+0.4) && ( (EventId == -1)  || ((psd0 > 0.232000) && (LiqSciHeight[0] > 0.100000 && LiqSciHeight[0] < 0.700000)) || ((psd1 > 0.188000) && (LiqSciHeight[1] > 0.200000 && LiqSciHeight[1] < 1.000000)) ) && (cpS1sTotBottom[] > 0) && (cpS2sTotBottom[0] > 0) && (cpS1sTotBottom[] < 40.000000) && (cpS2sTotBottom[0] < 4000.000000) && ((Z_any_peak > -24.3) && (Z_any_peak < -1.0)) && ( ( (LiqSciPeak[0] - S1sPeak[]) < 16 && (LiqSciPeak[0] - S1sPeak[]) > 6 ) || ( (LiqSciPeak[1] - S1sPeak[]) < 16 && (LiqSciPeak[1] - S1sPeak[]) > 6 ) || ( (LiqSciPeak[2] - S1sPeak[]) < 16 && (LiqSciPeak[2] - S1sPeak[]) > 6 ) || ( (LiqSciPeak[3] - S1sPeak[]) < 16 && (LiqSciPeak[3] - S1sPeak[]) > 6 ) ) && ( s1asym_any_peak > -1.4*exp(-cpS1sTotBottom[]/10.)+0.4 )

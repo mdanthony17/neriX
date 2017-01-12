@@ -40,28 +40,82 @@ colzOption = 'COLZ'
 upper_limit_er_fit = 0.2
 lower_limit_er_fit = 0.
 
+lb_nr_trial_fit, ub_nr_trial_fit = 0.2, 0.6
+
 guess_nr_fit_mean = 0.35
 
 d_psd = {}
 if degree_setting == 2300 or degree_setting == 3000:
-    d_psd[0] = {'h_min':0.10, 'h_max':0.70}
-    d_psd[1] = {'h_min':0.20, 'h_max':1.00}
-    d_psd[2] = {'h_min':0.30, 'h_max':1.45}
-    d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+    if cathode_setting == 1.054:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+    elif cathode_setting == 0.345:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+    elif cathode_setting == 2.356:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+
 elif degree_setting == 3500 or degree_setting == 4500:
-    d_psd[0] = {'h_min':0.10, 'h_max':0.70}
-    d_psd[1] = {'h_min':0.20, 'h_max':1.00}
-    d_psd[2] = {'h_min':0.30, 'h_max':1.45}
-    d_psd[3] = {'h_min':0.50, 'h_max':1.35}
-    upper_limit_er_fit = 0.11
+    if cathode_setting == 1.054:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+        upper_limit_er_fit = 0.11
+    elif cathode_setting == 0.345:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+        upper_limit_er_fit = 0.15
+        psdNumBins = 30
+        guess_nr_fit_mean = 0.29
+        ub_nr_trial_fit = 0.4
+    elif cathode_setting == 2.356:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+        upper_limit_er_fit = 0.15
+        psdNumBins = 30
+        guess_nr_fit_mean = 0.29
+        ub_nr_trial_fit = 0.4
+
+
 elif degree_setting == 5300 or degree_setting == 6200:
-    d_psd[0] = {'h_min':0.10, 'h_max':0.70}
-    d_psd[1] = {'h_min':0.20, 'h_max':1.00}
-    d_psd[2] = {'h_min':0.30, 'h_max':1.45}
-    d_psd[3] = {'h_min':0.50, 'h_max':1.35}
-    upper_limit_er_fit = 0.14
-    lower_limit_er_fit = 0.06
-    guess_nr_fit_mean = 0.25
+    if cathode_setting == 1.054:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+        upper_limit_er_fit = 0.14
+        lower_limit_er_fit = 0.06
+        guess_nr_fit_mean = 0.25
+    elif cathode_setting == 0.345:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+        upper_limit_er_fit = 0.15
+        psdNumBins = 30
+        guess_nr_fit_mean = 0.29
+        ub_nr_trial_fit = 0.4
+    elif cathode_setting == 2.356:
+        d_psd[0] = {'h_min':0.10, 'h_max':0.70}
+        d_psd[1] = {'h_min':0.20, 'h_max':1.00}
+        d_psd[2] = {'h_min':0.30, 'h_max':1.45}
+        d_psd[3] = {'h_min':0.50, 'h_max':1.35}
+        upper_limit_er_fit = 0.15
+        psdNumBins = 30
+        guess_nr_fit_mean = 0.29
+        ub_nr_trial_fit = 0.4
 
 
 l_column_names = ['ls_height', 'ls_psd_par']
@@ -115,7 +169,7 @@ for i in xrange(numEJs):
     
     
     # fit ER
-    d_psd[i]['f_trial_er'] = root.TF1('f_trial_er', 'gaus', 0, upper_limit_er_fit)
+    d_psd[i]['f_trial_er'] = root.TF1('f_trial_er', 'gaus', lower_limit_er_fit, upper_limit_er_fit)
     d_psd[i]['f_trial_er'].SetParameters(100, 0.09, 0.05)
     d_psd[i]['h_psd'].Fit('f_trial_er', 'MELRQN')
     
@@ -128,7 +182,7 @@ for i in xrange(numEJs):
     d_psd[i]['f_psd_er'].Draw('same')
     
     # fit NR
-    d_psd[i]['f_trial_nr'] = root.TF1('f_trial_nr', 'gaus', 0.2, 0.6)
+    d_psd[i]['f_trial_nr'] = root.TF1('f_trial_nr', 'gaus', lb_nr_trial_fit, ub_nr_trial_fit)
     d_psd[i]['f_trial_nr'].SetParameters(100, guess_nr_fit_mean, 0.08)
     d_psd[i]['h_psd'].Fit('f_trial_nr', 'MELRQN')
     
@@ -145,7 +199,11 @@ for i in xrange(numEJs):
 
     # make 3 sigma cut from mean of ERs in PSD
     # use max of 3 sigma from mean of ER or 2 sigma from NR
-    psd_cut_line = max(d_psd[i]['f_psd_er'].GetParameter(1) + 3*d_psd[i]['f_psd_er'].GetParameter(2), d_psd[i]['f_psd_nr'].GetParameter(1) - 2*d_psd[i]['f_psd_nr'].GetParameter(2))
+    if d_psd[i]['f_psd_er'].GetParameter(1) + 3*d_psd[i]['f_psd_er'].GetParameter(2) < d_psd[i]['f_psd_nr'].GetParameter(1):
+        psd_cut_line = max(d_psd[i]['f_psd_er'].GetParameter(1) + 3*d_psd[i]['f_psd_er'].GetParameter(2), d_psd[i]['f_psd_nr'].GetParameter(1) - 2*d_psd[i]['f_psd_nr'].GetParameter(2))
+    else:
+        psd_cut_line = d_psd[i]['f_psd_nr'].GetParameter(1) - 2*d_psd[i]['f_psd_nr'].GetParameter(2)
+    
     print 'EJ%d: %f' % (i, psd_cut_line)
 
     # get info for line

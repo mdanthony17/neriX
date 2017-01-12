@@ -75,8 +75,8 @@ else:
 
 
 if fit_type == 's':
-    numDim = 20
-    l_labels = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res', 'extraction_efficiency', 'gas_gain', 'gas_gain_width', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'scale']
+    numDim = 21
+    l_labels = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res', 'extraction_efficiency', 'gas_gain', 'gas_gain_width', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'prob_bkg', 'scale']
 elif fit_type == 'm':
     numDim = 31
     
@@ -106,8 +106,8 @@ batch_size = int(tot_number_events/40)
 num_batches = int(tot_number_events/batch_size/2)
 d_gr_stats = {}
 
-l_free_pars = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'scale']
-l_colors = ['b', 'r', 'g', 'y', 'm']
+l_free_pars = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'prob_bkg', 'scale']
+l_colors = ['b', 'r', 'g', 'y', 'black', 'm']
 
 for par_name in l_labels:
     d_gr_stats[par_name] = [0 for i in xrange(num_batches)]
@@ -150,7 +150,8 @@ for i, par_name in enumerate(l_free_pars):
     l_legend_handles.append(current_handle)
 
 a_gr.plot(l_size_for_test, [1.1 for i in xrange(len(l_size_for_test))], linestyle='--', color='black')
-a_gr.set_ylim([0, 10])
+a_gr.set_ylim([1, 5])
+a_gr.set_yscale('log')
 a_gr.legend(handles=l_legend_handles, loc='best')
 
 
