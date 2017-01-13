@@ -1157,7 +1157,7 @@ class fit_nr(object):
         # for histogram binning
         num_bins_s1 = np.asarray(self.l_s1_settings[0], dtype=np.int32)
         num_bins_log = np.asarray(self.l_log_settings[0], dtype=np.int32)
-        a_hist_2d = np.zeros(self.l_s1_settings[0]*self.l_log_settings[0], dtype=np.int32)
+        a_hist_2d = np.zeros(self.l_s1_settings[0]*self.l_log_settings[0], dtype=np.float32)
         
         num_loops = np.asarray(self.num_loops, dtype=np.int32)
 
@@ -2256,23 +2256,23 @@ if __name__ == '__main__':
 
 
     d_coincidence_data = {}
-    d_coincidence_data['degree_settings'] = [2300]
+    d_coincidence_data['degree_settings'] = [4500]
     d_coincidence_data['cathode_settings'] = [1.054]
 
     test = fit_nr('s', d_coincidence_data, num_mc_events=2.5e6, num_gpus=3, num_loops=4)
-    #test.suppress_likelihood()
+    test.suppress_likelihood()
     
     #ln_likelihood_full_matching_single_energy(self, py, qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_gpu_local_info, draw_fit=False):
     
     # 2300: [7.24, 6.10, 0.07, 0.31, 0.25, 0.99]
-    # 3000: [7.56, 5.76, 0.07, 0.26, 0.38, 0.99]
+    # 3000: [7.80, 5.80, 0.05, 0.30, 0.30, 0.99]
     # 3500: [7.71, 6.03, 0.04, 0.06, 0.32, 0.92]
     # 4500: [7.80, 5.83, 0.18, 0.23, 0.024, 0.99]
     # 5300: [9.78, 6.12, 0.27, 0.04, 0.17, 0.97]
-    #l_test_parameters_single_energy = [7.78, 5.85, 0.12, 0.15, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.25, 0.99]
+    #l_test_parameters_single_energy = [7.8, 5.8, 0.05, 0.3, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.3, 0.99]
     #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_single_energy, [l_test_parameters_single_energy])
 
-    #a_free_par_bounds = [(0.,20.), (0, 20.), (0.01, 0.5), (0.01, 0.5), (0., 1.), (0, 1.2)]
+    #a_free_par_bounds = [(3., 15.), (3.5, 15.), (0.01, 0.5), (0.01, 0.5), (0., 1.), (0, 1.2)]
     #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
     
     test.run_mcmc(num_steps=500, num_walkers=256)
