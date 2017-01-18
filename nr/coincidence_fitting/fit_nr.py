@@ -372,9 +372,9 @@ class fit_nr(object):
         self.l_cathode_settings_in_use = sorted(d_coincidence_data['cathode_settings'])
         
         
-        self.l_s1_settings = [30, 0, 30]
+        self.l_s1_settings = [20, 0, 40]
         self.l_s2_settings = [20, 0, 2000]
-        self.l_log_settings = [30, 1, 3.5]
+        self.l_log_settings = [20, 1, 3.5]
 
         self.l_quantiles = [20, 80]
         
@@ -2049,22 +2049,73 @@ class fit_nr(object):
 
             if self.fit_type == 's' and self.num_dimensions == 21:
                 degree_setting = self.l_degree_settings_in_use[0]
+                cathode_setting = self.l_cathode_settings_in_use[0]
                 
                 if degree_setting == 2300:
-                    a_free_parameter_guesses = [7.24, 6.10, 0.07, 0.31, 0.25, 0.97]
-                    # [ 7.24279474,  6.10423574,  0.06494089,  0.30873822, 0.25022568,  0.99936306] # 2300
+                    if cathode_setting == 1.054:
+                        a_free_parameter_guesses = [7.24, 6.10, 0.07, 0.31, 0.25, 0.97]
+                        # [ 7.24279474,  6.10423574,  0.06494089,  0.30873822, 0.25022568,  0.99936306] # 2300
+                    elif cathode_setting == 0.345:
+                        a_free_parameter_guesses = [7.04, 5.68, 0.23, 0.12, 0.29, 0.97]
+                        # [ 7.04498957,  5.6815345,  0.23072485,  0.11705023, 0.28815432,  0.97119736] # 2300
+                        
+                    elif cathode_setting == 2.356:
+                        a_free_parameter_guesses = [7.79, 6.27, 0.19, 0.18, 0.16, 0.97]
+                        # [ 8.21997358,  6.06919105,  0.06841404 ,  0.46676469,  0.14950445, 0.98737901] # 2300
+                        
                 elif degree_setting == 3000:
-                    a_free_parameter_guesses = [7.56, 5.76, 0.07, 0.26, 0.38, 0.97]
-                    # [ 7.56098549,  5.76996929,  0.07485624 ,  0.25600894, 0.38586383,  0.98883613] # 3000
+                    if cathode_setting == 1.054:
+                        a_free_parameter_guesses = [7.56, 5.76, 0.07, 0.26, 0.38, 0.97]
+                        # [ 7.56098549,  5.76996929,  0.07485624 ,  0.25600894, 0.38586383,  0.98883613] # 3000
+                    
+                    elif cathode_setting == 0.345:
+                        a_free_parameter_guesses = [8.58, 6.40, 0.06, 0.32, 0.28, 0.97]
+                        # [ 8.58012424,  6.4082583,  0.059447,  0.32507151, 0.28044492,  0.97627979] # 3500
+                        
+                    elif cathode_setting == 2.356:
+                        a_free_parameter_guesses = [8.20, 7.40, 0.07, 0.22, 0.28, 0.92]
+                        # [ 8.20653994,  7.45641684,  0.06750863 ,  0.21867223,  0.28004732, 0.92374844] # 3000
+                        
                 elif degree_setting == 3500:
-                    a_free_parameter_guesses = [7.71, 6.03, 0.04, 0.06, 0.32, 0.92]
-                    # [ 7.71422274,  6.03296573,  0.03810478,  0.05889366, 0.31801688,  0.91945319] # 3500
+                    if cathode_setting == 1.054:
+                        a_free_parameter_guesses = [7.71, 6.03, 0.04, 0.06, 0.32, 0.92]
+                        # [ 7.71422274,  6.03296573,  0.03810478,  0.05889366, 0.31801688,  0.91945319] # 3500
+                        
+                    elif cathode_setting == 0.345:
+                        a_free_parameter_guesses = [7.76, 6.17, 0.21, 0.26, 0.05, 0.93]
+                        # [ 7.76790283,  6.17368043,  0.21353381,  0.26405303, 0.05305485,  0.92298929] # 3500
+                        
+                    elif cathode_setting == 2.356:
+                        a_free_parameter_guesses = [7.79, 6.27, 0.19, 0.18, 0.16, 0.97]
+                        # [ 7.78806321,  6.27176934,  0.19965031 ,  0.17596064,  0.164257, 0.99944881] # 3500
+                        
                 elif degree_setting == 4500:
-                    a_free_parameter_guesses = [7.80, 5.83, 0.18, 0.23, 0.05, 0.97]
-                    # [ 7.78910186,  5.832333,  0.17891269,  0.22816425, 0.02462351,  0.99851682] # 4500
+                    if cathode_setting == 1.054:
+                        a_free_parameter_guesses = [7.80, 5.83, 0.18, 0.23, 0.05, 0.97]
+                        # [ 7.78910186,  5.832333,  0.17891269,  0.22816425, 0.02462351,  0.99851682] # 4500
+                    
+                    elif cathode_setting == 0.345:
+                        a_free_parameter_guesses = [8.82, 5.96, 0.19, 0.04, 0.48, 0.97]
+                        # [ 8.82078054,  5.96911495,  0.1908735 ,  0.02383425,  0.48874606, 0.99311512] # 4500
+                        
+                    elif cathode_setting == 2.356:
+                        a_free_parameter_guesses = [7.65, 5.96, 0.22, 0.05, 0.32, 0.97]
+                        # [ 7.65321071,  5.96063235,  0.2200952 ,  0.0500525,  0.31784079, 0.98759496] # 4500
+                    
                 elif degree_setting == 5300:
-                    a_free_parameter_guesses = [9.78, 6.12, 0.27, 0.04, 0.17, 0.97]
-                    # [ 9.7874405,  6.12108864,  0.27462468,  0.01749649, 0.16826173,  0.99297773] # 5300
+                    if cathode_setting == 1.054:
+                        a_free_parameter_guesses = [9.78, 6.12, 0.27, 0.04, 0.17, 0.97]
+                        # [ 9.7874405,  6.12108864,  0.27462468,  0.01749649, 0.16826173,  0.99297773] # 5300
+                        
+                    elif cathode_setting == 0.345:
+                        a_free_parameter_guesses = [9.82, 6.18, 0.21, 0.02, 0.13, 0.96]
+                        # [ 9.82589491,  6.18360509,  0.20806021,  0.01750014,  0.13195983,  0.96117175] # 5300
+                        
+                    elif cathode_setting == 2.356:
+                        a_free_parameter_guesses = [9.82, 6.18, 0.21, 0.02, 0.13, 0.96]
+                        # [ 9.760886,  5.96287371,  0.2028719,  0.03330193,  0.22689327,  0.99626046] # 5300
+
+
                 else:
                     a_free_parameter_guesses = [8., 6., 0.25, 0.25, 0.95]
 
@@ -2184,7 +2235,7 @@ class fit_nr(object):
 
 
 
-    def suppress_likelihood(self, iterations=2000, a_free_par_guesses=None):
+    def suppress_likelihood(self, iterations=200, a_free_par_guesses=None):
     
         # reset variables in case this is not the first time run
         self.b_suppress_likelihood = False
@@ -2195,16 +2246,42 @@ class fit_nr(object):
             degree_setting = self.l_degree_settings_in_use[0]
             cathode_setting = self.l_cathode_settings_in_use[0]
             
+            
             if degree_setting == 2300 and cathode_setting == 1.054:
                 l_free_pars = [7.24, 6.10, 0.07, 0.31, 0.25, 0.99]
+            elif degree_setting == 2300 and cathode_setting == 0.345:
+                l_free_pars = [7.04, 5.68, 0.23, 0.12, 0.29, 0.97]
+            elif degree_setting == 2300 and cathode_setting == 2.356:
+                l_free_pars = [7.79, 6.27, 0.19, 0.18, 0.16, 0.97]
+            
             elif degree_setting == 3000 and cathode_setting == 1.054:
                 l_free_pars = [7.56, 5.76, 0.07, 0.26, 0.38, 0.99]
+            elif degree_setting == 3000 and cathode_setting == 0.345:
+                l_free_pars = [8.58, 6.40, 0.06, 0.32, 0.28, 0.97]
+            elif degree_setting == 3000 and cathode_setting == 2.356:
+                l_free_pars = [8.20, 7.40, 0.07, 0.22, 0.28, 0.92]
+            
             elif degree_setting == 3500 and cathode_setting == 1.054:
                 l_free_pars = [7.71, 6.03, 0.04, 0.06, 0.32, 0.92]
+            elif degree_setting == 3500 and cathode_setting == 0.345:
+                l_free_pars = [7.76, 6.17, 0.21, 0.26, 0.05, 0.93]
+            elif degree_setting == 3500 and cathode_setting == 2.356:
+                l_free_pars = [7.79, 6.27, 0.19, 0.18, 0.16, 0.97]
+            
             elif degree_setting == 4500 and cathode_setting == 1.054:
                 l_free_pars = [7.80, 5.83, 0.18, 0.23, 0.024, 0.99]
+            elif degree_setting == 4500 and cathode_setting == 0.345:
+                l_free_pars = [8.82, 5.96, 0.19, 0.04, 0.48, 0.97]
+            elif degree_setting == 4500 and cathode_setting == 2.356:
+                l_free_pars = [7.65, 5.96, 0.22, 0.05, 0.32, 0.97]
+            
             elif degree_setting == 5300 and cathode_setting == 1.054:
                 l_free_pars = [9.78, 6.12, 0.27, 0.04, 0.17, 0.97]
+            elif degree_setting == 5300 and cathode_setting == 0.345:
+                l_free_pars = [9.82, 6.18, 0.21, 0.02, 0.13, 0.96]
+            elif degree_setting == 5300 and cathode_setting == 2.356:
+                l_free_pars = [9.76, 5.96, 0.20, 0.03, 0.22, 0.99]
+            
             else:
                 print 'Not set up for %d at %.3f yet!' % (degree_setting, cathode_setting)
                 sys.exit()
@@ -2257,19 +2334,19 @@ if __name__ == '__main__':
 
     d_coincidence_data = {}
     d_coincidence_data['degree_settings'] = [4500]
-    d_coincidence_data['cathode_settings'] = [1.054]
+    d_coincidence_data['cathode_settings'] = [0.345]
 
     test = fit_nr('s', d_coincidence_data, num_mc_events=2.5e6, num_gpus=3, num_loops=4)
     test.suppress_likelihood()
     
     #ln_likelihood_full_matching_single_energy(self, py, qy, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, exciton_to_ion_par0_rv, exciton_to_ion_par1_rv, exciton_to_ion_par2_rv, d_gpu_local_info, draw_fit=False):
     
-    # 2300: [7.24, 6.10, 0.07, 0.31, 0.25, 0.99]
-    # 3000: [7.80, 5.80, 0.05, 0.30, 0.30, 0.99]
-    # 3500: [7.71, 6.03, 0.04, 0.06, 0.32, 0.92]
-    # 4500: [7.80, 5.83, 0.18, 0.23, 0.024, 0.99]
-    # 5300: [9.78, 6.12, 0.27, 0.04, 0.17, 0.97]
-    #l_test_parameters_single_energy = [7.8, 5.8, 0.05, 0.3, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.3, 0.99]
+    # 2300, 1054: [7.24, 6.10, 0.07, 0.31, 0.25, 0.99]
+    # 3000, 1054: [7.95, 5.84, 0.05, 0.34, 0.32, 0.99]
+    # 3500, 1054: [7.71, 6.03, 0.04, 0.06, 0.32, 0.92]
+    # 4500, 1054: [7.80, 5.83, 0.18, 0.23, 0.024, 0.99]
+    # 5300, 1054: [9.69, 6.04, 0.23, 0.05, 0.17, 0.98]
+    #l_test_parameters_single_energy = [9.69, 6.04, 0.23, 0.05, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0, 0.17, 0.98]
     #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_single_energy, [l_test_parameters_single_energy])
 
     #a_free_par_bounds = [(3., 15.), (3.5, 15.), (0.01, 0.5), (0.01, 0.5), (0., 1.), (0, 1.2)]
