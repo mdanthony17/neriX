@@ -162,7 +162,7 @@ a_s1_data = d_s1_s2['s1'] # a_test_transformed[:,0]
 a_s2_data = d_s1_s2['s2'] # a_test_transformed[:,1]
 
 # need axis image for colorbar
-hist_s1_log_data = ax_s1_log_data.hist2d(a_s1_data, np.log10(a_s2_data/a_s1_data), bins=[l_s1_settings[0], l_log_settings[0]], range=[[l_s1_settings[1], l_s1_settings[2]], [l_log_settings[1], l_log_settings[2]]], cmap='ocean_r')
+hist_s1_log_data = ax_s1_log_data.hist2d(a_s1_data, np.log10(a_s2_data/a_s1_data), bins=[l_s1_settings[0], l_log_settings[0]], range=[[l_s1_settings[1], l_s1_settings[2]], [l_log_settings[1], l_log_settings[2]]], cmap='Blues')
 fig_s1_log.colorbar(hist_s1_log_data[3], ax=ax_s1_log_data)
 
 
@@ -276,7 +276,7 @@ for quantile_number, a_fit_parameters in enumerate(a_percentile_values):
 
 
 
-hist_s1_log_mc = ax_s1_log_mc.hist2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[l_s1_settings[0], l_log_settings[0]], range=[[l_s1_settings[1], l_s1_settings[2]], [l_log_settings[1], l_log_settings[2]]], cmap='ocean_r', normed=True)
+hist_s1_log_mc = ax_s1_log_mc.hist2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[l_s1_settings[0], l_log_settings[0]], range=[[l_s1_settings[1], l_s1_settings[2]], [l_log_settings[1], l_log_settings[2]]], cmap='Blues', normed=True)
 fig_s1_log.colorbar(hist_s1_log_mc[3], ax=ax_s1_log_mc)
 
 # end GPU context
@@ -334,7 +334,13 @@ ax_s1_log_mc.plot(a_median_line_s1, a_median_line_mc_log, color='magenta', label
 
 
 # add labels to plots
-ax_s1_log_data.set_title(r'%d keV - V_c = %.3f kV' % (d_degree_setting_to_energy_name[degree_setting], cathode_setting))
+ax_s1_log_data.set_title(r'%d keV Data - $V_c$ = %.3f kV' % (d_degree_setting_to_energy_name[degree_setting], cathode_setting))
+ax_s1_log_data.set_xlabel('S1 [PE]')
+ax_s1_log_data.set_ylabel(r'$log_{10}(\frac{S2}{S1})$')
+
+ax_s1_log_mc.set_title(r'%d keV Best Fit MC - $V_c$ = %.3f kV' % (d_degree_setting_to_energy_name[degree_setting], cathode_setting))
+ax_s1_log_mc.set_xlabel('S1 [PE]')
+ax_s1_log_mc.set_ylabel(r'$log_{10}(\frac{S2}{S1})$')
 
 
 ax_s1_log_data.legend(handles=[line_handle_data, line_handle_mc], loc='best')

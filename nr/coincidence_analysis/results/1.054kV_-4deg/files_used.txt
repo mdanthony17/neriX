@@ -1,0 +1,12 @@
+nerix_160405_1054
+nerix_160412_1052
+nerix_160517_1413
+nerix_160519_1135
+nerix_160520_1433
+nerix_160520_1714
+nerix_160621_1203
+nerix_160623_1213
+
+
+
+(EventId != -1) && ((R > 0) && (R < 0.85)) && ( Alt$(S2sTotBottom[1], -1) < 50 ) && ( s2asym > -0.9*exp(-cpS2sTotBottom[0]/400.)-0.05 && s2asym < -0.5*exp(-cpS2sTotBottom[0]/400.)+0.4) && (cpS1sTotBottom[0] > 0) && (cpS2sTotBottom[0] > 0) && (cpS1sTotBottom[0] < 40.000000) && (cpS2sTotBottom[0] < 4000.000000) && ((Z > -24.3) && (Z < -1.0)) && ( s1asym > -1.4*exp(-cpS1sTotBottom[0]/10.)+0.4 ) && (log10((S1Tot + S2Tot)/(AreaTot - S1Tot - S2Tot)) > 0.)

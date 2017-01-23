@@ -12,8 +12,7 @@ from rootpy.io import File
 from rootpy.tree import Tree, TreeModel, TreeChain
 from rootpy.plotting import Hist, Hist2D, Canvas, Graph, func
 
-import neriX_simulation_datasets, neriX_simulation_config, neriX_analysis, neriX_datasets
-import neriX_simulation_datasets
+import neriX_simulation_config, neriX_analysis, neriX_datasets
 
 import numpy as np
 from math import exp, factorial, erf, ceil, log, pow, floor, lgamma
@@ -285,11 +284,15 @@ class fit_nr(object):
         # 4. Multiple Energies with Lindhard model: 'ml'
         #    - for fitting multiple yields using the
         #       Lindhard model to reduce number of free pars
+        # 5. Band with Lindhard model: 'ml'
+        #    - for fitting the band using the
+        #       Lindhard model to reduce number of free pars
 
         # d_coincidence_data should be in the following form:
         # d_coincidence_data['degree_settings'] = [2300, 3000, ...]
         # d_coincidence_data['cathode_settings'] = [0.345, 1.054, ...]
         # d_coincidence_data['cathode_settings'] = [4.5]
+        # same convention for band data: deg=-4
         
         # total MC events = num_mc_events*num_loops
         
@@ -301,6 +304,8 @@ class fit_nr(object):
         elif fit_type == 'm':
             assert len(d_coincidence_data['degree_settings']) >= 1
         elif fit_type == 'ml':
+            assert len(d_coincidence_data['degree_settings']) == 1
+        elif fit_type == 'bl':
             assert len(d_coincidence_data['degree_settings']) >= 1
         elif fit_type == 'mb':
             print 'Multiple energies with NR band not setup yet!\n'
@@ -320,7 +325,7 @@ class fit_nr(object):
         self.d_gpu_scale['grid'] = (int(numBlocks), 1)
         self.num_mc_events = int(numBlocks*block_dim)
 
-        assert len(d_coincidence_data['cathode_settings']) == 1, ('Only setup to handle one cathode setting at a time currently')
+        #assert len(d_coincidence_data['cathode_settings']) == 1, ('Only setup to handle one cathode setting at a time currently')
 
         # ------------------------------------------------
         # ------------------------------------------------
@@ -329,7 +334,7 @@ class fit_nr(object):
         # ------------------------------------------------
 
 
-        l_allowed_degree_settings = [2300, 3000, 3500, 4500, 5300, 6200]
+        l_allowed_degree_settings = [2300, 3000, 3500, 4500, 5300, 6200, -4]
         l_allowed_cathode_settings = [0.345, 1.054, 2.356]
         l_allowed_anode_settings = [4.5]
 
@@ -371,10 +376,14 @@ class fit_nr(object):
         self.l_degree_settings_in_use = sorted(d_coincidence_data['degree_settings'])
         self.l_cathode_settings_in_use = sorted(d_coincidence_data['cathode_settings'])
         
+        if fit_type == 'bl':
+            num_bins = 60
+        else:
+            num_bins = 20
         
-        self.l_s1_settings = [20, 0, 40]
-        self.l_s2_settings = [20, 0, 2000]
-        self.l_log_settings = [20, 1, 3.5]
+        self.l_s1_settings = [num_bins, 0, 40]
+        self.l_s2_settings = [num_bins, 0, 2000]
+        self.l_log_settings = [num_bins, 1, 3.5]
 
         self.l_quantiles = [20, 80]
         
@@ -455,7 +464,7 @@ class fit_nr(object):
                 self.d_coincidence_data_information[cathode_setting][degree_setting]['low_bin_log'] = lower_bin_logs2s1
                 self.d_coincidence_data_information[cathode_setting][degree_setting]['high_bin_log'] = upper_bin_logs2s1
                 
-                print self.d_coincidence_data_information[cathode_setting][degree_setting]['low_bin_s1'], self.d_coincidence_data_information[cathode_setting][degree_setting]['high_bin_s1'], self.d_coincidence_data_information[cathode_setting][degree_setting]['low_bin_log'], self.d_coincidence_data_information[cathode_setting][degree_setting]['high_bin_log']
+                #print self.d_coincidence_data_information[cathode_setting][degree_setting]['low_bin_s1'], self.d_coincidence_data_information[cathode_setting][degree_setting]['high_bin_s1'], self.d_coincidence_data_information[cathode_setting][degree_setting]['low_bin_log'], self.d_coincidence_data_information[cathode_setting][degree_setting]['high_bin_log']
                 
 
 
@@ -480,12 +489,14 @@ class fit_nr(object):
 
 
         # set whether or not we can fit electron to ion ratio
+        """
         if len(self.l_cathode_settings_in_use) == 1 and not free_exciton_to_ion_ratio:
             print '\nCannot fit exciton to ion ratio with only one field - setting as a nuissance parameter.\n'
             self.free_exciton_to_ion_ratio = False
         else:
             print '\nCurrently not setup to handle free exciton to ion ratio so setting to nuissance parameter.\n'
             self.free_exciton_to_ion_ratio = False
+        """
 
 
 
@@ -592,12 +603,20 @@ class fit_nr(object):
                 self.num_dimensions = 14 + 9
                 self.directory_name = 'multiple_energies_lindhard_model'
                 self.gpu_function_name = 'gpu_full_observables_production_with_log_hist_lindhard_model'
+            
             elif fit_type == 'mb':
                 self.ln_likelihood_function = self.ln_likelihood_full_matching_single_energy_and_band
                 self.ln_likelihood_function_wrapper = self.wrapper_ln_likelihood_full_matching_single_energy_and_band
                 self.num_dimensions = 19
                 self.directory_name = 'multiple_energies_with_band'
                 self.gpu_function_name = 'gpu_full_observables_production_with_log_hist_spline'
+            
+            elif fit_type == 'bl':
+                self.ln_likelihood_function = self.ln_likelihood_full_matching_band
+                self.ln_likelihood_function_wrapper = self.wrapper_ln_likelihood_full_matching_band
+                self.num_dimensions = 19 + len(self.l_cathode_settings_in_use) # 19 + scales
+                self.directory_name = 'band_with_lindhard_model'
+                self.gpu_function_name = 'gpu_full_observables_production_with_log_hist_lindhard'
 
             
             
@@ -607,7 +626,7 @@ class fit_nr(object):
             # -----------------------------------------------
             # -----------------------------------------------
             
-            
+            """
             # will fill spline points dynamically since depends on
             # energies given
             l_spline_energies = [0.5]
@@ -623,6 +642,7 @@ class fit_nr(object):
             print '\n\nEnergy Spline Points:\n'
             pprint(list(self.a_spline_energies))
             print '\n\n'
+            
         
             self.a_nest_photon_yields = np.zeros(len(self.a_spline_energies), dtype=np.float32)
             self.a_nest_charge_yields = np.zeros(len(self.a_spline_energies), dtype=np.float32)
@@ -630,6 +650,7 @@ class fit_nr(object):
                 l_yields = nest_nr_mean_yields(self.a_spline_energies[i], self.d_cathode_voltages_to_field[cathode_setting])
                 self.a_nest_photon_yields[i] = l_yields[0]
                 self.a_nest_charge_yields[i] = l_yields[1]
+            """
 
 
         d_gpu_single_copy_array_dictionaries = {'energy':self.d_energy_arrays,
@@ -701,10 +722,16 @@ class fit_nr(object):
             self.d_energy_arrays[degree_setting] = {}
 
             # check if reduced file exists
-            current_path_to_reduced_energy_spectra = '%snerixsim-%dkeV.root' % (self.path_to_reduced_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
+            coincidence_degree_setting = True
+            if degree_setting > 0:
+                current_path_to_reduced_energy_spectra = '%snerixsim-%dkeV.root' % (self.path_to_reduced_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
+            else:
+                current_path_to_reduced_energy_spectra = '%snerixsim-pure_nr_spec.root' % (self.path_to_reduced_energy_spectra)
+                coincidence_degree_setting = False
             
             
-            if not os.path.exists(current_path_to_reduced_energy_spectra):
+            
+            if coincidence_degree_setting and not os.path.exists(current_path_to_reduced_energy_spectra):
                 # if the file doesn't exist we need to create it!
             
                 # load the raw data file
@@ -908,10 +935,18 @@ class fit_nr(object):
 
 
     def get_prior_log_likelihood_scale(self, scale):
-        if scale < 0. or scale > 1.:
-            return -np.inf
+        if isinstance(scale, dict):
+            for id in scale:
+                if scale[id] < 0. or scale[id] > 1.:
+                    return -np.inf
+                else:
+                    return 0.
+        
         else:
-            return 0
+            if scale < 0. or scale > 1.:
+                return -np.inf
+            else:
+                return 0
 
 
 
@@ -1301,6 +1336,278 @@ class fit_nr(object):
         
     def wrapper_ln_likelihood_full_matching_single_energy(self, a_parameters, kwargs={}):
         return self.ln_likelihood_full_matching_single_energy(*a_parameters, **kwargs)
+    
+    
+    # band matching
+    def ln_likelihood_full_matching_band(self, w_value, alpha, zeta, beta, gamma, delta, kappa, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, d_scale_pars, d_gpu_local_info, draw_fit=False):
+
+
+
+        # -----------------------------------------------
+        # -----------------------------------------------
+        # determine prior likelihood and variables
+        # -----------------------------------------------
+        # -----------------------------------------------
+
+
+        prior_ln_likelihood = 0
+        matching_ln_likelihood = 0
+
+
+        current_likelihood, w_value = self.get_w_value_default(w_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+        
+        prior_ln_likelihood += self.get_prior_log_likelihood_alpha(alpha)
+        prior_ln_likelihood += self.get_prior_log_likelihood_zeta(zeta)
+        prior_ln_likelihood += self.get_prior_log_likelihood_beta(beta)
+        prior_ln_likelihood += self.get_prior_log_likelihood_gamma(gamma)
+        prior_ln_likelihood += self.get_prior_log_likelihood_delta(delta)
+        prior_ln_likelihood += self.get_prior_log_likelihood_kappa(kappa)
+
+
+        # priors of resolutions
+        prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s1)
+        prior_ln_likelihood += self.get_prior_log_likelihood_resolution(intrinsic_res_s2)
+        
+        prior_ln_likelihood += self.get_prior_log_likelihood_scale(d_scale_pars)
+
+
+
+        # priors of detector variables
+        current_likelihood, g1_value = self.get_g1_default(g1_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+        
+        current_likelihood, extraction_efficiency = self.get_extraction_efficiency_default(extraction_efficiency_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+        current_likelihood, spe_res = self.get_spe_res_default(spe_res_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+        current_likelihood, gas_gain_value = self.get_gas_gain_default(gas_gain_mean_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+        current_likelihood, gas_gain_width = self.get_gas_gain_width_default(gas_gain_width_value)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+
+        # priors of efficiencies
+        current_likelihood, pf_eff_par0, pf_eff_par1 = self.get_pf_eff_default(pf_eff_par0, pf_eff_par1)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+        current_likelihood, s2_eff_par0, s2_eff_par1 = self.get_s2_eff_default(s2_eff_par0, s2_eff_par1)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_likelihood)
+
+        current_ln_likelihood, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2 = self.get_pf_stdev_default(pf_stdev_par0, pf_stdev_par1, pf_stdev_par2)
+        prior_ln_likelihood += self.get_prior_log_likelihood_nuissance(current_ln_likelihood)
+        
+
+
+        # if prior is -inf then don't bother with MC
+        #print 'removed prior infinity catch temporarily'
+        if not np.isfinite(prior_ln_likelihood) and not draw_fit:
+            return -np.inf
+
+
+
+        # -----------------------------------------------
+        # -----------------------------------------------
+        # run MC
+        # -----------------------------------------------
+        # -----------------------------------------------
+        
+
+        num_trials = np.asarray(self.num_mc_events, dtype=np.int32)
+        mean_field = np.asarray(self.d_cathode_voltages_to_field[self.l_cathode_settings_in_use[0]], dtype=np.float32)
+
+        w_value = np.asarray(w_value, dtype=np.float32)
+        alpha = np.asarray(alpha, dtype=np.float32)
+        zeta = np.asarray(zeta, dtype=np.float32)
+        beta = np.asarray(beta, dtype=np.float32)
+        gamma = np.asarray(gamma, dtype=np.float32)
+        delta = np.asarray(delta, dtype=np.float32)
+        kappa = np.asarray(kappa, dtype=np.float32)
+
+        g1_value = np.asarray(g1_value, dtype=np.float32)
+        extraction_efficiency = np.asarray(extraction_efficiency, dtype=np.float32)
+        spe_res = np.asarray(spe_res, dtype=np.float32)
+        gas_gain_value = np.asarray(gas_gain_value, dtype=np.float32)
+        gas_gain_width = np.asarray(gas_gain_width, dtype=np.float32)
+
+        intrinsic_res_s1 = np.asarray(intrinsic_res_s1, dtype=np.float32)
+        intrinsic_res_s2 = np.asarray(intrinsic_res_s2, dtype=np.float32)
+
+        #print 'hard coding pf eff'
+        #pf_eff_par0 = np.asarray(0.01, dtype=np.float32)
+        #pf_eff_par1 = np.asarray(0.01, dtype=np.float32)
+        pf_eff_par0 = np.asarray(pf_eff_par0, dtype=np.float32)
+        pf_eff_par1 = np.asarray(pf_eff_par1, dtype=np.float32)
+
+        s2_eff_par0 = np.asarray(s2_eff_par0, dtype=np.float32)
+        s2_eff_par1 = np.asarray(s2_eff_par1, dtype=np.float32)
+
+        a_pf_stdev = np.asarray([pf_stdev_par0, pf_stdev_par1, pf_stdev_par2], dtype=np.float32)
+        
+        # for histogram binning
+        num_bins_s1 = np.asarray(self.l_s1_settings[0], dtype=np.int32)
+        num_bins_log = np.asarray(self.l_log_settings[0], dtype=np.int32)
+        a_hist_2d = np.zeros(self.l_s1_settings[0]*self.l_log_settings[0], dtype=np.float32)
+        
+        num_loops = np.asarray(self.num_loops, dtype=np.int32)
+
+
+
+        for cathode_setting in self.l_cathode_settings_in_use:
+        
+            tArgs = (d_gpu_local_info['rng_states'], drv.In(num_trials), drv.In(mean_field), d_gpu_local_info['d_gpu_energy'][self.l_degree_settings_in_use[0]], drv.In(w_value), drv.In(alpha), drv.In(zeta), drv.In(beta), drv.In(gamma), drv.In(delta), drv.In(kappa), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(intrinsic_res_s1), drv.In(intrinsic_res_s2), drv.In(a_pf_stdev), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(num_bins_s1), d_gpu_local_info['gpu_bin_edges_s1'], drv.In(num_bins_log), d_gpu_local_info['gpu_bin_edges_log'], drv.InOut(a_hist_2d), drv.In(num_loops))
+
+            d_gpu_local_info['function_to_call'](*tArgs, **self.d_gpu_scale)
+
+            a_s1_s2_mc = np.reshape(a_hist_2d, (self.l_log_settings[0], self.l_s1_settings[0])).T
+
+            sum_mc = np.sum(a_s1_s2_mc, dtype=np.float32)
+            if sum_mc == 0:
+                return -np.inf
+
+            #a_s1_s2_mc = np.multiply(a_s1_s2_mc, np.sum(self.a_s1_s2, dtype=np.float32) / sum_mc)
+
+            # if making PDF rather than scaling for rate
+            scale_par = d_scale_pars[cathode_setting]
+            scale_par *= float(self.num_mc_events*self.num_loops) / sum_mc
+
+            a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['num_data_pts']/float(self.num_mc_events*self.num_loops))
+
+            # likelihood for single energy
+            if draw_fit:
+
+                f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+
+                s1_s2_data_plot = np.rot90(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'])
+                s1_s2_data_plot = np.flipud(s1_s2_data_plot)
+                ax1.pcolormesh(self.a_s1_bin_edges, self.a_log_bin_edges, s1_s2_data_plot)
+
+                s1_s2_mc_plot = np.rot90(a_s1_s2_mc)
+                s1_s2_mc_plot = np.flipud(s1_s2_mc_plot)
+                #print self.l_s1_settings
+                #print self.l_log_settings
+                #print self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'].shape
+                #print a_s1_s2_mc.shape
+                #print s1_s2_data_plot.shape
+                #print s1_s2_mc_plot.shape
+                ax2.pcolormesh(self.a_s1_bin_edges, self.a_log_bin_edges, s1_s2_mc_plot)
+                #plt.colorbar()
+
+
+                c1 = Canvas(1400, 400)
+                c1.Divide(2)
+
+                h_s1_data = Hist(*self.l_s1_settings, name='hS1_draw_data')
+                root_numpy.array2hist(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'].sum(axis=1), h_s1_data)
+
+                hS1MC = Hist(*self.l_s1_settings, name='hS1_draw_mc')
+                root_numpy.array2hist(a_s1_s2_mc.sum(axis=1), hS1MC)
+
+                s1_scale_factor = h_s1_data.Integral() / float(hS1MC.Integral())
+
+                g_s1_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s1_data)
+                g_s1_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(hS1MC, scale=s1_scale_factor)
+
+                g_s1_mc.SetFillColor(root.kBlue)
+                g_s1_mc.SetMarkerColor(root.kBlue)
+                g_s1_mc.SetLineColor(root.kBlue)
+                g_s1_mc.SetFillStyle(3005)
+
+                g_s1_data.SetTitle('S1 Comparison')
+                g_s1_data.GetXaxis().SetTitle('S1 [PE]')
+                g_s1_data.GetYaxis().SetTitle('Counts')
+
+                g_s1_data.SetLineColor(root.kRed)
+                g_s1_data.SetMarkerSize(0)
+                g_s1_data.GetXaxis().SetRangeUser(self.l_s1_settings[1], self.l_s1_settings[2])
+                g_s1_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s1_data.GetMaximum(), hS1MC.GetMaximum()))
+
+                c1.cd(1)
+                g_s1_data.Draw('ap')
+                g_s1_mc.Draw('same')
+                g_s1_mc_band = g_s1_mc.Clone()
+                g_s1_mc_band.Draw('3 same')
+
+                h_s2_data = Hist(*self.l_log_settings, name='h_s2_draw_data')
+                root_numpy.array2hist(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'].sum(axis=0), h_s2_data)
+
+                h_s2_mc = Hist(*self.l_log_settings, name='h_s2_draw_mc')
+                root_numpy.array2hist(a_s1_s2_mc.sum(axis=0), h_s2_mc)
+
+                s2_scale_factor = h_s2_data.Integral() / float(h_s2_mc.Integral())
+
+                g_s2_data = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_data)
+                g_s2_mc = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_s2_mc, scale=s2_scale_factor)
+
+                g_s2_mc.SetFillColor(root.kBlue)
+                g_s2_mc.SetMarkerColor(root.kBlue)
+                g_s2_mc.SetLineColor(root.kBlue)
+                g_s2_mc.SetFillStyle(3005)
+
+                g_s2_data.SetTitle('Log(S2/S1) Comparison')
+                g_s2_data.GetXaxis().SetTitle('Log(S2/S1)')
+                g_s2_data.GetYaxis().SetTitle('Counts')
+
+                g_s2_data.SetLineColor(root.kRed)
+                g_s2_data.SetMarkerSize(0)
+                g_s2_data.GetXaxis().SetRangeUser(self.l_log_settings[1], self.l_log_settings[2])
+                g_s2_data.GetYaxis().SetRangeUser(0, 1.2*max(h_s2_data.GetMaximum(), h_s2_mc.GetMaximum()))
+
+                c1.cd(2)
+                g_s2_data.Draw('ap')
+                g_s2_mc.Draw('same')
+                g_s2_mc_band = g_s2_mc.Clone()
+                g_s2_mc_band.Draw('3 same')
+
+                c1.Update()
+
+                neriX_analysis.save_plot(['temp_results'], c1, '1d_hists', batch_mode=True)
+                f.savefig('./temp_results/2d_hist.png')
+
+                #plt.show()
+
+            #flat_s1_log_data = np.asarray(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'].flatten(), dtype=np.float32)
+            #flat_s1_log_mc = np.asarray(a_s1_s2_mc.flatten(), dtype=np.float32)
+            
+            flat_s1_log_data = np.asarray(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'][self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_s1']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_s1'],self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_log']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_log']].flatten(), dtype=np.float32)
+            flat_s1_log_mc = np.asarray(a_s1_s2_mc[self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_s1']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_s1'],self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_log']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_log']].flatten(), dtype=np.float32)
+
+
+            flat_s1_log_data = np.asarray(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['a_log_s2_s1'][self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_s1']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_s1'],self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_log']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_log']].flatten(), dtype=np.float32)
+            flat_s1_log_mc = np.asarray(a_s1_s2_mc[self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_s1']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_s1'],self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['low_bin_log']:self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['high_bin_log']].flatten(), dtype=np.float32)
+            logLikelihoodMatching = c_log_likelihood(flat_s1_log_data, flat_s1_log_mc, len(flat_s1_log_data), int(self.d_coincidence_data_information[self.l_cathode_settings_in_use[0]][self.l_degree_settings_in_use[0]]['num_data_pts']), 0.95)
+            
+            matching_ln_likelihood += logLikelihoodMatching
+        
+        total_ln_likelihood = matching_ln_likelihood + prior_ln_likelihood
+
+        if self.b_suppress_likelihood:
+            total_ln_likelihood /= self.ll_suppression_factor
+
+        #print logLikelihoodMatching, prior_ln_likelihood
+        #print 'Total time: %f' % (time.time() - start_time_tot_ll)
+        #print total_ln_likelihood
+
+        if np.isnan(total_ln_likelihood):
+            return -np.inf
+        else:
+            return total_ln_likelihood
+
+
+        
+    def wrapper_ln_likelihood_full_matching_band(self, a_parameters, kwargs={}):
+        #print a_parameters
+        #print '\n\n\n'
+        d_scale_pars = {}
+        for i, cathode_setting in enumerate(self.l_cathode_settings_in_use):
+            d_scale_pars[cathode_setting] = a_parameters[-4+i]
+        
+        return self.ln_likelihood_full_matching_band(*(list(a_parameters[:-4]) + [d_scale_pars, a_parameters[-1]]), **kwargs)
+
+
 
 
 
@@ -2227,8 +2534,13 @@ class fit_nr(object):
 
     def differential_evolution_minimizer_free_pars(self, a_bounds, maxiter=250, tol=0.05, popsize=15):
         def neg_log_likelihood_diff_ev(a_guesses):
-            a_guesses = list(a_guesses[:-2]) + [test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0] + list(a_guesses[-2:])
-            return -self.gpu_pool.map(self.wrapper_ln_likelihood_full_matching_single_energy, [a_guesses])[0]
+            if self.fit_type == 's':
+                a_guesses = list(a_guesses[:-2]) + [test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0] + list(a_guesses[-2:])
+                return -self.gpu_pool.map(self.wrapper_ln_likelihood_full_matching_single_energy, [a_guesses])[0]
+            else:
+                a_guesses = [13.7] + list(a_guesses[:8]) + [test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]] + list(a_guesses[-3:])
+                return -self.gpu_pool.map(self.wrapper_ln_likelihood_full_matching_band, [a_guesses])[0]
+            
         print '\n\nStarting differential evolution minimizer...\n\n'
         result = optimize.differential_evolution(neg_log_likelihood_diff_ev, a_bounds, disp=True, maxiter=maxiter, tol=tol, popsize=popsize)
         print result
@@ -2331,7 +2643,7 @@ if __name__ == '__main__':
     # d_coincidence_data['cathode_settings'] = [0.345, 1.054, ...]
     # d_coincidence_data['cathode_settings'] = [4.5]
 
-
+    """
     d_coincidence_data = {}
     d_coincidence_data['degree_settings'] = [4500]
     d_coincidence_data['cathode_settings'] = [0.345]
@@ -2353,35 +2665,28 @@ if __name__ == '__main__':
     #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
     
     test.run_mcmc(num_steps=500, num_walkers=256)
+    """
     
     
     d_coincidence_data = {}
-    d_coincidence_data['degree_settings'] = [2300, 3000, 3500, 4500, 5300]
-    d_coincidence_data['cathode_settings'] = [0.345]
+    d_coincidence_data['degree_settings'] = [-4]
+    d_coincidence_data['cathode_settings'] = [0.345, 1.054, 2.356]
     
-    """
-    test = fit_nr('m', d_coincidence_data, num_mc_events=1e5, num_gpus=1)
+    test = fit_nr('bl', d_coincidence_data, num_mc_events=5e5, num_gpus=3, num_loops=4)
     #test.suppress_likelihood()
-    l_test_parameters_multiple_energies = [8, 3.5, 9.3, 7.3, 7.5, 10.23, 10.44, 7, 3.7, 5.1, 5.5, 4.9, 5.4, 4.5, 0.31, 0.02, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0, 0, 0]
-    test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_multiple_energies, [l_test_parameters_multiple_energies])
+    
+    # ln_likelihood_full_matching_band(self, w_value, alpha, zeta, beta, gamma, delta, kappa, intrinsic_res_s1, intrinsic_res_s2, g1_value, spe_res_value, extraction_efficiency_value, gas_gain_mean_value, gas_gain_width_value, pf_eff_par0, pf_eff_par1, s2_eff_par0, s2_eff_par1, pf_stdev_par0, pf_stdev_par1, pf_stdev_par2, d_scale_par, d_gpu_local_info, draw_fit=False)
+    
+    #l_test_parameters_single_energy = [13.7, 1.24, 0.047, 239, 0.01385, 0.0620, 0.1394, 0.1, 0.2, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2], 0.99, 0.99, 0.99]
+    #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_band, [l_test_parameters_single_energy])
 
-    #a_free_par_bounds = [(3.,20.), (3, 20.), (3, 20.), (3, 20.), (3, 20.), (3, 20.), (3, 20.), (2, 20.), (2, 20.), (2, 20.), (2, 20.), (2, 20.), (2, 20.), (2, 20.), (0.01, 1.5), (0.01, 1.5)]
-    #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
-    """
+    a_free_par_bounds = [(0., 5.), (0., 0.15), (0., 800), (0., 0.03), (0., 0.15), (0, 0.4), (0, 0.5), (0, 0.5), (0, 1), (0, 1), (0, 1)]
+    test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
     
-    """
-    test = fit_nr('ml', d_coincidence_data, num_mc_events=2e5, num_gpus=2)
-    #test.suppress_likelihood()
-    #l_test_parameters_multiple_energies_lindhard_model = [0, 1.240, 0.0472, 239, 0.01385, 0.0620, 0.1394, 3.3, 1.14, 0.31, 0.02, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
-    l_test_parameters_multiple_energies_lindhard_model = [0.13, 5.151, 0.2889, 10000, 0.08231, 0.454, 0.1539, 1318, 154, 0.18, 0.22, test.l_means_g1_g2[0], 0., 20.89, 0.5, 0., test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1], test.l_means_pf_stdev_pars[0], test.l_means_pf_stdev_pars[1], test.l_means_pf_stdev_pars[2]]
-    
-    test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_multiple_energies_lindhard_model, [l_test_parameters_multiple_energies_lindhard_model])
-    #a_free_par_bounds = [(-6, 6), (0.5, 1.7), (0.01, 0.75), (200, 300), (0.007, 0.019), (0.02, 0.1), (0.05, 0.25), (0.5, 10), (0.1, 3), (0.01, 1.5), (0.01, 1.5)]
-    #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=50, popsize=15, tol=0.05)
+    #test.run_mcmc(num_steps=500, num_walkers=256)
     
     
-    #test.run_mcmc(num_steps=50, num_walkers=128)
-    """
+   
     
     
     test.close_workers()
