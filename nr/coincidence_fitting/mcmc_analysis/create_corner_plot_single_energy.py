@@ -44,7 +44,7 @@ for degree_setting in l_degree_settings_in_use:
 s_degree_settings = s_degree_settings[:-1]
 
 nameOfResultsDirectory = neriX_simulation_config.results_directory_name
-l_plots = ['plots', '%.3f_kV' % cathode_setting, '%s_deg' % (s_degree_settings)]
+l_plots = ['plots', directory_descriptor, '%.3f_kV' % cathode_setting, '%s_deg' % (s_degree_settings)]
 
 dir_specifier_name = '%.3f_kV_%s_deg' % (cathode_setting, s_degree_settings)
 
@@ -68,8 +68,8 @@ else:
 
 
 
-numDim = 21
-l_labels = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res', 'extraction_efficiency', 'gas_gain', 'gas_gain_width', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'prob_bkg', 'scale']
+numDim = 20
+l_labels = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res', 'extraction_efficiency', 'gas_gain', 'gas_gain_width', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_res_s1', 'pf_res_s2', 'exciton_to_ion_par0_rv', 'exciton_to_ion_par1_rv', 'exciton_to_ion_par2_rv', 'prob_bkg', 'scale']
 
 
 num_steps = 1000
@@ -90,8 +90,8 @@ batch_size = int(tot_number_events/40)
 num_batches = int(tot_number_events/batch_size/2)
 d_gr_stats = {}
 
-l_free_pars = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'prob_bkg', 'scale']
-l_colors = ['b', 'r', 'g', 'y', 'black', 'm']
+l_free_pars = ['py', 'qy', 'intrinsic_res_s1', 'intrinsic_res_s2', 'pf_res_s1', 'pf_res_s2', 'prob_bkg', 'scale']
+l_colors = ['b', 'r', 'g', 'y', 'orange', 'cyan', 'black', 'm']
 
 for par_name in l_labels:
     d_gr_stats[par_name] = [0 for i in xrange(num_batches)]
@@ -103,22 +103,21 @@ print '\nCalculating Gelman-Rubin Statistic for each parameter...\n'
 for i in tqdm.tqdm(xrange(numDim)):
     par_name = l_labels[i]
     for j in xrange(1, num_batches+1):
-        #print tot_number_events, 2*j*batch_size
         num_events_in_batch = float(j*batch_size)
     
+        # take all walkers, j*batch_size->2*j*batch_size samples, for ith parameter
         a_sampler = a_full_sampler[:, j*batch_size:2*j*batch_size, i]
-        #print a_sampler[0,:]
-        #print np.var(a_sampler[0,:], ddof=1)
         
         a_means = np.mean(a_sampler, axis=1)
         a_vars = np.var(a_sampler, axis=1, ddof=1)
         mean_of_means = np.mean(a_means)
-        #print len(a_vars), a_vars
-        #print num_walkers, np.sum(a_vars), mean_of_means
+        
         b_ = num_events_in_batch/(num_walkers-1.) * np.sum((a_means-mean_of_means)**2)
         w_ = 1./(num_walkers) * np.sum(a_vars)
+        
         var_p = (num_events_in_batch-1)/num_events_in_batch*w_ + b_/num_events_in_batch
         v_ = var_p + b_/(num_events_in_batch*num_walkers)
+        
         rg_stat = (v_/w_)**0.5
         
         #print num_events_in_batch, b_, w_, var_p, v_
