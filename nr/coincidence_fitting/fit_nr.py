@@ -756,7 +756,7 @@ class fit_nr(object):
             # check if reduced file exists
             coincidence_degree_setting = True
             if degree_setting > 0:
-                if not self.identifier == 'mlti_moved_pos':
+                if not self.fit_type == 'mlti_moved_pos':
                     current_path_to_reduced_energy_spectra = '%snerixsim-%dkeV.root' % (self.path_to_reduced_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
                 else:
                     current_path_to_reduced_energy_spectra = '%snerixsim-%dkeV_moved_pos.root' % (self.path_to_reduced_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
@@ -772,7 +772,7 @@ class fit_nr(object):
             
                 # load the raw data file
                 if coincidence_degree_setting:
-                    if not self.identifier == 'mlti_moved_pos':
+                    if not self.fit_type == 'mlti_moved_pos':
                         current_path_to_energy_spectra = '%snerixsim-%dkeV.root' % (self.path_to_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
                     else:
                         current_path_to_energy_spectra = '%snerixsim-%dkeV_moved_pos.root' % (self.path_to_energy_spectra, self.d_degree_setting_to_energy_name[degree_setting])
@@ -1888,7 +1888,7 @@ class fit_nr(object):
                 #a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*self.d_coincidence_data_information[cathode_setting][degree_setting]['num_data_pts']/float(self.num_mc_events*self.num_loops))
                 a_s1_s2_mc = np.multiply(a_s1_s2_mc, float(scale_par)*integral_data/float(integral_mc))
 
-                # likelihood for mlti
+                # likelihood for test
                 if draw_fit:
 
                     f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
@@ -2508,7 +2508,9 @@ class fit_nr(object):
                 a_free_parameter_guesses = [1.50570624e-01, 1.73586063e-01, 1.20784480e-01, 8.28728080e-02, 2.50685523e-01, 3.47215755e+01, 2.97646444e-02, 1.17420176e+00, 3.29941916e-01, 8.60177855e-01, 1.37438771e-01, 8.81837797e-01, 2.82658988e-01, 7.59336611e-01, 3.93830317e-01, 9.75755515e-01, 4.09473409e-02, 1.83664545e-01, 3.48234408e+01, 3.78743406e-02, 1.29242185e+00, 1.18262763e-01, 7.30735165e-01, 2.50593149e-01, 7.81316055e-01, 3.63693355e-01, 9.32919132e-01, 3.13526304e-01, 8.52441265e-01, 5.72525297e-02, 2.44435244e-01, 3.42007248e+01, 2.61562638e-02, 1.27534975e+00, 1.26479405e-01, 8.01497954e-01, 2.27479810e-01, 8.70813328e-01, 3.94553333e-01, 9.02541013e-01, 3.48684210e-01, 9.43474342e-01]
             
             elif self.fit_type[:4] == 'mlti':
-                a_free_parameter_guesses = [3.22182010e+03, 1.56037068e-01, 3.05109850e+00, 1.16001614e+00, 1.26899592e-01, 9.72338277e-01, 2.20896740e+00, 1.24605540e-01, 2.00780510e-01, 1.07290240e+03, 5.76968344e-03, 1.23491295e+00, 2.19176568e+00, 3.09352209e-01, 2.35900361e+00, 1.00254241e-01, 2.15905404e+00, 6.01790172e-03, 2.26503500e+00, 1.60397675e-01, 1.19741699e+00, 6.72672821e-03, 1.33180979e+00, 2.22957542e+00, 3.58497476e-01, 2.65224391e+00, 2.35506919e-01, 2.20839990e+00, 1.70133070e-01, 1.73809979e+00, 3.71251968e-01, 1.70512637e+00, 8.02725402e-03, 9.16496586e-01, 1.62461513e+00, 3.18310422e-01, 2.07738773e+00, 1.25221404e-01, 2.51620240e+00, 1.96360030e-01, 1.35731466e+00, 1.71761316e-01, 2.03880016e+00]
+                #a_free_parameter_guesses = [3.22182010e+03, 1.56037068e-01, 3.05109850e+00, 1.16001614e+00, 1.26899592e-01, 9.72338277e-01, 2.20896740e+00, 1.24605540e-01, 2.00780510e-01, 1.07290240e+03, 5.76968344e-03, 1.23491295e+00, 2.19176568e+00, 3.09352209e-01, 2.35900361e+00, 1.00254241e-01, 2.15905404e+00, 6.01790172e-03, 2.26503500e+00, 1.60397675e-01, 1.19741699e+00, 6.72672821e-03, 1.33180979e+00, 2.22957542e+00, 3.58497476e-01, 2.65224391e+00, 2.35506919e-01, 2.20839990e+00, 1.70133070e-01, 1.73809979e+00, 3.71251968e-01, 1.70512637e+00, 8.02725402e-03, 9.16496586e-01, 1.62461513e+00, 3.18310422e-01, 2.07738773e+00, 1.25221404e-01, 2.51620240e+00, 1.96360030e-01, 1.35731466e+00, 1.71761316e-01, 2.03880016e+00]
+                # after completed log and linear fits 170518
+                a_free_parameter_guesses = [2.52e+03, 1.71e-01, 7.22e+00, 1.13e+00, 1.73e-01, 1.60e+00, 4.98e-01, 5.39e-02, 3.63e-01, 9.92e+02, 8.50e-03, 9.21e-01, 4.00e+00, 3.77e-01, 1.92e+00, 2.19e-01, 1.78e+00, 1.32e-01, 1.53e+00, 2.06e-01, 1.49e+00, 8.59e-03, 9.21e-01, 3.95e+00, 4.32e-01, 1.94e+00, 2.67e-01, 1.75e+00, 8.82e-02, 1.43e+00, 1.96e-01, 1.47e+00, 8.97e-03, 8.64e-01, 4.12e+00, 4.03e-01, 1.96e+00, 8.91e-02, 1.64e+00, 2.15e-01, 1.52e+00, 2.20e-01, 1.46e+00]
             
             else:
                 print '\nPlease run differential evolution minimizer for this setup and implement results in source code.\n'
@@ -2985,14 +2987,16 @@ if __name__ == '__main__':
     d_coincidence_data['degree_settings'] = [-4, 3000, 3500, 4500, 5300]
     d_coincidence_data['cathode_settings'] = [0.345, 1.054, 2.356]
     
-    test = fit_nr('mlti', d_coincidence_data, num_mc_events=2e6, l_gpus=[0, 1, 2, 3, 4, 5], num_loops=4)
+    #test = fit_nr('mlti', d_coincidence_data, num_mc_events=2e6, l_gpus=[0, 1, 2, 3, 4, 5], num_loops=4)
+    test = fit_nr('mlti_moved_pos', d_coincidence_data, num_mc_events=2e4, l_gpus=[0], num_loops=4)
     
     
-
-    a_free_par_guesses = [13.7] + [2.54939588e+03, 0.14, 5.41196862e+00, 1.75879471e+00, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1]]
-    a_free_par_guesses += [0.15, 0.6, 7, 0.05, 0.3, 800]
+    
+    #[2.52e+03, 1.71e-01, 7.22e+00, 1.13e+00, 1.73e-01, 1.60e+00, 4.98e-01, 5.39e-02, 3.63e-01, 9.92e+02, 8.50e-03, 9.21e-01, 4.00e+00, 3.77e-01, 1.92e+00, 2.19e-01, 1.78e+00, 1.32e-01, 1.53e+00, 2.06e-01, 1.49e+00, 8.59e-03, 9.21e-01, 3.95e+00, 4.32e-01, 1.94e+00, 2.67e-01, 1.75e+00, 8.82e-02, 1.43e+00, 1.96e-01, 1.47e+00, 8.97e-03, 8.64e-01, 4.12e+00, 4.03e-01, 1.96e+00, 8.91e-02, 1.64e+00, 2.15e-01, 1.52e+00, 2.20e-01, 1.46e+00] # 43
+    a_free_par_guesses = [13.7] + [2.52e+03, 1.71e-01, 7.22e+00, 1.13e+00, test.g1_value, test.spe_res_value, test.extraction_efficiency_value, test.gas_gain_value, test.gas_gain_width, test.l_means_pf_eff_pars[0], test.l_means_pf_eff_pars[1], test.l_means_s2_eff_pars[0], test.l_means_s2_eff_pars[1]]
+    a_free_par_guesses += [1.73e-01, 1.60e+00, 4.98e-01, 5.39e-02, 3.63e-01, 9.92e+02]
     a_free_par_guesses += [0.20]
-    a_free_par_guesses += [6.53197967e-03, 9.49893129e-01, 2., 0.2213, 2.735, 0.03, 1.803, 0.2, 2.26, 0.05, 1.43, 5.27447143e-03, 1.31299744e+00, 2., 0.345, 2.57, 0.08, 1.757, 0.13, 1.53, 0.05, 1.414, 6.24836144e-03, 1.06208467e+00, 2., 0.3227, 1.84, 0.02465, 1.657, 0.082, 1.458, 0.06, 1.39]
+    a_free_par_guesses += [8.50e-03, 9.21e-01, 4.00e+00, 3.77e-01, 1.92e+00, 2.19e-01, 1.78e+00, 1.32e-01, 1.53e+00, 2.06e-01, 1.49e+00, 8.59e-03, 9.21e-01, 3.95e+00, 4.32e-01, 1.94e+00, 2.67e-01, 1.75e+00, 8.82e-02, 1.43e+00, 1.96e-01, 1.47e+00, 8.97e-03, 8.64e-01, 4.12e+00, 4.03e-01, 1.96e+00, 8.91e-02, 1.64e+00, 2.15e-01, 1.52e+00, 2.20e-01, 1.46e+00]
     #test.gpu_pool.map(test.wrapper_ln_likelihood_full_matching_multiple_energies_lindhard_model_with_ti_recombination, [a_free_par_guesses])
     
     #a_free_par_bounds = [(100, 4000), (0.1, 0.2), (1.5, 10), (0.8, 2)]
@@ -3001,8 +3005,8 @@ if __name__ == '__main__':
     #test.differential_evolution_minimizer_free_pars(a_free_par_bounds, maxiter=150, popsize=5, tol=0.1)
     
     
-    #test.suppress_likelihood(100)
-    test.run_mcmc(num_steps=38*3, num_walkers=512)
+    test.suppress_likelihood(100)
+    #test.run_mcmc(num_steps=38*3, num_walkers=512)
     
     
      

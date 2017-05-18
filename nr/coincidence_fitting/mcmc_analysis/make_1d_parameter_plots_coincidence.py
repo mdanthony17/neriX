@@ -45,7 +45,8 @@ if file_descriptor == 'ml':
     directory_descriptor = 'multiple_energies_lindhard_model'
 elif file_descriptor == 'mlti':
     directory_descriptor = 'multiple_energies_lindhard_model_with_ti'
-
+elif file_descriptor == 'mlti_moved_pos':
+    directory_descriptor = 'multiple_energies_lindhard_model_with_ti_moved_pos'
 
 l_degree_settings_in_use = [-4, 3000, 3500, 4500, 5300]
 s_degree_settings = ''
@@ -118,6 +119,8 @@ elif file_descriptor == 'mlti':
     l_par_names = ['w_value', 'beta', 'kappa', 'eta', 'lambda', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_s1_par0', 'pf_stdev_s1_par1', 'pf_stdev_s1_par2', 'pf_stdev_s2_par0', 'pf_stdev_s2_par1', 'pf_stdev_s2_par2', 'dpe_prob'] + l_field_free_pars
 
 
+
+
 num_rows = 1
 for i in xrange(1, 10):
     if i**2 > len(l_par_names):
@@ -131,6 +134,17 @@ for num_columns in xrange(1, num_rows+1):
 
 assert num_dim == len(l_par_names)
 samples = a_full_sampler[:, -num_steps:, :].reshape((-1, num_dim))
+
+
+
+a_medians = np.median(samples, axis=0)
+print a_medians
+print '\nPrinting median parameters...'
+for i, par_name in enumerate(l_par_names):
+    print '%s = %.2e' % (par_name, a_medians[i])
+print '\n\n'
+
+
 
 
 # use pars from corner to make figure
