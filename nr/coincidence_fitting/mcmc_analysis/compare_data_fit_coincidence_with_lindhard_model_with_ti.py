@@ -52,17 +52,21 @@ transparency = 0.2
 l_quantiles_for_2d = [50]
 
 # num_steps goes into how many random draws you will take from kept sampler
-num_steps = 1#5
+num_steps = 5
 # num_steps_to_include is how large of sampler you keep
 num_steps_to_include = 200
 num_mc_events = int(2e5)
 device_number = 0
 
-if(len(sys.argv) != 2):
-	print 'Usage is python compare_data_fit_single_energy.py <num walkers>'
+if(len(sys.argv) != 3):
+	print 'Usage is python compare_data_fit_single_energy.py <num walkers> <moved positions>'
 	sys.exit(1)
 
 num_walkers = int(sys.argv[1])
+if str.lower(sys.argv[2]) == 't':
+    b_moved_pos = True
+else:
+    b_moved_pos = False
 
 d_degree_setting_to_energy_name = {2300:3,
                                    3000:5,
@@ -77,7 +81,8 @@ d_cathode_voltages_to_field = {0.345:190,
 
 
 dir_specifier_name = 'multiple_energies_lindhard_model_with_ti'
-
+if b_moved_pos:
+    dir_specifier_name += '_moved_pos'
 
 l_degree_settings_in_use = [-4, 3000, 3500, 4500, 5300]
 s_degree_settings = ''
@@ -453,8 +458,7 @@ for cathode_setting in l_cathode_settings_in_use:
         #print a_s2_mc
         #print a_weight
 
-        hist_s1_log_mc = ax_s1_log_mc.hist2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting]], weights=a_weight, cmap='Blues')
-        fig_s1_log.colorbar(hist_s1_log_mc[3], ax=ax_s1_log_mc)
+
         
         #plt.show()
         
@@ -485,8 +489,17 @@ for cathode_setting in l_cathode_settings_in_use:
         # for consistency, get data integral BEFORE extra cuts
         a_hist2d_before_cuts_data, _, _ = np.histogram2d(current_df_data['s1'], current_df_data['log'], bins=[d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting]])
         data_integral = np.sum(a_hist2d_before_cuts_data)
+
+        mc_integral = float(num_mc_events)
+
+
+        hist_s1_log_mc, _, _ = np.histogram2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting]], weights=a_weight)
+        hist_s1_log_mc = np.multiply(hist_s1_log_mc, scale_par * data_integral / mc_integral)
+        pcm = ax_s1_log_mc.pcolor(d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting], hist_s1_log_mc.T, cmap='Blues')
+        ax_s1_log_mc.set_xlim(d_bin_edges['s1'][cathode_setting][degree_setting][0], d_bin_edges['s1'][cathode_setting][degree_setting][-1])
+        ax_s1_log_mc.set_ylim(d_bin_edges['log'][cathode_setting][degree_setting][0], d_bin_edges['log'][cathode_setting][degree_setting][-1])
+        fig_s1_log.colorbar(pcm, ax=ax_s1_log_mc)
         
-        best_fit_mc_2d_hist, _, _ = np.histogram2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting]])
         
 
 
@@ -508,7 +521,7 @@ for cathode_setting in l_cathode_settings_in_use:
             if (np.isnan(current_mean_log)) or (np.isnan(current_std_log)):
                 continue
 
-            num_std_away = 3
+            num_std_away = 2
 
             # must apply to both data and MC!
             current_df_data = current_df_data[(current_df_data['s1'] < s1_edges_mc[bin_number]) | (current_df_data['s1'] > s1_edges_mc[bin_number+1]) | ((current_df_data['log'] > (current_mean_log-num_std_away*current_std_log)) & (current_df_data['log'] < (current_mean_log+num_std_away*current_std_log)))]
@@ -523,7 +536,7 @@ for cathode_setting in l_cathode_settings_in_use:
 
 
 
-        best_fit_mc_2d_hist = hist_s1_log_mc[0]
+        best_fit_mc_2d_hist = hist_s1_log_mc
         
         print '\n\nFinding p-value via PFF test...\n'
         
@@ -634,25 +647,22 @@ for cathode_setting in l_cathode_settings_in_use:
         
         # see above before cuts
         #data_integral = np.sum(hist_s1_log_data[0])
-        mc_integral = float(num_mc_events)
+
         #print scale_par, data_integral, mc_integral
-        
-        # only scaling for chi2 / ndf
-        #print np.sum(best_fit_mc_2d_hist)
-        best_fit_mc_2d_hist = np.multiply(best_fit_mc_2d_hist, scale_par * data_integral / mc_integral)
-        #print np.sum(best_fit_mc_2d_hist)
-        
         #print 'hist2d integral data: %f' % (data_integral)
         
         # find the chi2
-        indices_for_log_likelihood = ((hist_s1_log_data[0] > 3) | (best_fit_mc_2d_hist > 0.01))
-        #current_chi2 = np.sum((best_fit_mc_2d_hist[indices_for_log_likelihood] - hist_s1_log_data[0][indices_for_log_likelihood])**2 / hist_s1_log_data[0][indices_for_log_likelihood])
-        #current_ndf = np.sum(indices_for_log_likelihood)
-        #print 'Chi2 / NDF: %f / %d' % (current_chi2, current_ndf)
-        small_number = 1e-10
-        current_ln_likelihood = np.sum(hist_s1_log_data[0][indices_for_log_likelihood]*np.log(best_fit_mc_2d_hist[indices_for_log_likelihood]+small_number) - (best_fit_mc_2d_hist[indices_for_log_likelihood]+small_number) - gammaln(hist_s1_log_data[0][indices_for_log_likelihood]+1.))
+        indices_for_log_likelihood = ((hist_s1_log_data[0] > 3) & (best_fit_mc_2d_hist > 0.01))
+        #print best_fit_mc_2d_hist
+        #print hist_s1_log_data[0]
+        #print indices_for_log_likelihood
+        current_chi2 = np.sum((best_fit_mc_2d_hist[indices_for_log_likelihood] - hist_s1_log_data[0][indices_for_log_likelihood])**2 / hist_s1_log_data[0][indices_for_log_likelihood])
         current_ndf = np.sum(indices_for_log_likelihood)
-        print 'ln(L) / NDF: %f / %d' % (current_ln_likelihood, current_ndf)
+        print 'Chi2 / NDF: %f / %d' % (current_chi2, current_ndf)
+        #small_number = 1e-10
+        #current_ln_likelihood = np.sum(hist_s1_log_data[0][indices_for_log_likelihood]*np.log(best_fit_mc_2d_hist[indices_for_log_likelihood]+small_number) - (best_fit_mc_2d_hist[indices_for_log_likelihood]+small_number) - gammaln(hist_s1_log_data[0][indices_for_log_likelihood]+1.))
+        #current_ndf = np.sum(indices_for_log_likelihood)
+        #print 'ln(L) / NDF: %f / %d' % (current_ln_likelihood, current_ndf)
 
         #print 'remove continue and addition'
         #if degree_setting != -4:

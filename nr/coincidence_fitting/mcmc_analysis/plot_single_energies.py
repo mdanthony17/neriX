@@ -94,8 +94,8 @@ s_degree_settings = s_degree_settings[:-1]
 name_of_results_directory = neriX_simulation_config.results_directory_name + '/%s' % (directory_descriptor)
 #l_plots = ['plots']
 
-num_steps = 200
-num_steps_to_pull_from = 200
+num_steps = 100
+num_steps_to_pull_from = 100
 
 for cathode_setting in l_cathode_settings_in_use:
     d_yields[cathode_setting] = {}

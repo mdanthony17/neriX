@@ -34,7 +34,7 @@ num_steps = 500
 num_walkers = int(sys.argv[1])
 file_descriptor = sys.argv[2]
 
-if not (file_descriptor == 'ml' or file_descriptor == 'mlti'):
+if not (file_descriptor == 'ml' or file_descriptor == 'mlti' or file_descriptor == 'mlti_moved_pos'):
     print 'Need to give proper file type'
     sys.exit()
 
@@ -89,7 +89,7 @@ else:
 # 17 + scales + recombination + exciton-to-ion ratio + bkgs + scales
 if file_descriptor == 'ml':
     num_dim = 17 + len(l_cathode_settings_in_use)*(4+1) + len(l_cathode_settings_in_use)*len(l_degree_settings_in_use)*2
-elif file_descriptor == 'mlti':
+elif file_descriptor[:4] == 'mlti':
     num_dim = 21 + len(l_cathode_settings_in_use)*len(l_degree_settings_in_use)*2 + len(l_cathode_settings_in_use)*(1+1) - len(l_cathode_settings_in_use)
 
 
@@ -105,7 +105,7 @@ if file_descriptor == 'ml':
         l_par_names = ['w_value', 'kappa', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'dpe_prob'] + l_field_free_pars + ['band_res_s1', 'band_res_s2']
 
 
-elif file_descriptor == 'mlti':
+elif file_descriptor[:4] == 'mlti':
     for cathode_setting in l_cathode_settings_in_use:
         l_field_free_pars += ['ti_par_%.3f_kV' % (cathode_setting), 'exciton_to_ion_ratio_%.3f_kV' % (cathode_setting)]
         
