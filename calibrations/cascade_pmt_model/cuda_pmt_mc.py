@@ -354,7 +354,7 @@ __global__ void cascade_pmt_model(curandState *state, int *num_trials, float *a_
 }
 
 
-__global__ void pure_cascade_spectrum(curandState *state, int *num_trials, float *a_hist, int *num_pe, float *mean_e_from_dynode, float *probability_electron_ionized, int *num_bins, float *bin_edges)
+__global__ void pure_cascade_spectrum(curandState *state, int *num_trials, float *a_hist, int *num_pe, float *prob_hit_first_dynode, float *mean_e_from_dynode, float *probability_electron_ionized, int *num_bins, float *bin_edges)
 {
     //printf("hello\\n");
     
@@ -362,13 +362,16 @@ __global__ void pure_cascade_spectrum(curandState *state, int *num_trials, float
     curandState s = state[iteration];
     
     int bin_number;
-    int num_dynodes = 12;
+    const int tot_num_dynodes = 12;
     float f_tot_num_pe;
     int i_tot_num_pe = *num_pe;
     
     
     if (iteration < *num_trials)
 	{
+        int current_num_dynodes = tot_num_dynodes;
+        if(curand_uniform(&s) > *prob_hit_first_dynode)
+            current_num_dynodes -= 1;
 
         if (*mean_e_from_dynode < 0)
 		{	
@@ -378,7 +381,7 @@ __global__ void pure_cascade_spectrum(curandState *state, int *num_trials, float
         
         if (i_tot_num_pe > 0)
         {
-            for (int i = 0; i < num_dynodes; i++)
+            for (int i = 0; i < current_num_dynodes; i++)
             {
                 if (i_tot_num_pe < 10000)
                     i_tot_num_pe = gpu_binomial(&s, (int)floorf(i_tot_num_pe * *mean_e_from_dynode), *probability_electron_ionized);

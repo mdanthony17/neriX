@@ -16,7 +16,7 @@ for files in l_files:
     num_mc_events = str(int(1e7))
     num_steps_to_include = '20'
 
-    subprocess.call(['python', 'run_cascade_mcmc.py', files[0], files[1], num_walkers, num_steps, num_mc_events])
-    #subprocess.call(['python', 'create_cascade_plots.py', files[0], files[1], num_walkers, num_steps_to_include, num_mc_events])
+    #subprocess.call(['python', 'run_cascade_mcmc.py', files[0], files[1], num_walkers, num_steps, num_mc_events])
+    subprocess.call(['python', 'create_cascade_plots.py', files[0], files[1], num_walkers, num_steps_to_include, num_mc_events])
 
 

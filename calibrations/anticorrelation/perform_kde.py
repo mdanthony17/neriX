@@ -31,7 +31,7 @@ from sklearn import grid_search
 from sklearn import preprocessing
 
 num_walkers = 64
-num_steps_to_include = 2500
+num_steps_to_include = 50
 num_steps = 3000
 num_events = num_walkers*num_steps_to_include
 

@@ -55,8 +55,8 @@ s2Branch = 'cpS2sTotBottom[0]'
 
 current_analysis.add_cut('%s > 0' % s1Branch)
 current_analysis.add_cut('%s > 0' % s2Branch)
-current_analysis.add_cut('%s < %f' % (s1Branch, s1Max))
-current_analysis.add_cut('%s < %f' % (s2Branch, s2Max))
+#current_analysis.add_cut('%s < %f' % (s1Branch, s1Max))
+#current_analysis.add_cut('%s < %f' % (s2Branch, s2Max))
 
 current_analysis.add_z_cut(any_peak=True)
 current_analysis.add_s1_liqsci_peak_cut()

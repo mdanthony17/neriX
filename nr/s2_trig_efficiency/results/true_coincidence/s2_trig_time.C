@@ -1,16 +1,16 @@
 {
-//=========Macro generated from canvas: 6e6be249d2394437adfecce48aafca82/
-//=========  (Tue Nov 15 15:02:25 2016) by ROOT version5.34/26
-   TCanvas *6e6be249d2394437adfecce48aafca82 = new TCanvas("6e6be249d2394437adfecce48aafca82", "",10,45,704,527);
-   6e6be249d2394437adfecce48aafca82->SetHighLightColor(2);
-   6e6be249d2394437adfecce48aafca82->Range(-18.75,-12.91946,168.75,116.2751);
-   6e6be249d2394437adfecce48aafca82->SetFillColor(0);
-   6e6be249d2394437adfecce48aafca82->SetBorderMode(0);
-   6e6be249d2394437adfecce48aafca82->SetBorderSize(2);
-   6e6be249d2394437adfecce48aafca82->SetGridx();
-   6e6be249d2394437adfecce48aafca82->SetGridy();
-   6e6be249d2394437adfecce48aafca82->SetFrameBorderMode(0);
-   6e6be249d2394437adfecce48aafca82->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 7204bc83408a48268db501d49d7434e2/
+//=========  (Fri Mar 17 09:50:33 2017) by ROOT version5.34/26
+   TCanvas *7204bc83408a48268db501d49d7434e2 = new TCanvas("7204bc83408a48268db501d49d7434e2", "",10,45,704,527);
+   7204bc83408a48268db501d49d7434e2->SetHighLightColor(2);
+   7204bc83408a48268db501d49d7434e2->Range(-18.75,-12.64297,168.75,113.7867);
+   7204bc83408a48268db501d49d7434e2->SetFillColor(0);
+   7204bc83408a48268db501d49d7434e2->SetBorderMode(0);
+   7204bc83408a48268db501d49d7434e2->SetBorderSize(2);
+   7204bc83408a48268db501d49d7434e2->SetGridx();
+   7204bc83408a48268db501d49d7434e2->SetGridy();
+   7204bc83408a48268db501d49d7434e2->SetFrameBorderMode(0);
+   7204bc83408a48268db501d49d7434e2->SetFrameBorderMode(0);
    
    TH1F *h_trig_time = new TH1F("h_trig_time","",50,0,150);
    h_trig_time->SetBinContent(0,123);
@@ -23,9 +23,9 @@
    h_trig_time->SetBinContent(18,1);
    h_trig_time->SetBinContent(19,2);
    h_trig_time->SetBinContent(20,6);
-   h_trig_time->SetBinContent(21,12);
-   h_trig_time->SetBinContent(22,42);
-   h_trig_time->SetBinContent(23,89);
+   h_trig_time->SetBinContent(21,11);
+   h_trig_time->SetBinContent(22,41);
+   h_trig_time->SetBinContent(23,87);
    h_trig_time->SetBinContent(24,52);
    h_trig_time->SetBinContent(25,20);
    h_trig_time->SetBinContent(26,12);
@@ -57,9 +57,9 @@
    h_trig_time->SetBinError(18,1);
    h_trig_time->SetBinError(19,1.414214);
    h_trig_time->SetBinError(20,2.44949);
-   h_trig_time->SetBinError(21,3.464102);
-   h_trig_time->SetBinError(22,6.480741);
-   h_trig_time->SetBinError(23,9.433981);
+   h_trig_time->SetBinError(21,3.316625);
+   h_trig_time->SetBinError(22,6.403124);
+   h_trig_time->SetBinError(23,9.327379);
    h_trig_time->SetBinError(24,7.211103);
    h_trig_time->SetBinError(25,4.472136);
    h_trig_time->SetBinError(26,3.464102);
@@ -81,7 +81,7 @@
    h_trig_time->SetBinError(49,1);
    h_trig_time->SetBinError(50,1.414214);
    h_trig_time->SetBinError(51,6.78233);
-   h_trig_time->SetEntries(449);
+   h_trig_time->SetEntries(445);
    h_trig_time->SetStats(0);
    h_trig_time->SetFillStyle(0);
    h_trig_time->SetMarkerStyle(20);
@@ -101,7 +101,7 @@
    h_trig_time->GetZaxis()->SetTitleSize(0.035);
    h_trig_time->GetZaxis()->SetTitleFont(42);
    h_trig_time->Draw("");
-   6e6be249d2394437adfecce48aafca82->Modified();
-   6e6be249d2394437adfecce48aafca82->cd();
-   6e6be249d2394437adfecce48aafca82->SetSelected(6e6be249d2394437adfecce48aafca82);
+   7204bc83408a48268db501d49d7434e2->Modified();
+   7204bc83408a48268db501d49d7434e2->cd();
+   7204bc83408a48268db501d49d7434e2->SetSelected(7204bc83408a48268db501d49d7434e2);
 }

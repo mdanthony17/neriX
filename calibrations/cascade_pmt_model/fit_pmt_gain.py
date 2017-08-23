@@ -601,7 +601,7 @@ class fit_pmt_gain(object):
         
         
             # gather inputs for pure spec
-            l_pure_spec = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_pure), drv.In(np.asarray(1, dtype=np.int32)), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
+            l_pure_spec = [self.rng_states, drv.In(num_trials), drv.InOut(a_hist_pure), drv.In(np.asarray(1, dtype=np.int32)), drv.In(prob_hit_first), drv.In(mean_e_from_dynode), drv.In(probability_electron_ionized), drv.In(num_bins_mpe1), drv.In(mpe1_bin_edges)]
             
             gpu_pure_cascade_spectrum(*l_pure_spec, **self.d_gpu_scale)
             

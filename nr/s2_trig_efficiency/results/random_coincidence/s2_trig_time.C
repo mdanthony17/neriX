@@ -1,22 +1,22 @@
 {
-//=========Macro generated from canvas: 44feb1fffc064b96a30a12f5cdfc916e/
-//=========  (Tue Nov 15 15:28:25 2016) by ROOT version5.34/26
-   TCanvas *44feb1fffc064b96a30a12f5cdfc916e = new TCanvas("44feb1fffc064b96a30a12f5cdfc916e", "",10,45,704,527);
-   44feb1fffc064b96a30a12f5cdfc916e->SetHighLightColor(2);
-   44feb1fffc064b96a30a12f5cdfc916e->Range(-18.75,-39.48687,168.75,355.3818);
-   44feb1fffc064b96a30a12f5cdfc916e->SetFillColor(0);
-   44feb1fffc064b96a30a12f5cdfc916e->SetBorderMode(0);
-   44feb1fffc064b96a30a12f5cdfc916e->SetBorderSize(2);
-   44feb1fffc064b96a30a12f5cdfc916e->SetGridx();
-   44feb1fffc064b96a30a12f5cdfc916e->SetGridy();
-   44feb1fffc064b96a30a12f5cdfc916e->SetFrameBorderMode(0);
-   44feb1fffc064b96a30a12f5cdfc916e->SetFrameBorderMode(0);
+//=========Macro generated from canvas: a4563fde119d41a3b9cebeeca66538a6/
+//=========  (Fri Mar 17 09:49:58 2017) by ROOT version5.34/26
+   TCanvas *a4563fde119d41a3b9cebeeca66538a6 = new TCanvas("a4563fde119d41a3b9cebeeca66538a6", "",10,45,704,527);
+   a4563fde119d41a3b9cebeeca66538a6->SetHighLightColor(2);
+   a4563fde119d41a3b9cebeeca66538a6->Range(-18.75,-36.10602,168.75,324.9542);
+   a4563fde119d41a3b9cebeeca66538a6->SetFillColor(0);
+   a4563fde119d41a3b9cebeeca66538a6->SetBorderMode(0);
+   a4563fde119d41a3b9cebeeca66538a6->SetBorderSize(2);
+   a4563fde119d41a3b9cebeeca66538a6->SetGridx();
+   a4563fde119d41a3b9cebeeca66538a6->SetGridy();
+   a4563fde119d41a3b9cebeeca66538a6->SetFrameBorderMode(0);
+   a4563fde119d41a3b9cebeeca66538a6->SetFrameBorderMode(0);
    
    TH1F *h_trig_time = new TH1F("h_trig_time","",50,0,150);
-   h_trig_time->SetBinContent(0,288);
+   h_trig_time->SetBinContent(0,268);
    h_trig_time->SetBinContent(6,2);
    h_trig_time->SetBinContent(7,1);
-   h_trig_time->SetBinContent(8,2);
+   h_trig_time->SetBinContent(8,1);
    h_trig_time->SetBinContent(9,2);
    h_trig_time->SetBinContent(10,1);
    h_trig_time->SetBinContent(13,2);
@@ -25,14 +25,14 @@
    h_trig_time->SetBinContent(17,3);
    h_trig_time->SetBinContent(18,2);
    h_trig_time->SetBinContent(19,12);
-   h_trig_time->SetBinContent(20,16);
-   h_trig_time->SetBinContent(21,63);
-   h_trig_time->SetBinContent(22,169);
-   h_trig_time->SetBinContent(23,284);
-   h_trig_time->SetBinContent(24,167);
-   h_trig_time->SetBinContent(25,51);
-   h_trig_time->SetBinContent(26,22);
-   h_trig_time->SetBinContent(27,16);
+   h_trig_time->SetBinContent(20,15);
+   h_trig_time->SetBinContent(21,54);
+   h_trig_time->SetBinContent(22,153);
+   h_trig_time->SetBinContent(23,259);
+   h_trig_time->SetBinContent(24,156);
+   h_trig_time->SetBinContent(25,44);
+   h_trig_time->SetBinContent(26,21);
+   h_trig_time->SetBinContent(27,15);
    h_trig_time->SetBinContent(28,3);
    h_trig_time->SetBinContent(29,1);
    h_trig_time->SetBinContent(31,1);
@@ -45,7 +45,7 @@
    h_trig_time->SetBinContent(38,6);
    h_trig_time->SetBinContent(39,5);
    h_trig_time->SetBinContent(40,2);
-   h_trig_time->SetBinContent(41,9);
+   h_trig_time->SetBinContent(41,7);
    h_trig_time->SetBinContent(42,6);
    h_trig_time->SetBinContent(43,5);
    h_trig_time->SetBinContent(44,4);
@@ -55,11 +55,11 @@
    h_trig_time->SetBinContent(48,1);
    h_trig_time->SetBinContent(49,2);
    h_trig_time->SetBinContent(50,4);
-   h_trig_time->SetBinContent(51,140);
-   h_trig_time->SetBinError(0,16.97056);
+   h_trig_time->SetBinContent(51,135);
+   h_trig_time->SetBinError(0,16.37071);
    h_trig_time->SetBinError(6,1.414214);
    h_trig_time->SetBinError(7,1);
-   h_trig_time->SetBinError(8,1.414214);
+   h_trig_time->SetBinError(8,1);
    h_trig_time->SetBinError(9,1.414214);
    h_trig_time->SetBinError(10,1);
    h_trig_time->SetBinError(13,1.414214);
@@ -68,14 +68,14 @@
    h_trig_time->SetBinError(17,1.732051);
    h_trig_time->SetBinError(18,1.414214);
    h_trig_time->SetBinError(19,3.464102);
-   h_trig_time->SetBinError(20,4);
-   h_trig_time->SetBinError(21,7.937254);
-   h_trig_time->SetBinError(22,13);
-   h_trig_time->SetBinError(23,16.8523);
-   h_trig_time->SetBinError(24,12.92285);
-   h_trig_time->SetBinError(25,7.141428);
-   h_trig_time->SetBinError(26,4.690416);
-   h_trig_time->SetBinError(27,4);
+   h_trig_time->SetBinError(20,3.872983);
+   h_trig_time->SetBinError(21,7.348469);
+   h_trig_time->SetBinError(22,12.36932);
+   h_trig_time->SetBinError(23,16.09348);
+   h_trig_time->SetBinError(24,12.49);
+   h_trig_time->SetBinError(25,6.63325);
+   h_trig_time->SetBinError(26,4.582576);
+   h_trig_time->SetBinError(27,3.872983);
    h_trig_time->SetBinError(28,1.732051);
    h_trig_time->SetBinError(29,1);
    h_trig_time->SetBinError(31,1);
@@ -88,7 +88,7 @@
    h_trig_time->SetBinError(38,2.44949);
    h_trig_time->SetBinError(39,2.236068);
    h_trig_time->SetBinError(40,1.414214);
-   h_trig_time->SetBinError(41,3);
+   h_trig_time->SetBinError(41,2.645751);
    h_trig_time->SetBinError(42,2.44949);
    h_trig_time->SetBinError(43,2.236068);
    h_trig_time->SetBinError(44,2);
@@ -98,8 +98,8 @@
    h_trig_time->SetBinError(48,1);
    h_trig_time->SetBinError(49,1.414214);
    h_trig_time->SetBinError(50,2);
-   h_trig_time->SetBinError(51,11.83216);
-   h_trig_time->SetEntries(1317);
+   h_trig_time->SetBinError(51,11.61895);
+   h_trig_time->SetEntries(1218);
    
    TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
    ptstats->SetName("stats");
@@ -109,9 +109,9 @@
    ptstats->SetTextFont(42);
    TText *text = ptstats->AddText("h_trig_time");
    text->SetTextSize(0.0368);
-   text = ptstats->AddText("Entries = 1317   ");
-   text = ptstats->AddText("Mean  =  11.14");
-   text = ptstats->AddText("RMS   =    262");
+   text = ptstats->AddText("Entries = 1218   ");
+   text = ptstats->AddText("Mean  =  13.54");
+   text = ptstats->AddText("RMS   =  263.4");
    ptstats->SetOptStat(1111);
    ptstats->SetOptFit(0);
    ptstats->Draw();
@@ -133,7 +133,7 @@
    h_trig_time->GetZaxis()->SetTitleSize(0.035);
    h_trig_time->GetZaxis()->SetTitleFont(42);
    h_trig_time->Draw("");
-   44feb1fffc064b96a30a12f5cdfc916e->Modified();
-   44feb1fffc064b96a30a12f5cdfc916e->cd();
-   44feb1fffc064b96a30a12f5cdfc916e->SetSelected(44feb1fffc064b96a30a12f5cdfc916e);
+   a4563fde119d41a3b9cebeeca66538a6->Modified();
+   a4563fde119d41a3b9cebeeca66538a6->cd();
+   a4563fde119d41a3b9cebeeca66538a6->SetSelected(a4563fde119d41a3b9cebeeca66538a6);
 }

@@ -231,8 +231,9 @@ class fit_anticorrelation():
             # ---------- MAKE CES CUT ----------
 
             # no time correction: 0.08, 14.
-            g1_test = 0.118 #0.1308 #0.12
-            g2_test = 0.9*21.29 #28.
+            print 'Corrected for new gain (3/17/17)'
+            g1_test = 0.121#0.118/9.35*8.68 #0.1308 #0.12
+            g2_test = 22.9*0.88#0.9*21.29/9.35*8.68 #28.
 
             self.d_energy_information[source]['canvas'] = Canvas(width=900, height=700, name='cCES')
             self.d_energy_information[source]['canvas'].SetGridx()
@@ -263,7 +264,8 @@ class fit_anticorrelation():
                 self.d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
                 self.d_energy_information[source]['func'].SetParLimits(1, 0, 1)
                 self.d_energy_information[source]['func'].SetParLimits(2, 50, 1000)
-                self.d_energy_information[source]['func'].SetParLimits(3, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParLimits(3, 600, 700)
+                #self.d_energy_information[source]['func'].SetParLimits(3, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
                 self.d_energy_information[source]['func'].SetParLimits(4, 10, 100)
 
 
@@ -277,7 +279,8 @@ class fit_anticorrelation():
                 self.d_energy_information[source]['func'].SetParLimits(0, 1, 1e8)
                 self.d_energy_information[source]['func'].SetParLimits(1, 0, 1)
                 self.d_energy_information[source]['func'].SetParLimits(2, 10, 500)
-                self.d_energy_information[source]['func'].SetParLimits(3, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
+                self.d_energy_information[source]['func'].SetParLimits(3, 450, 560)
+                #self.d_energy_information[source]['func'].SetParLimits(3, self.d_energy_information[source]['lbCES'], self.d_energy_information[source]['ubCES'])
                 self.d_energy_information[source]['func'].SetParLimits(4, 10, 100)
 
 
@@ -497,8 +500,8 @@ class fit_anticorrelation():
         #neriX_analysis.warning_message('Using hard coded correction: %.2e' % correction_factor)
         
         # correction factor = 1. / (gain_in_processing / (800V_gain / rel_gain_530V_800V))
-        new_gain_at_voltage = 9.35e5 * 0.00953
-        new_gain_at_voltage *= (1.48e6 / 9.35e5) # because cpS1/S2 has correction already
+        new_gain_at_voltage = 8.68e5 * 0.00953
+        new_gain_at_voltage *= (1.48e6 / 8.68e5) # because cpS1/S2 has correction already
         correction_factor = 1. / (1.18e4 / new_gain_at_voltage)
         
         return correction_factor
@@ -524,8 +527,9 @@ class fit_anticorrelation():
 
 
     def ln_prior_gas_gain(self, gas_gain):
-        measured_value = 21.29
-        measured_uncertainty = 0.53
+        # corrected 3/17/17
+        measured_value = 22.93
+        measured_uncertainty = 0.55
         return np.log(1./(2*np.pi)**0.5/measured_uncertainty) - 0.5*(gas_gain-measured_value)**2/measured_uncertainty**2
 
 
@@ -836,7 +840,6 @@ if __name__ == '__main__':
 
     d_files['cs137'] = []
     d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
-    
     d_files['na22'] = []
     d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
 

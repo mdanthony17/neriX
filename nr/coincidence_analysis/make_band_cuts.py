@@ -18,6 +18,7 @@ s1Max = 40
 s2Min = 0.
 s2Max = 4000
 
+num_pts_to_use = 30000 #90000
 
 if(len(sys.argv) != 5):
 	print 'Usage is python coincidence_quick_check.py <run> <anode> <cathode> <degree>'
@@ -53,8 +54,8 @@ s2Branch = 'cpS2sTotBottom[0]'
 
 current_analysis.add_cut('%s > 0' % s1Branch)
 current_analysis.add_cut('%s > 0' % s2Branch)
-current_analysis.add_cut('%s < %f' % (s1Branch, s1Max))
-current_analysis.add_cut('%s < %f' % (s2Branch, s2Max))
+#current_analysis.add_cut('%s < %f' % (s1Branch, s1Max))
+#current_analysis.add_cut('%s < %f' % (s2Branch, s2Max))
 
 current_analysis.add_z_cut()
 current_analysis.add_xs1asym_cut()
@@ -124,6 +125,17 @@ with open('%sfiles_used.txt' % (s_main_save_directory), 'w') as f_files_used:
 
 d_s1_s2['s1'] = np.asarray(d_s1_s2['s1'])
 d_s1_s2['s2'] = np.asarray(d_s1_s2['s2'])
+
+# use subset of points
+print 'Taking subset of points'
+idx = np.random.choice(np.arange(len(d_s1_s2['s1'])), num_pts_to_use, replace=False)
+d_s1_s2['s1'] = d_s1_s2['s1'][idx]
+d_s1_s2['s2'] = d_s1_s2['s2'][idx]
+
+# use all pts
+#print 'Taking all points'
+#d_s1_s2['s1'] = np.asarray(d_s1_s2['s1'])
+#d_s1_s2['s2'] = np.asarray(d_s1_s2['s2'])
 
 print d_s1_s2['s1']
 print d_s1_s2['s2']

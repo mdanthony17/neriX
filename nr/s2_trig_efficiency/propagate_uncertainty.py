@@ -24,12 +24,12 @@ import matplotlib.lines as mlines
 
 
 l_means = []
-l_means.append(np.asarray([105.39592078, 401.13818422]).T)
-l_means.append(np.asarray([93.59455683, 359.03910271]).T)
+l_means.append(np.asarray([118.71406758, 428.12577677]).T)
+l_means.append(np.asarray([105.48908001, 371.76309815]).T)
 
 l_covariance_matrices = []
-l_covariance_matrices.append(np.asarray([[2175.46483985, -2054.4935741], [-2054.4935741, 4199.12583991]]))
-l_covariance_matrices.append(np.asarray([[1278.05250734, 862.8228211], [862.8228211, 1201.8026661]]))
+l_covariance_matrices.append(np.asarray([[1964.21611655, -1912.58582097], [-1912.58582097, 4209.08207196]]))
+l_covariance_matrices.append(np.asarray([[1370.72669531, -1063.78007348], [-1063.78007348, 1611.49007206]]))
 
 l_inverse_covariance_matrices = []
 for matrix in l_covariance_matrices:

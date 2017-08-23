@@ -37,7 +37,7 @@ dt_ub = 1800.
 mod_dt_offset_branch = '(NaiPeak[0] - S1sPeak[0])'
 l_mod_dt_offset_settings = [15, 180, 195]
 
-correction_factor = 9.35e5/1.48e6
+correction_factor = 8.68e5/1.48e6
 neriX_analysis.warning_message('Hard-coded gain correction: %.3f')
 s2_branch = 'S2sTotBottom[0]/%f' % (correction_factor)
 l_s2_settings = [20, 0, 2000]

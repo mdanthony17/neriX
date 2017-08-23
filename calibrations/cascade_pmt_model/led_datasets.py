@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 l_files = []
+
 l_files.append(('nerix_160407_1533', 'nerix_160407_1550'))
 l_files.append(('nerix_160411_1118', 'nerix_160411_1127'))
 l_files.append(('nerix_160414_1006', 'nerix_160414_1015'))
@@ -38,4 +39,3 @@ l_files.append(('nerix_160725_0936', 'nerix_160725_0944'))
 l_files.append(('nerix_160728_0938', 'nerix_160728_0947'))
 l_files.append(('nerix_160801_0933', 'nerix_160801_0940'))
 l_files.append(('nerix_160808_1038', 'nerix_160808_1045'))
-
