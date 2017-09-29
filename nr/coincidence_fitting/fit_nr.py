@@ -606,6 +606,14 @@ class fit_nr(object):
                 self.num_dimensions = 21 + len(self.l_cathode_settings_in_use)*len(self.l_degree_settings_in_use)*2 + len(self.l_cathode_settings_in_use)*(1+1) - len(self.l_cathode_settings_in_use) # 17 + scales + bkg + recombination + exciton-to-ion ratio
                 self.directory_name = 'multiple_energies_lindhard_model_with_ti_moved_pos'
                 self.gpu_function_name = 'gpu_full_observables_production_with_hist_ti_wth_bkg'
+                
+                
+            elif fit_type == 'mlti_pq_fixed':
+                self.ln_likelihood_function = self.ln_likelihood_full_matching_multiple_energies_lindhard_model_with_ti_recombination
+                self.ln_likelihood_function_wrapper = self.wrapper_ln_likelihood_full_matching_multiple_energies_lindhard_model_with_ti_recombination
+                self.num_dimensions = 21 + len(self.l_cathode_settings_in_use)*len(self.l_degree_settings_in_use)*2 + len(self.l_cathode_settings_in_use)*(1+1) - len(self.l_cathode_settings_in_use) # 17 + scales + bkg + recombination + exciton-to-ion ratio
+                self.directory_name = 'multiple_energies_lindhard_model_with_ti_pq_fixed'
+                self.gpu_function_name = 'gpu_full_observables_production_with_hist_ti_wth_bkg'
 
             
             elif fit_type == 'mb':
@@ -1411,7 +1419,12 @@ class fit_nr(object):
         prior_ln_likelihood += self.get_prior_log_likelihood_beta(beta)
         prior_ln_likelihood += self.get_prior_log_likelihood_kappa(kappa)
         prior_ln_likelihood += self.get_prior_log_likelihood_eta(eta)
-        prior_ln_likelihood += self.get_prior_log_likelihood_lamb(lamb)
+        
+        if not self.fit_type == 'mlti_pq_fixed':
+            prior_ln_likelihood += self.get_prior_log_likelihood_lamb(lamb)
+        else:
+            # fix lambda to 0.5
+            lamb = 0.5
         
         
         for cathode_setting in self.l_cathode_settings_in_use:
@@ -2997,7 +3010,8 @@ if __name__ == '__main__':
     d_coincidence_data['degree_settings'] = [-4, 3000, 3500, 4500, 5300]
     d_coincidence_data['cathode_settings'] = [0.345, 1.054, 2.356]
     
-    test = fit_nr('mlti', d_coincidence_data, num_mc_events=2e6, l_gpus=[0, 1, 2, 3, 4, 5], num_loops=4)
+    test = fit_nr('mlti', d_coincidence_data, num_mc_events=2e6, l_gpus=[0, 1, 2, 3, 5], num_loops=4)
+    test = fit_nr('mlti_pq_fixed', d_coincidence_data, num_mc_events=2e6, l_gpus=[0, 1, 2, 3, 5], num_loops=4)
     #test = fit_nr('mlti_moved_pos', d_coincidence_data, num_mc_events=2e6, l_gpus=[0, 1, 2, 3, 4, 5], num_loops=4)
     
     
@@ -3017,7 +3031,7 @@ if __name__ == '__main__':
     
     #test.suppress_likelihood(100)
     test.fix_ll_suppression(10)
-    test.run_mcmc(num_steps=25*2, num_walkers=512)
+    test.run_mcmc(num_steps=25*1, num_walkers=512)
     
     
      

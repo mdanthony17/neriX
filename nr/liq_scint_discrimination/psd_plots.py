@@ -4,8 +4,13 @@ import ROOT as root
 import sys
 import neriX_analysis
 from rootpy.plotting import Hist2D, Hist, Legend, Canvas
+import root_numpy
 
 import numpy as np
+import pandas as pd
+
+import cPickle as pickle
+import os, re
 
 #--------------- Start Parameters to Change ----------------
 
@@ -23,6 +28,9 @@ lhMax = 2
 
 
 
+
+
+
 if(len(sys.argv) != 5):
     print 'Usage is python coincidence_quick_check.py <run> <anode> <cathode> <degree>'
     sys.exit(1)
@@ -31,6 +39,14 @@ run = int(sys.argv[1])
 anode_setting = float(sys.argv[2])
 cathode_setting = float(sys.argv[3])
 degree_setting = int(sys.argv[4])
+
+
+
+s_main_save_directory = './results/%.3fkV_%ddeg/' % (cathode_setting, degree_setting)
+s_scan_save_directory = './results/%.3fkV_%ddeg/reduced/' % (cathode_setting, degree_setting)
+if not os.path.exists(s_scan_save_directory):
+    os.makedirs(s_scan_save_directory)
+
 
 l_filenames = neriX_analysis.pull_all_files_given_parameters(run, anode_setting, cathode_setting, degree_setting)
 current_analysis = neriX_analysis.neriX_analysis(l_filenames, degree_setting, cathode_setting, anode_setting)
@@ -134,6 +150,7 @@ current_analysis.multithread_set_event_list(num_threads)
 
 numEJs = 4
 
+d_to_save = {}
 
 for i in xrange(numEJs):
     d_psd[i]['canvas'] = Canvas(1280,480)
@@ -164,6 +181,8 @@ for i in xrange(numEJs):
     d_psd[i]['h_psd'].SetStats(0)
 
     d_psd[i]['h_psd'].Draw()
+    
+    
     
     
     
@@ -234,9 +253,73 @@ for i in xrange(numEJs):
 
     d_psd[i]['canvas'].Update()
 
+
+    # make dictionary to save
+    """
+    a_psd_pars = root_numpy.tree2array(current_analysis.get_lT1()[0], branches=['LiqSciHeight[%d]' % (i), 'LiqSciTailRaw[%d]/LiqSciRaw[%d]' % (i, i)], selection=current_analysis.get_cuts())
+    #print a_psd_pars[0]
+    #print a_psd_pars['LiqSciHeight[%d]' % (i)]
+    #print a_psd_pars
+    a_height = a_psd_pars['LiqSciHeight[%d]' % (i)]
+    a_psd = a_psd_pars['LiqSciTailRaw[%d]/LiqSciRaw[%d]' % (i, i)]
+    df_psd_pars = pd.DataFrame({'height':a_height, 'psd':a_psd})
+    df_psd_pars = df_psd_pars[(df_psd_pars['height'] > d_psd[i]['h_min']) & (df_psd_pars['height'] < d_psd[i]['h_max'])]
+    #print df_psd_pars
+    d_to_save[i] = {'height':np.asarray(df_psd_pars['height']), 'psd':np.asarray(df_psd_pars['psd']), 'min_height':d_psd[i]['h_min'], 'max_height':d_psd[i]['h_max'], 'psd_cut':psd_cut_line}
+    """
+    
+
+    num_files_used = len(current_analysis.get_lT1())
+    tot_num_events = 0
+
+    for j in xrange(num_files_used):
+        #print current_analysis.get_filename_no_ext(i)
+        tot_num_events += current_analysis.get_lT1()[j].GetEventList().GetN()
+
+        current_analysis.get_lT1()[j].GetPlayer().SetScanRedirect(True)
+        current_analysis.get_lT1()[j].GetPlayer().SetScanFileName('%s/%s_ej_%d.txt' % (s_scan_save_directory, current_analysis.get_filename_no_ext(j), i))
+
+        current_analysis.get_lT1()[j].Scan('EventId:LiqSciHeight[%d]:LiqSciTailRaw[%d]/LiqSciRaw[%d]' % (i, i, i), current_analysis.get_cuts())
+
+
+    l_files = os.listdir(s_scan_save_directory)
+
+    d_to_save[i] = {}
+    d_to_save[i]['height'] = []
+    d_to_save[i]['psd'] = []
+
+    for current_file in l_files:
+        if current_file[-3:] != 'txt':
+            continue
+
+        if current_file[-5] != str(i):
+            continue
+
+
+        s_current_file = open('%s/%s' % (s_scan_save_directory, current_file)).read()
+        #s_current_file += '\n'
+
+        # get s1 and s2 strings from scan output
+        l_strings = re.findall('\d+\.\d* \* \d+\.\d*', s_current_file)
+
+        # break up each string in list
+        for s_current in l_strings:
+            l_height_psd = map(float, s_current.split(' * '))
+            #print l_height_psd
+            #print event_counter, tot_num_events
+            d_to_save[i]['height'].append(l_height_psd[0])
+            d_to_save[i]['psd'].append(l_height_psd[1])
+            #event_counter += 1
+            
+    #d_to_save[i]['height'] = np.asarray(d_to_save[i]['height'])
+    #d_to_save[i]['psd'] = np.asarray(d_to_save[i]['psd'])
+    d_to_save[i] = {'height':np.asarray(d_to_save[i]['height']), 'psd':np.asarray(d_to_save[i]['psd']), 'min_height':d_psd[i]['h_min'], 'max_height':d_psd[i]['h_max'], 'psd_cut':psd_cut_line}
+
+
+
     neriX_analysis.save_plot(['results', '%.3fkV_%ddeg' % (cathode_setting, degree_setting)], d_psd[i]['canvas'], 'psd_plots_EJ%d_%.3fkV_%ddeg' % (i, cathode_setting, degree_setting), batch_mode=True)
 
-
+pickle.dump(d_to_save, open('./results/%.3fkV_%ddeg/ej_data.p' % (cathode_setting, degree_setting), 'wb'))
 
 
 #raw_input("Enter to continue...")

@@ -52,11 +52,11 @@ transparency = 0.2
 l_quantiles_for_2d = [50]
 
 # num_steps goes into how many random draws you will take from kept sampler
-num_steps = 5
+num_steps = 100
 # num_steps_to_include is how large of sampler you keep
-num_steps_to_include = 200
+num_steps_to_include = 1000
 num_mc_events = int(2e5)
-device_number = 0
+device_number = 4
 
 if(len(sys.argv) != 3):
 	print 'Usage is python compare_data_fit_single_energy.py <num walkers> <moved positions>'
@@ -208,7 +208,7 @@ print '\n\n'
 
 
 
-mc_bin_number_multiplier = 1
+mc_bin_number_multiplier = 5
 d_bin_edges = {}
 d_bin_edges['s1'] = {}
 d_bin_edges['s1_mc'] = {}
