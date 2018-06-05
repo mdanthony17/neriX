@@ -82,3 +82,4 @@ nr/pmt_gain/results/
 ./nr.zip
 ./Slow Control/old/smac-0.3.0/smacd.log
 ./daq/levelmeter/*.dat
+./nr/coincidence_fitting/mcmc_analysis/final_scripts/all_yields*
