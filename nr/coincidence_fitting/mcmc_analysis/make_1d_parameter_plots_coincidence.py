@@ -30,11 +30,11 @@ d_degree_setting_to_energy_name = {2300:3,
 
 
 
-num_steps = 500
+num_steps = 50
 num_walkers = int(sys.argv[1])
 file_descriptor = sys.argv[2]
 
-if not (file_descriptor == 'ml' or file_descriptor == 'mlti' or file_descriptor == 'mlti_moved_pos'):
+if not (file_descriptor == 'ml' or file_descriptor == 'mlti' or file_descriptor == 'mlti_moved_pos' or file_descriptor == 'mlti_bq_fixed' or file_descriptor == 'mlti_bq_fixed_leakage'):
     print 'Need to give proper file type'
     sys.exit()
 
@@ -47,6 +47,10 @@ elif file_descriptor == 'mlti':
     directory_descriptor = 'multiple_energies_lindhard_model_with_ti'
 elif file_descriptor == 'mlti_moved_pos':
     directory_descriptor = 'multiple_energies_lindhard_model_with_ti_moved_pos'
+elif file_descriptor == 'mlti_bq_fixed':
+    directory_descriptor = 'multiple_energies_lindhard_model_with_ti_bq_fixed'
+elif file_descriptor == 'mlti_bq_fixed_leakage':
+    directory_descriptor = 'multiple_energies_lindhard_model_with_ti_bq_fixed_leakage'
 
 l_degree_settings_in_use = [-4, 3000, 3500, 4500, 5300]
 s_degree_settings = ''
@@ -92,6 +96,9 @@ if file_descriptor == 'ml':
 elif file_descriptor[:4] == 'mlti':
     num_dim = 21 + len(l_cathode_settings_in_use)*len(l_degree_settings_in_use)*2 + len(l_cathode_settings_in_use)*(1+1) - len(l_cathode_settings_in_use)
 
+if file_descriptor[-3:] == 'age':
+    num_dim += 1
+
 
 l_field_free_pars = []
 if file_descriptor == 'ml':
@@ -103,6 +110,20 @@ if file_descriptor == 'ml':
             l_field_free_pars.append('scale_%.3f_kV_%d_deg' % (cathode_setting, degree_setting))
 
         l_par_names = ['w_value', 'kappa', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'dpe_prob'] + l_field_free_pars + ['band_res_s1', 'band_res_s2']
+
+
+elif file_descriptor == 'mlti_bq_fixed_leakage':
+    for cathode_setting in l_cathode_settings_in_use:
+        l_field_free_pars += ['ti_par_%.3f_kV' % (cathode_setting), 'exciton_to_ion_ratio_%.3f_kV' % (cathode_setting)]
+        
+        for degree_setting in l_degree_settings_in_use:
+            if degree_setting != -4:
+                l_field_free_pars.append('prob_bkg_%.3f_kV_%d_deg' % (cathode_setting, degree_setting))
+            
+            l_field_free_pars.append('scale_%.3f_kV_%d_deg' % (cathode_setting, degree_setting))
+
+
+    l_par_names = ['w_value', 'beta', 'kappa', 'eta', 'lambda', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_s1_par0', 'pf_stdev_s1_par1', 'pf_stdev_s1_par2', 'pf_stdev_s2_par0', 'pf_stdev_s2_par1', 'pf_stdev_s2_par2', 'dpe_prob', 'leak_prob'] + l_field_free_pars
 
 
 elif file_descriptor[:4] == 'mlti':
@@ -135,16 +156,35 @@ for num_columns in xrange(1, num_rows+1):
 assert num_dim == len(l_par_names)
 samples = a_full_sampler[:, -num_steps:, :].reshape((-1, num_dim))
 
-
+l_exciton_to_ion_ratio = []
+l_ti_par = []
 
 a_medians = np.median(samples, axis=0)
 print a_medians
 print '\nPrinting median parameters...'
 for i, par_name in enumerate(l_par_names):
-    print '%s = %.2e' % (par_name, a_medians[i])
+    #print '%s = %.2e' % (par_name, a_medians[i])
+    lb, med, ub = np.percentile(samples[:, i], [16., 50., 84.])
+    print '%s = %.2e, + %.2e, - %.2e' % (par_name, med, ub-med, med-lb)
+
+    if par_name[:2] == 'ti':
+        l_ti_par.append(samples[:, i])
+    if par_name[:4] == 'exci':
+        l_exciton_to_ion_ratio.append(samples[:, i])
+
 print '\n\n'
 
+print 'Exciton-to-ion ratio joint:'
+lb, med, ub = np.percentile(l_exciton_to_ion_ratio, [16., 50., 84.])
+print '%.2e, + %.2e, - %.2e' % (med, ub-med, med-lb)
 
+print '\n\n'
+
+print 'TI par ratio joint:'
+lb, med, ub = np.percentile(l_ti_par, [16., 50., 84.])
+print '%.2e, + %.2e, - %.2e' % (med, ub-med, med-lb)
+
+print '\n\n\n'
 
 
 # use pars from corner to make figure

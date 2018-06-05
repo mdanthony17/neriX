@@ -85,7 +85,7 @@ for i in xrange(num_files_used):
     current_analysis.get_lT1()[i].GetPlayer().SetScanRedirect(True)
     current_analysis.get_lT1()[i].GetPlayer().SetScanFileName('%s/%s.txt' % (s_scan_save_directory, current_analysis.get_filename_no_ext(i)))
 
-    current_analysis.get_lT1()[i].Scan('EventId:cpS1sTotBottom[0]:cpS2sTotBottom[0]', current_analysis.get_cuts())
+    current_analysis.get_lT1()[i].Scan('EventId:cpS1sTotBottom[0]:cpS2sTotBottom[0]:X[0]:Y[0]:Z', current_analysis.get_cuts())
 
 
 l_files = os.listdir(s_scan_save_directory)
@@ -93,6 +93,9 @@ l_files = os.listdir(s_scan_save_directory)
 d_s1_s2 = {}
 d_s1_s2['s1'] = []
 d_s1_s2['s2'] = []
+d_s1_s2['x'] = []
+d_s1_s2['y'] = []
+d_s1_s2['z'] = []
 #event_counter = 0
 
 s_file_tracker = ''
@@ -107,7 +110,7 @@ for current_file in l_files:
     #s_current_file += '\n'
 
     # get s1 and s2 strings from scan output
-    l_s1_s2_strings = re.findall('\d+\.\d* \* \d+\.\d*', s_current_file)
+    l_s1_s2_strings = re.findall('\d+\.\d* \* \d+\.\d* \* -?\d\.\d* \* -?\d\.\d* \*\s+-?\d+.\d* *', s_current_file)
 
     # break up each string in list
     for s_current in l_s1_s2_strings:
@@ -116,6 +119,11 @@ for current_file in l_files:
         #print event_counter, tot_num_events
         d_s1_s2['s1'].append(l_s1_s2[0])
         d_s1_s2['s2'].append(l_s1_s2[1])
+        d_s1_s2['x'].append(l_s1_s2[2])
+        d_s1_s2['y'].append(l_s1_s2[3])
+        d_s1_s2['z'].append(l_s1_s2[4])
+        
+        #print l_s1_s2[2], l_s1_s2[3]
         #event_counter += 1
 
 s_file_tracker += '\n\n\n%s\n' % (current_analysis.get_cuts())
@@ -125,12 +133,18 @@ with open('%sfiles_used.txt' % (s_main_save_directory), 'w') as f_files_used:
 
 d_s1_s2['s1'] = np.asarray(d_s1_s2['s1'])
 d_s1_s2['s2'] = np.asarray(d_s1_s2['s2'])
+d_s1_s2['x'] = np.asarray(d_s1_s2['x'])
+d_s1_s2['y'] = np.asarray(d_s1_s2['y'])
+d_s1_s2['z'] = np.asarray(d_s1_s2['z'])
 
 # use subset of points
 print 'Taking subset of points'
 idx = np.random.choice(np.arange(len(d_s1_s2['s1'])), num_pts_to_use, replace=False)
 d_s1_s2['s1'] = d_s1_s2['s1'][idx]
 d_s1_s2['s2'] = d_s1_s2['s2'][idx]
+d_s1_s2['x'] = d_s1_s2['x'][idx]
+d_s1_s2['y'] = d_s1_s2['y'][idx]
+d_s1_s2['z'] = d_s1_s2['z'][idx]
 
 # use all pts
 #print 'Taking all points'
@@ -139,6 +153,7 @@ d_s1_s2['s2'] = d_s1_s2['s2'][idx]
 
 print d_s1_s2['s1']
 print d_s1_s2['s2']
+
 
 pickle.dump(d_s1_s2, open('%ss1_s2.pkl' % (s_main_save_directory), 'w'))
 

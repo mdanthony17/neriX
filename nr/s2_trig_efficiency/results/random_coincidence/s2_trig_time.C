@@ -1,16 +1,16 @@
 {
-//=========Macro generated from canvas: a4563fde119d41a3b9cebeeca66538a6/
-//=========  (Fri Mar 17 09:49:58 2017) by ROOT version5.34/26
-   TCanvas *a4563fde119d41a3b9cebeeca66538a6 = new TCanvas("a4563fde119d41a3b9cebeeca66538a6", "",10,45,704,527);
-   a4563fde119d41a3b9cebeeca66538a6->SetHighLightColor(2);
-   a4563fde119d41a3b9cebeeca66538a6->Range(-18.75,-36.10602,168.75,324.9542);
-   a4563fde119d41a3b9cebeeca66538a6->SetFillColor(0);
-   a4563fde119d41a3b9cebeeca66538a6->SetBorderMode(0);
-   a4563fde119d41a3b9cebeeca66538a6->SetBorderSize(2);
-   a4563fde119d41a3b9cebeeca66538a6->SetGridx();
-   a4563fde119d41a3b9cebeeca66538a6->SetGridy();
-   a4563fde119d41a3b9cebeeca66538a6->SetFrameBorderMode(0);
-   a4563fde119d41a3b9cebeeca66538a6->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 8927c40cce764ca2b385bacd9205b1c4/
+//=========  (Fri Nov 10 08:53:24 2017) by ROOT version5.34/26
+   TCanvas *8927c40cce764ca2b385bacd9205b1c4 = new TCanvas("8927c40cce764ca2b385bacd9205b1c4", "",10,45,704,527);
+   8927c40cce764ca2b385bacd9205b1c4->SetHighLightColor(2);
+   8927c40cce764ca2b385bacd9205b1c4->Range(-18.75,-36.10602,168.75,324.9542);
+   8927c40cce764ca2b385bacd9205b1c4->SetFillColor(0);
+   8927c40cce764ca2b385bacd9205b1c4->SetBorderMode(0);
+   8927c40cce764ca2b385bacd9205b1c4->SetBorderSize(2);
+   8927c40cce764ca2b385bacd9205b1c4->SetGridx();
+   8927c40cce764ca2b385bacd9205b1c4->SetGridy();
+   8927c40cce764ca2b385bacd9205b1c4->SetFrameBorderMode(0);
+   8927c40cce764ca2b385bacd9205b1c4->SetFrameBorderMode(0);
    
    TH1F *h_trig_time = new TH1F("h_trig_time","",50,0,150);
    h_trig_time->SetBinContent(0,268);
@@ -133,7 +133,7 @@
    h_trig_time->GetZaxis()->SetTitleSize(0.035);
    h_trig_time->GetZaxis()->SetTitleFont(42);
    h_trig_time->Draw("");
-   a4563fde119d41a3b9cebeeca66538a6->Modified();
-   a4563fde119d41a3b9cebeeca66538a6->cd();
-   a4563fde119d41a3b9cebeeca66538a6->SetSelected(a4563fde119d41a3b9cebeeca66538a6);
+   8927c40cce764ca2b385bacd9205b1c4->Modified();
+   8927c40cce764ca2b385bacd9205b1c4->cd();
+   8927c40cce764ca2b385bacd9205b1c4->SetSelected(8927c40cce764ca2b385bacd9205b1c4);
 }

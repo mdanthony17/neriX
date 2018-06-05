@@ -1,17 +1,17 @@
 {
-//=========Macro generated from canvas: e3dacaa4028d420394c086e1989fd23d/
-//=========  (Fri Mar 17 09:49:56 2017) by ROOT version5.34/26
-   TCanvas *e3dacaa4028d420394c086e1989fd23d = new TCanvas("e3dacaa4028d420394c086e1989fd23d", "",10,45,704,527);
-   e3dacaa4028d420394c086e1989fd23d->SetHighLightColor(2);
-   e3dacaa4028d420394c086e1989fd23d->Range(-250,-0.694033,2250,4.267015);
-   e3dacaa4028d420394c086e1989fd23d->SetFillColor(0);
-   e3dacaa4028d420394c086e1989fd23d->SetBorderMode(0);
-   e3dacaa4028d420394c086e1989fd23d->SetBorderSize(2);
-   e3dacaa4028d420394c086e1989fd23d->SetLogy();
-   e3dacaa4028d420394c086e1989fd23d->SetGridx();
-   e3dacaa4028d420394c086e1989fd23d->SetGridy();
-   e3dacaa4028d420394c086e1989fd23d->SetFrameBorderMode(0);
-   e3dacaa4028d420394c086e1989fd23d->SetFrameBorderMode(0);
+//=========Macro generated from canvas: 443d7aabb29d4226aaad2a5205d27860/
+//=========  (Fri Nov 10 08:53:21 2017) by ROOT version5.34/26
+   TCanvas *443d7aabb29d4226aaad2a5205d27860 = new TCanvas("443d7aabb29d4226aaad2a5205d27860", "",10,45,704,527);
+   443d7aabb29d4226aaad2a5205d27860->SetHighLightColor(2);
+   443d7aabb29d4226aaad2a5205d27860->Range(-250,-0.694033,2250,4.267015);
+   443d7aabb29d4226aaad2a5205d27860->SetFillColor(0);
+   443d7aabb29d4226aaad2a5205d27860->SetBorderMode(0);
+   443d7aabb29d4226aaad2a5205d27860->SetBorderSize(2);
+   443d7aabb29d4226aaad2a5205d27860->SetLogy();
+   443d7aabb29d4226aaad2a5205d27860->SetGridx();
+   443d7aabb29d4226aaad2a5205d27860->SetGridy();
+   443d7aabb29d4226aaad2a5205d27860->SetFrameBorderMode(0);
+   443d7aabb29d4226aaad2a5205d27860->SetFrameBorderMode(0);
    
    TH1F *h_s2_spectrum = new TH1F("h_s2_spectrum","Low Energy S2 Spectrum",20,0,2000);
    h_s2_spectrum->SetBinContent(1,3);
@@ -174,7 +174,7 @@
    entry->SetMarkerStyle(20);
    entry->SetTextFont(42);
    leg->Draw();
-   e3dacaa4028d420394c086e1989fd23d->Modified();
-   e3dacaa4028d420394c086e1989fd23d->cd();
-   e3dacaa4028d420394c086e1989fd23d->SetSelected(e3dacaa4028d420394c086e1989fd23d);
+   443d7aabb29d4226aaad2a5205d27860->Modified();
+   443d7aabb29d4226aaad2a5205d27860->cd();
+   443d7aabb29d4226aaad2a5205d27860->SetSelected(443d7aabb29d4226aaad2a5205d27860);
 }

@@ -142,7 +142,12 @@ s_cathode_settings = s_cathode_settings[:-1]
 
 name_of_results_directory = neriX_simulation_config.results_directory_name
 
-s_path_to_file = './%s/%s/%s_kV_%s_deg/sampler_dictionary.p' % (name_of_results_directory, 'multiple_energies_lindhard_model_with_ti', s_cathode_settings, s_degree_settings)
+#s_path_to_file = './%s/%s/%s_kV_%s_deg/sampler_dictionary.p' % (name_of_results_directory, 'multiple_energies_lindhard_model_with_ti', s_cathode_settings, s_degree_settings)
+#b_bq_fixed = False
+
+print 'bq_fixed'
+b_bq_fixed = True
+s_path_to_file = './%s/%s/%s_kV_%s_deg/sampler_dictionary.p' % (name_of_results_directory, 'multiple_energies_lindhard_model_with_ti_bq_fixed', s_cathode_settings, s_degree_settings)
 
 print '\nLoading sampler for band fit...'
 if os.path.exists(s_path_to_file):
@@ -170,9 +175,9 @@ num_degree_field_pars = 2*len(l_degree_settings_in_use) + 2 - 1
 
 
 
-min_energy = 3 # 2 PE / (0.117 PE/photon) / (5.5 photons / keV)
+min_energy = 1 # 2 PE / (0.117 PE/photon) / (5.5 photons / keV)
 max_energy = 75#23 # mean + 2 sigma highest energy (17 + 2*3)
-num_energies = 50
+num_energies = 50*5
 a_energies = np.linspace(min_energy, max_energy, num_energies)
 
 min_energy_plot = 1
@@ -357,7 +362,11 @@ for cathode_setting in l_cathode_settings_in_use:
             beta = a_current_pars[1]
             kappa = a_current_pars[2]
             eta = a_current_pars[3]
-            lamb = a_current_pars[4]
+            
+            if b_bq_fixed:
+                lamb = 0.5
+            else:
+                lamb = a_current_pars[4]
             
             
             dimensionless_energy = 11.5*energy*54**(-7./3.)
@@ -791,7 +800,7 @@ d_for_save['qy_comps']['weber'] = {'qy_energies':l_weber_energies, 'qy_lb':l_web
 
 pickle.dump(d_for_save, open('./final_scripts/all_yields.p', 'w'))
 
-#plt.show()
+plt.show()
 
 
 

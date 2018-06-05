@@ -11,6 +11,13 @@ import neriX_simulation_config
 
 import matplotlib
 matplotlib.use('QT4Agg')
+import matplotlib.style
+matplotlib.style.use('classic')
+
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+matplotlib.rcParams['font.size'] = 16
+
 import matplotlib as plt
 import matplotlib.pyplot as plt
 
@@ -104,18 +111,56 @@ ax_data.pcolormesh(s1_bin_edges, log_bin_edges, a_data.T, cmap='Blues')
 ax_data.plot(a_x_all, a_y_fit, 'r-')
 
 ax_data.set_xlabel('S1 [PE]')
-ax_data.set_ylabel(r'Log_{10}(\frac{S2}{S1})')
+ax_data.set_ylabel(r'$\mathrm{Log}_{10}(\frac{\mathrm{S2}}{\mathrm{S1}})$')
 
-ax_data.set_xlim(s1_bin_edges[0], s1_bin_edges[-1])
+ax_data.set_xlim(s1_bin_edges[0], 160)
 ax_data.set_ylim(log_bin_edges[0], log_bin_edges[-1])
 
-ax_data.text(0.35, 0.85, r'$ Log_{10}(\frac{S2}{S1}) < %.3e + %.3e \cdot S1 $' % (l_pol[1], l_pol[0]), transform=ax_data.transAxes, fontsize=12, verticalalignment='top')
+print '\n\nText of cut removed!!\n\n'
+#ax_data.text(0.35, 0.85, r'$ \mathrm{Log}_{10}(\frac{\mathrm{S2}}{\mathrm{S1}}) < %.2f - %.4f \cdot \mathrm{S1} $' % (l_pol[1], abs(l_pol[0])), transform=ax_data.transAxes, fontsize=12, verticalalignment='top')
+
+
+df_s1_s2 = df_s1_s2[df_s1_s2['z'] < -3.5]
+
+df_s1_s2['r2'] = df_s1_s2['x']**2 + df_s1_s2['y']**2
+r2_min = np.min(df_s1_s2['r2'])
+r2_max = np.max(df_s1_s2['r2'])
+r2_num_bins = 20
+z_min = np.min(df_s1_s2['z'])
+z_max = -3.5 #np.max(df_s1_s2['z'])
+z_num_bins = 20
+
+tpc_rad = 21.5011
+tpc_height = 23.39
+
+r2_bins = np.linspace(r2_min, r2_max, r2_num_bins)
+z_bins = np.linspace(z_min, z_max, z_num_bins)
+
+fix_pos, (ax_x_y, ax_r2_z) = plt.subplots(1, 2, figsize=(10,5))
+ax_r2_z.scatter(df_s1_s2['r2']*tpc_rad**2, df_s1_s2['z'], marker='o', c='#0082c8', s=4, linewidth=0, alpha=0.7)
+#ax_r2_z.scatter(df_s1_s2['r2'], df_s1_s2['z'])
+ax_x_y.scatter(df_s1_s2['x']*tpc_rad, df_s1_s2['y']*tpc_rad, marker='o', c='#0082c8', s=4, linewidth=0, alpha=0.7)
+
+
+ax_x_y.set_xlabel('X [mm]')
+ax_x_y.set_ylabel('Y [mm]')
+ax_x_y.set_xlim(-tpc_rad, tpc_rad)
+ax_x_y.set_ylim(-tpc_rad, tpc_rad)
+
+
+ax_r2_z.set_xlim(0, tpc_rad**2)
+ax_r2_z.set_ylim(-24.5, -3)
+ax_r2_z.set_xlabel(r'$\mathrm{R}^2 \, \, [\mathrm{mm}^2]$')
+ax_r2_z.set_ylabel('Z [mm]')
+
+fix_pos.tight_layout()
 
 
 if not os.path.exists(s_plot_directory):
     os.makedirs(s_plot_directory)
 
 fig_data.savefig('%ser_cut%.3f_kV.png' % (s_plot_directory, cathodeSetting))
+fix_pos.savefig('%spos_rec%.3f_kV.png' % (s_plot_directory, cathodeSetting))
 
 #plt.show()
 

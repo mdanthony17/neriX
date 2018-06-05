@@ -197,7 +197,7 @@ c3.SetGridx()
 c3.SetGridy()
 
 h_eff = root.TEfficiency(h_with_cut, h_no_cut)
-h_eff.SetTitle('S2 Trigger Efficiency from Random Coincidences; S2 Size [PE]; Percentage Causing Trigger');
+h_eff.SetTitle('; S2 Size [PE]; Percentage Causing Trigger');
 
 g_eff = h_eff.CreateGraph()
 #g_eff = neriX_analysis.convert_hist_to_graph_with_poisson_errors(h_eff)

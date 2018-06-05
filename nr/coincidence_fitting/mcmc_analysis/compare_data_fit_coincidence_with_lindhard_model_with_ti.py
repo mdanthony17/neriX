@@ -59,14 +59,19 @@ num_mc_events = int(2e5)
 device_number = 4
 
 if(len(sys.argv) != 3):
-	print 'Usage is python compare_data_fit_single_energy.py <num walkers> <moved positions>'
+	print 'Usage is python compare_data_fit_single_energy.py <num walkers> <moved positions 1 or fixed quenching 2>'
 	sys.exit(1)
 
 num_walkers = int(sys.argv[1])
-if str.lower(sys.argv[2]) == 't':
+if sys.argv[2] == 1:
     b_moved_pos = True
 else:
     b_moved_pos = False
+
+if sys.argv[2] == 2:
+    b_bq_fixed = True
+else:
+    b_bq_fixed = False
 
 d_degree_setting_to_energy_name = {2300:3,
                                    3000:5,
@@ -83,6 +88,8 @@ d_cathode_voltages_to_field = {0.345:190,
 dir_specifier_name = 'multiple_energies_lindhard_model_with_ti'
 if b_moved_pos:
     dir_specifier_name += '_moved_pos'
+elif b_bq_fixed:
+    dir_specifier_name += '_bq_fixed'
 
 l_degree_settings_in_use = [-4, 3000, 3500, 4500, 5300]
 s_degree_settings = ''

@@ -39,6 +39,10 @@ elif file_descriptor == 'mlti':
     directory_descriptor = 'multiple_energies_lindhard_model_with_ti'
 elif file_descriptor == 'mlti_moved_pos':
     directory_descriptor = 'multiple_energies_lindhard_model_with_ti_moved_pos'
+elif file_descriptor == 'mlti_bq_fixed':
+    directory_descriptor = 'multiple_energies_lindhard_model_with_ti_bq_fixed'
+elif file_descriptor == 'mlti_bq_fixed_leakage':
+    directory_descriptor = 'multiple_energies_lindhard_model_with_ti_bq_fixed_leakage'
 
 
 l_degree_settings_in_use = [-4, 3000, 3500, 4500, 5300]
@@ -68,6 +72,8 @@ if os.path.exists(sPathToFile):
     l_chains = []
     for sampler in dSampler[num_walkers]:
         l_chains.append(sampler['_chain'])
+    
+    pickle.dump({num_walkers:[dSampler[num_walkers][-1]]}, open('%s.reduced' % sPathToFile, 'w'))
 
     a_full_sampler = np.concatenate(l_chains, axis=1)
 
@@ -85,6 +91,9 @@ if file_descriptor == 'ml':
 elif file_descriptor[:4] == 'mlti':
     num_dim = 21 + len(l_cathode_settings_in_use)*len(l_degree_settings_in_use)*2 + len(l_cathode_settings_in_use)*(1+1) - len(l_cathode_settings_in_use)
 
+if file_descriptor == 'mlti_bq_fixed_leakage':
+    num_dim += 1
+
 l_field_free_pars = []
 if file_descriptor == 'ml':
     for cathode_setting in l_cathode_settings_in_use:
@@ -95,6 +104,19 @@ if file_descriptor == 'ml':
             l_field_free_pars.append('scale_%.3f_kV_%d_deg' % (cathode_setting, degree_setting))
 
         l_par_names = ['w_value', 'kappa', 'intrinsic_res_s1', 'intrinsic_res_s2', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_par0', 'pf_stdev_par1', 'pf_stdev_par2', 'dpe_prob'] + l_field_free_pars
+
+elif file_descriptor == 'mlti_bq_fixed_leakage':
+    for cathode_setting in l_cathode_settings_in_use:
+        l_field_free_pars += ['ti_par_%.3f_kV' % (cathode_setting), 'exciton_to_ion_ratio_%.3f_kV' % (cathode_setting)]
+        
+        for degree_setting in l_degree_settings_in_use:
+            if degree_setting != -4:
+                l_field_free_pars.append('prob_bkg_%.3f_kV_%d_deg' % (cathode_setting, degree_setting))
+            
+            l_field_free_pars.append('scale_%.3f_kV_%d_deg' % (cathode_setting, degree_setting))
+
+
+    l_par_names = ['w_value', 'beta', 'kappa', 'eta', 'lambda', 'g1_value', 'spe_res_value', 'extraction_efficiency_value', 'gas_gain_mean_value', 'gas_gain_width_value', 'pf_eff_par0', 'pf_eff_par1', 's2_eff_par0', 's2_eff_par1', 'pf_stdev_s1_par0', 'pf_stdev_s1_par1', 'pf_stdev_s1_par2', 'pf_stdev_s2_par0', 'pf_stdev_s2_par1', 'pf_stdev_s2_par2', 'dpe_prob', 'leak_prob'] + l_field_free_pars
 
 
 elif file_descriptor[:4] == 'mlti':
@@ -180,6 +202,7 @@ f_gr, a_gr = plt.subplots(1)
 l_legend_handles = []
 for i, par_name in enumerate(l_free_pars):
     current_handle, = a_gr.plot(l_size_for_test, d_gr_stats[par_name], color=l_colors[i], linestyle='-', label=par_name)
+    print '%s %.3f' % (par_name, d_gr_stats[par_name][-1])
     l_legend_handles.append(current_handle)
 
 a_gr.plot(l_size_for_test, [1.1 for i in xrange(len(l_size_for_test))], linestyle='--', color='black')

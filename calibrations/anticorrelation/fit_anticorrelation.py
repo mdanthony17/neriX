@@ -88,7 +88,7 @@ class fit_anticorrelation():
         #s1_par = 'cpS1sTotBottom[0]'
         #s2_par = 'cpS2sTotBottom[0]'
 
-        column_names = ('S1', 'S2')
+        column_names = ('S1', 'S2', 'x', 'y', 'z')
 
         bounds_width_inclusion = 2.5
         orth_bins, orth_min, orth_max = 100, -500, 600
@@ -207,7 +207,7 @@ class fit_anticorrelation():
 
                 for j in xrange(len(list(files_at_setting))):
                     #print s1_par, s2_par
-                    current_tree = tree2array(current_analysis.get_T1(j), [s1_par, s2_par], selection=current_analysis.get_cuts())
+                    current_tree = tree2array(current_analysis.get_T1(j), [s1_par, s2_par, 'X[0]', 'Y[0]', 'Z'], selection=current_analysis.get_cuts())
                     #print current_tree.dtype.names
                     current_tree.dtype.names = column_names
                     
@@ -391,7 +391,16 @@ class fit_anticorrelation():
             s_orth_cut = '(0.0137*(-S1/%f + S2/%f)) > %f && (0.0137*(-S1/%f + S2/%f)) < %f' % (g1_test, g2_test, orth_lb_cut, g1_test, g2_test, orth_ub_cut)
 
 
-            self.d_s1_s2_arrays[source] = tree2array(self.d_energy_information[source]['combined_tree'], ['S1', 'S2'], selection='(%s) && (%s)' % (sCES_arr, s_orth_cut))
+            self.d_s1_s2_arrays[source] = tree2array(self.d_energy_information[source]['combined_tree'], ['S1', 'S2', 'x', 'y', 'z'], selection='(%s) && (%s)' % (sCES_arr, s_orth_cut))
+            
+            fig_pos, (ax_xy, ax_r2z) = plt.subplots(1, 2, figsize=(10,5))
+
+            print self.d_s1_s2_arrays[source]['x']**2 + self.d_s1_s2_arrays[source]['y']**2
+            
+            self.d_s1_s2_arrays[source] = self.d_s1_s2_arrays[source][self.d_s1_s2_arrays[source]['z'] < -4]
+            ax_xy.hist2d(self.d_s1_s2_arrays[source]['x'], self.d_s1_s2_arrays[source]['y'], bins=30)
+            ax_r2z.hist2d(self.d_s1_s2_arrays[source]['x']**2 + self.d_s1_s2_arrays[source]['y']**2, self.d_s1_s2_arrays[source]['z'], bins=30)
+            plt.show()
             
             s1_min = min(self.d_s1_s2_arrays[source]['S1'])
             s1_max = max(self.d_s1_s2_arrays[source]['S1'])
@@ -488,6 +497,7 @@ class fit_anticorrelation():
                 self.d_source_functions['na22']['ln_prior'] = self.ln_prior_greater_than_zero
                 self.d_source_functions['na22']['ln_likelihood'] = self.ln_likelihood_na22
                 
+                
         pickle.dump(d_yield_information, open('%syield_info.pkl' % (self.s_directory_save_name), 'w'))
 
 
@@ -536,7 +546,7 @@ class fit_anticorrelation():
 
     def ln_prior_w_normal(self, w_value):
         measured_value = 13.7
-        measured_uncertainty = 0.4
+        measured_uncertainty = 0.2
         return np.log(1./(2*np.pi)**0.5/measured_uncertainty) - 0.5*(w_value-measured_value)**2/measured_uncertainty**2
 
 
@@ -557,7 +567,8 @@ class fit_anticorrelation():
         #print g1, g2, w_value, s2_width_cs137
         return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_cs137) - 0.5*(a_s2-a_model_s2)**2/s2_width_cs137**2)
         """
-        a_energy = 0.0137 * (a_s1/g1 + a_s2/g2)
+        #a_energy = 0.0137 * (a_s1/g1 + a_s2/g2)
+        a_energy = (w_value/1000.) * (a_s1/g1 + a_s2/g2)
         return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_cs137) - 0.5*(a_energy-662.)**2/s2_width_cs137**2)
         
 
@@ -569,7 +580,8 @@ class fit_anticorrelation():
         #print g1, g2, w_value, s2_width_na22
         return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_na22) - 0.5*(a_s2-a_model_s2)**2/s2_width_na22**2)
         """
-        a_energy = 0.0137 * (a_s1/g1 + a_s2/g2)
+        #a_energy = 0.0137 * (a_s1/g1 + a_s2/g2)
+        a_energy = (w_value/1000.) * (a_s1/g1 + a_s2/g2)
         return np.sum(np.log(1./(2*np.pi)**0.5/s2_width_na22) - 0.5*(a_energy-511.)**2/s2_width_na22**2)
     
     
@@ -636,7 +648,7 @@ class fit_anticorrelation():
     def run_mcmc(self, num_walkers, num_steps, threads=1):
 
         l_value_guesses = [0.12, 0.90, 21.5, 13.7, 33, 25]
-        l_std_guesses = [0.01, 0.01, 0.5, 0.4, 3, 3]
+        l_std_guesses = [0.01, 0.01, 0.5, 0.2, 3, 3]
         l_par_names = ['g1', 'eta', 'gas_gain', 'w_value', 'cs137_stdev', 'na22_stdev']
 
         if not os.path.exists(self.s_directory_save_name):
@@ -839,9 +851,11 @@ if __name__ == '__main__':
 
 
     d_files['cs137'] = []
-    d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
+    #d_files['cs137'].append(['nerix_160404_1204', 'nerix_160404_1232', 'nerix_160404_1259', 'nerix_160404_1325', 'nerix_160404_1350'])
+    d_files['cs137'].append(['nerix_160627_1156', 'nerix_160627_1224', 'nerix_160627_1253', 'nerix_160627_1321', 'nerix_160627_1349'])
     d_files['na22'] = []
-    d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
+    #d_files['na22'].append(['nerix_160404_1421', 'nerix_160404_1447', 'nerix_160404_1530', 'nerix_160404_1555', 'nerix_160404_1621'])
+    d_files['na22'].append(['nerix_160627_1417', 'nerix_160627_1448', 'nerix_160627_1531', 'nerix_160627_1601', 'nerix_160627_1630'])
 
     test = fit_anticorrelation(d_files)
     test.run_mcmc(128, 500)

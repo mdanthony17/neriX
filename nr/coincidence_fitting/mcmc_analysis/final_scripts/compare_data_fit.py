@@ -35,13 +35,14 @@ import cPickle as pickle
 
 from scipy.special import gammaln
 
+max_s2 = 3000
 
 num_s1_cuts = 3 # 4 edges, 3 slices
 
 d_s1_cuts = {}
 d_s1_cuts[-4] = [40, 70, 100, 150]
 d_s1_cuts[3000] = [0, 7, 15, 40]
-d_s1_cuts[3500] = [0, 7, 15, 40]
+d_s1_cuts[3500] = [0, 5, 10, 40]
 d_s1_cuts[4500] = [0, 10, 20, 40]
 d_s1_cuts[5300] = [0, 10, 20, 40]
 
@@ -49,15 +50,15 @@ transparency = 0.2
 l_quantiles_for_2d = [50]
 
 # num_steps goes into how many random draws you will take from kept sampler
-num_steps = 2
-mc_bin_number_multiplier = 5
+num_steps = 10#25
+mc_bin_number_multiplier = 10
 
 # num_steps_to_include is how large of sampler you keep
-num_steps_to_include = 1000
+num_steps_to_include = num_steps
 num_mc_events = int(2e5)
 
-if(len(sys.argv) != 6):
-	print 'Usage is python compare_data_fit_single_energy.py <num walkers> <cathode setting> <degree setting> <device number> <moved positions>'
+if(len(sys.argv) != 7):
+	print 'Usage is python compare_data_fit_single_energy.py <num walkers> <cathode setting> <degree setting> <device number> <moved positions> <bq_fixed>'
 	sys.exit(1)
 
 num_walkers = int(sys.argv[1])
@@ -68,6 +69,11 @@ if str.lower(sys.argv[5]) == 't':
     b_moved_pos = True
 else:
     b_moved_pos = False
+if str.lower(sys.argv[6]) == 't':
+    b_bq_fixed = True
+else:
+    b_bq_fixed = False
+
 
 
 if degree_setting == 5300:
@@ -90,6 +96,8 @@ d_cathode_voltages_to_field = {0.345:190,
 dir_specifier_name = 'multiple_energies_lindhard_model_with_ti'
 if b_moved_pos:
     dir_specifier_name += '_moved_pos'
+elif b_bq_fixed:
+    dir_specifier_name += '_bq_fixed'
 
 
 l_degree_settings_in_use = [-4, 3000, 3500, 4500, 5300]
@@ -119,7 +127,7 @@ name_of_results_directory = neriX_simulation_config.results_directory_name
 l_plots = ['plots', dir_specifier_name, '%s_kV_%s_deg' % (s_cathode_settings, s_degree_settings), 'preliminary']
 
 
-s_path_to_file = './%s/%s/%s_kV_%s_deg/sampler_dictionary.p' % (name_of_results_directory, dir_specifier_name, s_cathode_settings, s_degree_settings)
+s_path_to_file = './%s/%s/%s_kV_%s_deg/sampler_dictionary.p.reduced' % (name_of_results_directory, dir_specifier_name, s_cathode_settings, s_degree_settings)
 
 
 if os.path.exists(s_path_to_file):
@@ -212,6 +220,7 @@ else:
 """
 
 
+
 # linear only
 if l_s1_binning[0] == 'lin':
     d_bin_edges['s1'][cathode_setting][degree_setting] = np.linspace(l_s1_binning[2], l_s1_binning[3], data_bin_multiplier*l_s1_binning[1]+1)
@@ -228,8 +237,10 @@ else:
     d_bin_edges['log_mc'][cathode_setting][degree_setting] = np.linspace(10**l_logs2s1_binning[2], 10**l_logs2s1_binning[3], mc_bin_number_multiplier*l_logs2s1_binning[1]+1)
 
 
-
-l_s2_settings = [15, 0, 4000]
+if degree_setting == 5300:
+    l_s2_settings = [40, 0, 4000]
+else:
+    l_s2_settings = [15, 0, 4000]
 l_s2_settings_band = [10, 1000, 6000]
 
 
@@ -288,7 +299,7 @@ for i in tqdm.tqdm(xrange(num_mc_events)):
     
     # special condition for band
     if degree_setting == -4:
-        while random_energy < (d_bin_edges['s1'][0.345][-4][0]*0.025/0.11/7.):
+        while random_energy < (d_bin_edges['s1'][cathode_setting][degree_setting][0]*0.025/0.11/7.):
             random_energy = h_energy.GetRandom()
     
 
@@ -373,7 +384,11 @@ w_value = np.asarray(a_best_fit_parameters[0], dtype=np.float32)
 beta = np.asarray(a_best_fit_parameters[1], dtype=np.float32)
 kappa = np.asarray(a_best_fit_parameters[2], dtype=np.float32)
 eta = np.asarray(a_best_fit_parameters[3], dtype=np.float32)
-lamb = np.asarray(a_best_fit_parameters[4], dtype=np.float32)
+
+if b_bq_fixed:
+    lamb = np.asarray(0.5, dtype=np.float32)
+else:
+    lamb = np.asarray(a_best_fit_parameters[4], dtype=np.float32)
 
 g1_value = np.asarray(a_best_fit_parameters[5], dtype=np.float32)
 spe_res = np.asarray(a_best_fit_parameters[6], dtype=np.float32)
@@ -460,6 +475,10 @@ mc_integral = float(num_mc_events)
 hist_s1_log_mc, _, _ = np.histogram2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting]], weights=a_weight)
 hist_s1_log_mc = np.multiply(hist_s1_log_mc, scale_par * data_integral / mc_integral)
 pcm = ax_s1_log_mc.pcolor(d_bin_edges['s1'][cathode_setting][degree_setting], d_bin_edges['log'][cathode_setting][degree_setting], hist_s1_log_mc.T, cmap='Blues')
+
+hist_s1_log_mc_fine, _, _ = np.histogram2d(a_s1_mc, np.log10(a_s2_mc/a_s1_mc), bins=[d_bin_edges['s1_mc'][cathode_setting][degree_setting], d_bin_edges['log_mc'][cathode_setting][degree_setting]], weights=a_weight)
+hist_s1_log_mc_fine = np.multiply(hist_s1_log_mc_fine, scale_par * data_integral * mc_bin_number_multiplier / mc_integral)
+
 ax_s1_log_mc.set_xlim(d_bin_edges['s1'][cathode_setting][degree_setting][0], d_bin_edges['s1'][cathode_setting][degree_setting][-1])
 ax_s1_log_mc.set_ylim(d_bin_edges['log'][cathode_setting][degree_setting][0], d_bin_edges['log'][cathode_setting][degree_setting][-1])
 fig_s1_log.colorbar(pcm, ax=ax_s1_log_mc)
@@ -485,7 +504,7 @@ for bin_number in xrange(len(s1_edges_mc)-1):
     if (np.isnan(current_mean_log)) or (np.isnan(current_std_log)):
         continue
 
-    num_std_away = 3
+    num_std_away = 2.5
 
     # must apply to both data and MC!
     current_df_data = current_df_data[(current_df_data['s1'] < s1_edges_mc[bin_number]) | (current_df_data['s1'] > s1_edges_mc[bin_number+1]) | ((current_df_data['log'] > (current_mean_log-num_std_away*current_std_log)) & (current_df_data['log'] < (current_mean_log+num_std_away*current_std_log)))]
@@ -505,7 +524,7 @@ best_fit_mc_2d_hist = hist_s1_log_mc
 print '\n\nFinding p-value via PFF test...\n'
 
 
-num_d_calculations = 200
+num_d_calculations = 200*5
 a_ps = np.zeros(num_d_calculations)
 num_to_choose_mc = 2000
 num_to_choose_data = 200#len(current_df_data['s1'])
@@ -551,6 +570,9 @@ for current_p_iteration in xrange(num_d_calculations):
 print 'median D: %f' % (np.median(a_ds_data))
 print 'Percentage synthetic above median: %.4f\n\n\n' % (len(a_ds_synthetic_data[a_ds_synthetic_data > np.median(a_ds_data)]) / float(num_d_calculations))
 
+
+print 'Debug!'
+sys.exit()
 
 
 # create 2d histogram of data
@@ -648,45 +670,49 @@ for i in tqdm.tqdm(xrange(num_walkers*num_steps)):
     beta = np.asarray(a_fit_parameters[1], dtype=np.float32)
     kappa = np.asarray(a_fit_parameters[2], dtype=np.float32)
     eta = np.asarray(a_fit_parameters[3], dtype=np.float32)
-    lamb = np.asarray(a_fit_parameters[4], dtype=np.float32)
+    
+    if b_bq_fixed:
+        lamb = np.asarray(0.5, dtype=np.float32)
+    else:
+        lamb = np.asarray(a_fit_parameters[4], dtype=np.float32)
 
-    g1_value = np.asarray(a_best_fit_parameters[5], dtype=np.float32)
-    spe_res = np.asarray(a_best_fit_parameters[6], dtype=np.float32)
-    extraction_efficiency = np.asarray(a_best_fit_parameters[7], dtype=np.float32)
-    gas_gain_value = np.asarray(a_best_fit_parameters[8], dtype=np.float32)
-    gas_gain_width = np.asarray(a_best_fit_parameters[9], dtype=np.float32)
+    g1_value = np.asarray(a_fit_parameters[5], dtype=np.float32)
+    spe_res = np.asarray(a_fit_parameters[6], dtype=np.float32)
+    extraction_efficiency = np.asarray(a_fit_parameters[7], dtype=np.float32)
+    gas_gain_value = np.asarray(a_fit_parameters[8], dtype=np.float32)
+    gas_gain_width = np.asarray(a_fit_parameters[9], dtype=np.float32)
 
 
     #print cathode_setting, degree_setting
     #print intrinsic_res_s1, intrinsic_res_s2
 
-    pf_eff_par0 = np.asarray(a_best_fit_parameters[10], dtype=np.float32)
-    pf_eff_par1 = np.asarray(a_best_fit_parameters[11], dtype=np.float32)
+    pf_eff_par0 = np.asarray(a_fit_parameters[10], dtype=np.float32)
+    pf_eff_par1 = np.asarray(a_fit_parameters[11], dtype=np.float32)
 
-    s2_eff_par0 = np.asarray(a_best_fit_parameters[12], dtype=np.float32)
-    s2_eff_par1 = np.asarray(a_best_fit_parameters[13], dtype=np.float32)
+    s2_eff_par0 = np.asarray(a_fit_parameters[12], dtype=np.float32)
+    s2_eff_par1 = np.asarray(a_fit_parameters[13], dtype=np.float32)
 
-    a_pf_stdev_s1 = np.asarray([a_best_fit_parameters[14], a_best_fit_parameters[15], a_best_fit_parameters[16]], dtype=np.float32)
-    a_pf_stdev_s2 = np.asarray([a_best_fit_parameters[17], a_best_fit_parameters[18], a_best_fit_parameters[19]], dtype=np.float32)
+    a_pf_stdev_s1 = np.asarray([a_fit_parameters[14], a_fit_parameters[15], a_fit_parameters[16]], dtype=np.float32)
+    a_pf_stdev_s2 = np.asarray([a_fit_parameters[17], a_fit_parameters[18], a_fit_parameters[19]], dtype=np.float32)
     
-    dpe_prob = np.asarray(a_best_fit_parameters[20], dtype=np.float32)
+    dpe_prob = np.asarray(a_fit_parameters[20], dtype=np.float32)
 
     a_s1_mc_current_iteration = np.zeros(num_mc_events, dtype=np.float32)
     a_s2_mc_current_iteration = np.zeros(num_mc_events, dtype=np.float32)
     a_weight = np.zeros(num_mc_events, dtype=np.float32)
     
-    ti_par = np.asarray(a_best_fit_parameters[20+1+count_fields*num_degree_field_pars], dtype=np.float32)
+    ti_par = np.asarray(a_fit_parameters[20+1+count_fields*num_degree_field_pars], dtype=np.float32)
 
-    exciton_to_ion_ratio = np.asarray(a_best_fit_parameters[20+2+count_fields*num_degree_field_pars], dtype=np.float32)
+    exciton_to_ion_ratio = np.asarray(a_fit_parameters[20+2+count_fields*num_degree_field_pars], dtype=np.float32)
 
     if degree_setting == -4:
         prob_bkg = np.asarray(0., dtype=np.float32)
-        scale_par = np.asarray(a_best_fit_parameters[20+3+count_fields*num_degree_field_pars], dtype=np.float32)
+        scale_par = np.asarray(a_fit_parameters[20+3+count_fields*num_degree_field_pars], dtype=np.float32)
     else:
-        prob_bkg = np.asarray(a_best_fit_parameters[20+4+count_fields*num_degree_field_pars + 2*count_degrees], dtype=np.float32)
-        scale_par = np.asarray(a_best_fit_parameters[20+5+count_fields*num_degree_field_pars + 2*count_degrees], dtype=np.float32)
+        prob_bkg = np.asarray(a_fit_parameters[20+4+count_fields*num_degree_field_pars + 2*count_degrees], dtype=np.float32)
+        scale_par = np.asarray(a_fit_parameters[20+5+count_fields*num_degree_field_pars + 2*count_degrees], dtype=np.float32)
 
-
+    #print prob_bkg, scale_par
 
     tArgs = (local_rng_states, drv.In(num_trials), drv.In(mean_field), d_plotting_information[cathode_setting][degree_setting]['gpu_energy'], gpu_bkg_energy, drv.In(w_value), drv.In(exciton_to_ion_ratio), drv.In(ti_par), drv.In(beta), drv.In(kappa), drv.In(eta), drv.In(lamb), drv.In(g1_value), drv.In(extraction_efficiency), drv.In(gas_gain_value), drv.In(gas_gain_width), drv.In(spe_res), drv.In(a_pf_stdev_s1), drv.In(a_pf_stdev_s2), drv.In(pf_eff_par0), drv.In(pf_eff_par1), drv.In(s2_eff_par0), drv.In(s2_eff_par1), drv.In(dpe_prob), drv.In(prob_bkg), drv.InOut(a_s1_mc_current_iteration), drv.InOut(a_s2_mc_current_iteration), drv.InOut(a_weight))
     
@@ -881,6 +907,7 @@ fig_s2s.savefig('%s%.3f_kV_%d_deg_data_mc_2.png' % (s_path_for_save, cathode_set
 
 
 d_for_save = {}
+d_for_save_high_stats = {}
 # want to save down pickle files
 # S1 cuts used
 d_for_save['s1_cuts'] = d_s1_cuts
@@ -889,6 +916,13 @@ d_for_save['s1_bin_edges'] = d_bin_edges['s1'][cathode_setting][degree_setting]
 d_for_save['log_bin_edges'] = d_bin_edges['log'][cathode_setting][degree_setting]
 d_for_save['2d_hist_data'] = hist_s1_log_data_for_save
 d_for_save['2d_hist_mc'] = hist_s1_log_mc
+
+d_for_save['s1_bin_edges_fine'] = d_bin_edges['s1_mc'][cathode_setting][degree_setting]
+d_for_save['log_bin_edges_fine'] = d_bin_edges['log_mc'][cathode_setting][degree_setting]
+d_for_save['2d_hist_mc_fine'] = hist_s1_log_mc_fine
+d_for_save_high_stats['s1_bin_edges_fine'] = d_bin_edges['s1_mc'][cathode_setting][degree_setting]
+d_for_save_high_stats['log_bin_edges_fine'] = d_bin_edges['log_mc'][cathode_setting][degree_setting]
+d_for_save_high_stats['2d_hist_mc_fine'] = hist_s1_log_mc_fine
 
 # median lines
 d_for_save['median_line_s1'] = a_median_line_s1
@@ -927,6 +961,7 @@ d_for_save['s2_bin_centers_mc'] = s2_bin_centers_mc
 
 # pickle file
 pickle.dump(d_for_save, open('%s%.3f_kV_%d_deg_comps.p' % (s_path_for_save, cathode_setting, degree_setting), 'wb'))
+pickle.dump(d_for_save_high_stats, open('%s%.3f_kV_%d_deg_comps_high_stats.p' % (s_path_for_save, cathode_setting, degree_setting), 'wb'))
 
 
 

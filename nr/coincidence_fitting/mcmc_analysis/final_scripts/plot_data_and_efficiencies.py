@@ -14,10 +14,12 @@ import numpy as np
 
 import matplotlib
 matplotlib.use('QT4Agg')
+import matplotlib.style
+matplotlib.style.use('classic')
 
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
-matplotlib.rcParams['font.size'] = 16
+matplotlib.rcParams['font.size'] = 12
 
 
 import matplotlib.pyplot as plt
@@ -126,8 +128,8 @@ if not os.path.exists(s_path_for_save):
 
 
 l_s1_binning = [500, 1, 40]
-l_s2_binning = [500, 2.3, 3.6]
-l_s1_binning_band = [500, 40, 180]
+l_s2_binning = [500, 2.3, 3.8]
+l_s1_binning_band = [500, 40, 150]
 l_s2_binning_band = [500, 3.25, 3.85]
 
 num_mc_events = int(1e4)
@@ -173,7 +175,7 @@ d_scatter_pars['color'] = {3000:'#0082c8', # blue
                            4500:'#e6194b', # red
                            5300:'#808080'} # gray
 
-figure_size = (16, 6)
+figure_size = (16, 3.2)
 
 l_grid_dim = [3, 4] # smaller number means larger upper row
 
@@ -192,7 +194,7 @@ for current_cathode_setting in l_cathode_settings_in_use:
     if not current_cathode_setting == cathode_setting:
         continue
     for current_degree_setting in l_degree_settings_in_use:
-        l_legend_handles_coincidence.append(ax_data.scatter(d_data[current_cathode_setting][current_degree_setting]['s1'], np.log10(d_data[current_cathode_setting][current_degree_setting]['s2']), marker='o', c=d_scatter_pars['color'][current_degree_setting], s=3, linewidths=0, alpha=1, label='$%d^{\circ}$' % (current_degree_setting/100)))
+        l_legend_handles_coincidence.append(ax_data.scatter(d_data[current_cathode_setting][current_degree_setting]['s1'], np.log10(d_data[current_cathode_setting][current_degree_setting]['s2']), marker='o', c=d_scatter_pars['color'][current_degree_setting], s=3, linewidths=0, alpha=0.7, label='$%d^{\circ}$ (%d keV)' % (current_degree_setting/100, d_degree_setting_to_energy_name[current_degree_setting])))
 
         # works well but no integral
         """
@@ -207,7 +209,7 @@ for current_cathode_setting in l_cathode_settings_in_use:
         t = np.linspace(0, np.max(zz), 1000)
         integral = ((zz >= t[:, None, None]) * zz).sum(axis=(1,2))
         f = interpolate.interp1d(integral, t)
-        ax_data.contour(xx, yy, zz, colors=d_scatter_pars['color'][current_degree_setting], levels=[f(0.5), f(0.25)], linewidths=2, linestyles=['dashed', 'solid'])
+        ax_data.contour(xx, yy, zz, colors=d_scatter_pars['color'][current_degree_setting], levels=[f(0.5), f(0.25)], linewidths=1.5, linestyles=['dashed', 'solid'])
         
 
         """
@@ -228,10 +230,10 @@ for current_cathode_setting in l_cathode_settings_in_use:
 
 
 
-ax_data.set_ylabel(r'$log_{10}\left(S2\right)$')
+ax_data.set_ylabel(r'$\mathrm{log}_{10}\left(\mathrm{S2}\right)$')
 ax_data.set_xlabel('S1 [PE]')
-ax_data.text(20, 2.5, r'$E = 1.02 \, \frac{kV}{cm}$')
-ax_data.text(1.5, 3.3, '(d)')
+ax_data.text(20, 2.5, r'$\mid \vec{E} \mid = 1.02 \, \, \frac{\mathrm{kV}}{\mathrm{cm}}$')
+ax_data.text(1.5, 3.45, '(d)')
 
 # S1 efficiency
 
@@ -267,7 +269,7 @@ ax_s1_eff.axhline(1., color='k', linestyle='--')
 ax_s1_eff.get_xaxis().tick_top()
 #ax_s1_eff.get_xaxis().set_visible(False)
 ax_s1_eff.set_ylim(0, 1.05)
-ax_s1_eff.set_ylabel('Efficiency')
+ax_s1_eff.set_ylabel('Peak-Finding Efficiency', labelpad=6.5)
 ax_s1_eff.set_yticks([0.2, 0.4, 0.6, 0.8, 1])
 
 
@@ -308,16 +310,46 @@ ax_s2_eff.axvline(1., color='k', linestyle='--')
 ax_s2_eff.get_yaxis().tick_right()
 #ax_s2_eff.get_yaxis().set_visible(False)
 ax_s2_eff.set_xlim(0, 1.05)
-ax_s2_eff.set_xlabel('Efficiency')
+ax_s2_eff.set_xlabel('Trigger Efficiency')
 ax_s2_eff.set_xticks([0.2, 0.4, 0.6, 0.8, 1])
 
-ax_s2_eff.text(0.2, 3.4, '(e)')
+ax_s2_eff.text(0.2, 3.6, '(e)')
 
 
+
+# plot of both efficiencies in same figure
+
+fig_both_efficiencies, ax_both_efficiencies_s1 = plt.subplots(1, figsize=(6,3))
+ax_both_efficiencies_s2 = ax_both_efficiencies_s1.twiny()
+
+
+handler_both_s1, = ax_both_efficiencies_s1.plot(l_s1_bin_edges, l_s1_eff_median, color='b', linestyle='-', label='S1 Peak Finding Efficiency')
+ax_both_efficiencies_s1.fill_between(l_s1_bin_edges, l_s1_eff_lb, l_s1_eff_ub, color='b', alpha=transparency)
+ax_both_efficiencies_s1.axhline(1., color='k', linestyle='--')
+
+handler_both_s2, = ax_both_efficiencies_s2.plot(l_s2_bin_edges, l_s2_eff_median, color='r', linestyle='-', label='Trigger Efficiency')
+ax_both_efficiencies_s2.fill_between(l_s2_bin_edges, l_s2_eff_lb, l_s2_eff_ub, color='r', alpha=transparency)
+
+
+ax_both_efficiencies_s1.set_xlabel('S1 [PE]')
+ax_both_efficiencies_s1.set_xlim(1, 10)
+
+ax_both_efficiencies_s2.set_xlabel(r'$\mathrm{log}_{10}\left(\mathrm{S2}\right)$')
+ax_both_efficiencies_s2.set_xlim(l_s2_binning[1], l_s2_binning[2])
+
+ax_both_efficiencies_s1.set_ylim(0, 1.05)
+ax_both_efficiencies_s1.set_ylabel('Efficiency')
+ax_both_efficiencies_s1.set_yticks([0.2, 0.4, 0.6, 0.8, 1])
+
+
+ax_both_efficiencies_s1.legend(handles=[handler_both_s1, handler_both_s2], loc='lower right', prop={'size': 12}, frameon=False, handletextpad=0.2)
 
 
 
 # EJ plot
+
+# make solo plot for paper
+fig_ej, ax_ej_solo = plt.subplots(1, figsize=(6, 3))
 
 ax_ej = fig.add_subplot(411)
 ax_ej.set_position(gs[0,(l_grid_dim[1]-1)].get_position(fig))
@@ -354,35 +386,53 @@ ax_ej.set_ylabel('PSD Parameter', rotation=270, labelpad=16)
 ax_ej.text(1.28, 0.34, '(c)')
 
 
+# do dedicated plot part
+ax_ej_solo.scatter(df_ej_neutrons['height'], df_ej_neutrons['psd'], marker='o', c='magenta', s=6, linewidths=0, alpha=1, label='n')
+ax_ej_solo.scatter(df_ej_gammas['height'], df_ej_gammas['psd'], marker='o', c='orange', s=6, linewidths=0, alpha=1, label='$\gamma$')
+ax_ej_solo.axhline(0.228, color='red', linestyle='--')
+ax_ej_solo.set_xlabel('Pulse Height [V]')
+ax_ej_solo.set_ylabel('PSD Parameter')
+ax_ej_solo.set_ylim(0., 0.45)
+
+
+legend_ej_solo = ax_ej_solo.legend(handles=l_legend_handles_ej, ncol=2, loc='lower center', prop={'size': 16}, frameon=False, handletextpad=0.1, scatterpoints=1)
+
+
+
+
 # inlay plot of band
 
 from mpl_toolkits.axes_grid.inset_locator import inset_axes
 #iax_band = inset_axes(ax_s1_eff, width='45%', height='60%', loc=7)
-iax_band = fig.add_axes([0.38, 0.69, 0.32, 0.16])
+iax_band = fig.add_axes([0.38, 0.69, 0.32, 0.145])
 iax_band.scatter(d_data[cathode_setting][-4]['s1'], np.log10(d_data[cathode_setting][-4]['s2']), marker='o', c='#008080', s=3, linewidths=0, alpha=1, label='NR Band')
 
 iax_band.set_xlim(l_s1_binning_band[1], l_s1_binning_band[2])
 iax_band.set_ylim(l_s2_binning_band[1], l_s2_binning_band[2])
 #iax_band.set_xscale('log', nonposx='clip')
 
-iax_band.set_xlabel('S1 [PE]', fontsize=12, labelpad=-0.3)
-iax_band.set_ylabel(r'$log_{10}\left(S2\right)$', fontsize=12, labelpad=-0.3)
+iax_band.set_xlabel('S1 [PE]', fontsize=10, labelpad=-8)
+iax_band.set_ylabel(r'$\mathrm{log}_{10}\left(\mathrm{S2}\right)$', fontsize=10, labelpad=-0.3)
 iax_band.tick_params(labelsize=10)
 
-iax_band.text(170, 3.72, '(b)')
+iax_band.text(140, 3.65, '(b)')
 
 
 # make label lines
-gas_gain = 23.1
-eta = 0.892
+gas_gain = 22.9
+eta = 0.904
+g2 = eta*gas_gain
 w_value = 13.7 / 1000.
-g1_value = 0.125
-lindhard_factor = 0.166
+g1_value = 0.126
+lindhard_factor = 0.189
+eta_prop = 1.84
 line_color = 'gray'
 label_color = 'dimgray'
 
 a_ll_s1 = np.linspace(l_s1_binning_band[1], l_s1_binning_band[2], 200)
 
+def energy_to_epsilon(ll_energy):
+    return 11.5*ll_energy*54**(-7./3.)
 
 def lindhard_quenching(ll_energy):
     epsilon = 11.5*ll_energy*54**(-7./3.)
@@ -390,15 +440,22 @@ def lindhard_quenching(ll_energy):
     return lindhard_factor*g / (1 + lindhard_factor*g)
 
 def get_s1_from_log(ll_energy, log_value):
-    return g1_value*(ll_energy*lindhard_quenching(ll_energy)/w_value - 10**log_value/(eta*gas_gain))
+    #return g1_value*(ll_energy*lindhard_quenching(ll_energy)/w_value - 10**log_value/(eta*gas_gain))
+    f = 1. / (1. + eta_prop*energy_to_epsilon(ll_energy)**0.5)
+    return g1_value * f / g2 * (ll_energy*lindhard_quenching(ll_energy)*g2/w_value - 10**(log_value))
 
 ll_energy = 74
 #print lindhard_quenching(ll_energy)
 
-a_ll_log = np.log10(eta*gas_gain * (ll_energy*lindhard_quenching(ll_energy)/(w_value) - a_ll_s1/g1_value))
-iax_band.plot(a_ll_s1, a_ll_log, color=line_color, linestyle='-', label=ll_energy)
-iax_band.text(get_s1_from_log(ll_energy, 3.3)-2.5, 3.27, '%d keV NR Band Kinematic Maximum Energy' % ll_energy, ha='right', size='x-small', color=label_color)
+#a_ll_log = np.log10(eta*gas_gain * (ll_energy*lindhard_quenching(ll_energy)/(w_value) - a_ll_s1/g1_value))
+f = 1. / (1. + eta_prop*energy_to_epsilon(ll_energy)**0.5)
+print f
+a_ll_log = np.log10(g2 * (ll_energy*lindhard_quenching(ll_energy)/(w_value) - a_ll_s1/(g1_value*f)))
+print a_ll_log
 
+iax_band.plot(a_ll_s1, a_ll_log, color=line_color, linestyle='-', label=ll_energy)
+#iax_band.text(get_s1_from_log(ll_energy, 3.3)-2.5, 3.30, '%d keV NR Band Kinematic Maximum Energy' % ll_energy, ha='right', size='small', weight='bold', color=label_color)
+iax_band.text(get_s1_from_log(ll_energy, 3.3)-2.5, 3.30, '%d keV' % ll_energy, ha='right', size='small', weight='bold', color=label_color)
 
 
 
@@ -415,8 +472,8 @@ fig.subplots_adjust(hspace=0, wspace=0)
 
 
 # put legends in place
-legend_coincidence = ax_s2_eff.legend(handles=l_legend_handles_coincidence, scatterpoints=1, loc='center left', ncol=2, prop={'size': 16}, frameon=False, handletextpad=0.1, columnspacing=0.3)
-legend_ej = ax_s2_eff.legend(handles=l_legend_handles_ej, loc='upper center', prop={'size': 16}, frameon=False, handletextpad=0.1)
+legend_coincidence = ax_s2_eff.legend(handles=l_legend_handles_coincidence, scatterpoints=1, loc='center left', ncol=1, prop={'size': 12}, frameon=False, handletextpad=0.1, columnspacing=0.3)
+legend_ej = ax_s2_eff.legend(handles=l_legend_handles_ej, loc='upper center', prop={'size': 12}, frameon=False, handletextpad=0.1, scatterpoints=1)
 ax_s2_eff.add_artist(legend_coincidence)
 
 
@@ -425,7 +482,7 @@ ax_s2_eff.add_artist(legend_coincidence)
 #p_higher_percentile = matplotlib.patches.Patch(color='k', linestyle='--', label=r'$50^{\mathrm{th}}$ Percentile')
 p_lower_percentile = plt.Line2D((-1000, -1000), (-1000, -1000), color='k', linestyle='-', label=r'$25^{\mathrm{th}}$ Percentile')
 p_higher_percentile = plt.Line2D((-1000, -1000), (-1000, -1000), color='k', linestyle='--', label=r'$50^{\mathrm{th}}$ Percentile')
-ax_data.legend(handles=[p_lower_percentile, p_higher_percentile], frameon=False, ncol=2, prop={'size': 16}, columnspacing=1.4, loc='center', bbox_to_anchor=(0.23, 0.9), handletextpad=0.1)
+ax_data.legend(handles=[p_lower_percentile, p_higher_percentile], frameon=False, ncol=2, prop={'size': 12}, columnspacing=1.4, loc='center', bbox_to_anchor=(0.23, 0.9), handletextpad=0.1)
 
 
 
@@ -442,18 +499,25 @@ for i in xrange(len(legend_ej.legendHandles)):
     legend_ej.legendHandles[i]._sizes = [30]
     legend_ej.legendHandles[i]._alpha = 1
 
+    legend_ej_solo.legendHandles[i]._sizes = [30]
+    legend_ej_solo.legendHandles[i]._alpha = 1
+
 
 
 ax_data.set_xticks([2, 6, 10, 30])
 ax_data.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-ax_data.set_yticks(ax_data.get_yticks()[1:-2])
+ax_data.set_yticks(ax_data.get_yticks()[1:-1])
 
-iax_band.set_xticks([40, 70, 100, 130, 160])
+iax_band.set_xticks([50, 80, 110, 140])
 iax_band.set_yticks([3.3, 3.5, 3.7])
 iax_band.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
 fig.savefig('%s/%.3f_kV_data_efficiencies_psd.pdf' % (s_path_for_save, cathode_setting), bbox_inches='tight')
+fig_ej.savefig('%s/ej_only_plot.png' % (s_path_for_save), bbox_inches='tight')
 
-plt.show()
+
+fig_both_efficiencies.savefig('plots/efficiencies_only.png', bbox_inches='tight')
+
+#plt.show()
 
 
